@@ -1,30 +1,26 @@
-Subject: [PATCH] feat: i18n import zhCn
----
-Index: packages/frontend/@n8n/i18n/src/index.ts
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
+# feat: i18n register zh-CN
+# 🔴 针对 n8n 2.38.7 的 packages/frontend/@n8n/i18n/src/index.ts 重新生成（2026-09-12）。
+# 上游该文件每次重构都会使本 patch 失效（git apply 失败时需对新版源码重新生成）。
+# 旧版（2.33.x）上下文的 patch 已被本版替换；2.38.x 源码中 CredentialConfig.vue 的
+# 空值保护已被上游自行修复，fix_editor-ui.patch 对 ≥2.38 不再需要。
 diff --git a/packages/frontend/@n8n/i18n/src/index.ts b/packages/frontend/@n8n/i18n/src/index.ts
---- a/packages/frontend/@n8n/i18n/src/index.ts	(revision d31a6a9acc78099344a86a068f22c2fd7efdeec8)
-+++ b/packages/frontend/@n8n/i18n/src/index.ts	(date 1758616182736)
-@@ -4,6 +4,7 @@
- import { createI18n } from 'vue-i18n';
+index 8f3dc011..fdaade92 100644
+--- a/packages/frontend/@n8n/i18n/src/index.ts
++++ b/packages/frontend/@n8n/i18n/src/index.ts
+@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n';
+ import type { I18n } from 'vue-i18n';
  
  import englishBaseText from './locales/en.json';
 +import cnBaseText from './locales/zh-CN.json';
  import type { BaseTextKey, LocaleMessages, INodeTranslationHeaders } from './types';
  import {
  	deriveMiddleKey,
-@@ -16,9 +17,9 @@
- 
- export const i18nInstance = createI18n({
+@@ -23,7 +24,7 @@ export const i18nInstance: I18n<LooseSchema, LooseSchema, LooseSchema, string, f
  	legacy: false,
--	locale: 'en',
-+	locale: 'zh-CN',
+ 	locale: 'en',
  	fallbackLocale: 'en',
 -	messages: { en: englishBaseText },
-+	messages: { en: englishBaseText, 'zh-CN': cnBaseText, },
++	messages: { en: englishBaseText, 'zh-CN': cnBaseText },
  	warnHtmlMessage: false,
  });
  

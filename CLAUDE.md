@@ -66,5 +66,6 @@ n8n 新旧目录布局兼容：CI 检测 `packages/frontend/editor-ui`（新布�
 
 ## patch 注意事项
 
-- `patches/feat__i18n_zhCn.patch` 修改 n8n 上游 `packages/frontend/@n8n/i18n/src/index.ts`：import zh-CN 语言 + 注册进 vue-i18n messages。上游该文件变动会导致 `git apply` 失败，需对照新版文件重新生成 patch（IDEA 导出格式，含 revision/date 头）
-- 手动更新 patch 后，本地可用 `git -C <n8n源码目录> apply <patch路径>` 验证
+- `patches/feat__i18n_zhCn.patch` 修改 n8n 上游 `packages/frontend/@n8n/i18n/src/index.ts`：import zh-CN 语言 + 注册进 vue-i18n messages（`messages: { en: englishBaseText, 'zh-CN': cnBaseText }`）。**上游该文件每次重构都会使 patch 失效**——`git apply` 报 "patch does not apply" 时，直接在新版源码上手动做等效两行修改，再 `git diff` 重新生成 patch。当前版本：2026-09-12 针对 2.38.7 重新生成（git diff 格式）
+- `patches/fix_editor-ui.patch`（旧 `fix_editor-ui.old.patch` 同理）：CredentialConfig.vue 空值保护。**2.38.x 起上游已自行修复，对新版源码不再需要**；仅构建 ≤2.33 旧版时使用。另注意 2.38.x 的 editor-ui src 重构为 `features/` 结构（CredentialConfig.vue 迁至 `src/features/credentials/components/CredentialEdit/`）
+- 手动修改源码后验证：`git -C <n8n源码目录> apply --check --reverse <patch路径>`（已应用状态应通过，同时证明格式可解析）
