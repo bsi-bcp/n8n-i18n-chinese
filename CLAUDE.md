@@ -21,9 +21,9 @@ npm run i18n:translate        # 增量翻译（script/translate.js）
 node script/get-n8n-nodes.js  # 从 node_modules/n8n-nodes-base 提取节点文案 → script/en-nodes.json（需先 npm install）
 ```
 
-无测试、无 lint。
+无测试、无 lint。Node ≥18（translate.js 用全局 `fetch`），CI 用 Node 22。
 
-translate.js 环境变量（OpenAI 兼容接口，可放 `.env`）：
+translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**运行时所在目录**加载，CI 在 `script/` 下直接注入环境变量）：
 
 - `OPENAI_API_KEY`、`OPENAI_API_BASE` — 必填，请求发往 `BASE + "/chat/completions"`
 - `OPENAI_MODEL` — 模型名
