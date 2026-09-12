@@ -49,11 +49,10 @@ jobs:
 
       - name: Build and push multi-arch Docker images
         run: |
-          # 构建并直接推送 multi-arch 镜像（amd64 + arm64）
+          # 构建并直接推送 multi-arch 镜像（amd64 + arm64）到商软库
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg VERSION=$RELEASE_VERSION \
-            -t blowsnow/n8n-chinese:$RELEASE_VERSION \
-            -t blowsnow/n8n-chinese:latest \
+            -t registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:$RELEASE_VERSION \
             --push \
             .

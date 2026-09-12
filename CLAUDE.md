@@ -8,7 +8,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 - `languages/zh-CN.json` — 中文语言包（自动翻译产物）
 - `editor-ui.tar.gz` — 编译后的 editor-ui dist（CI 生成，GitHub Release 附件）
-- Docker 镜像 → 2026-09-12 起指向 BCP 私有库 `registry.bcpcloud.cn/bcp/n8n-chinese`（image.yml 需配 `BCP_REGISTRY_USERNAME` / `BCP_REGISTRY_PASSWORD` secrets，真值见凭证库 `swr.txc_43`；原上游 DockerHub `blowsnow/n8n-chinese` 无发布权限且已冻结在 2.33.7）
+- Docker 镜像 → 交付渠道为商软私有库 **`registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:<ver>`**（image.yml 需配 `BCP_REGISTRY_USERNAME` / `BCP_REGISTRY_PASSWORD` secrets，真值见凭证库 `swr.txc_43`；原上游 DockerHub `blowsnow/n8n-chinese` 无发布权限且已冻结在 2.33.7）
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
@@ -74,7 +74,7 @@ Actions 未启用的现状下，追新版本按此 SOP 手动执行：
 4. **安装**：`CI=1 pnpm install --frozen-lockfile --filter "n8n-editor-ui..."`。🔴 两个关键：**`CI=1` 必须带**——根 `prepare.mjs` 会跑 lefthook 安装，非 CI 环境下因过滤安装没装 lefthook 而秒挂（ELIFECYCLE 无输出）；**过滤安装**只装 editor-ui 子图，避开后端原生依赖（isolated-vm 在新 Node 上 gyp 编译失败）
 5. **构建**：`CI=1 pnpm --filter "n8n-editor-ui..." build` → 产物在 `packages/frontend/editor-ui/dist/`
 6. **打包**：`tar -czf editor-ui-<ver>.tar.gz -C packages/frontend/editor-ui dist`（macOS tar 的 LIBARCHIVE.xattr 警告在 Linux 解包无害）
-6½. **镜像交付（国内客户渠道）**：在 TX-43 上构建推送 `registry.bcpcloud.cn/bcp/n8n-chinese:<ver>`（FROM `registry.bcpcloud.cn/bcp/n8n:<ver>` + `COPY dist` 到 `.../n8n-editor-ui/dist` + `ENV N8N_DEFAULT_LOCALE=zh-CN`）。GitHub Releases 拉包对国内客户边端不稳（超时/CDN reset），registry 是正式交付通道，Releases 仅作公开存档。构建上下文传 TX-43（SSH `43.139.228.145:22` root，凭证库 `bcp_ipaas/server/txc_43`）本地构建推送秒级完成；客户实例首次需 `docker login registry.bcpcloud.cn`（凭证 `swr.txc_43`）
+6½. **镜像交付（国内客户渠道）**：在 TX-43 上构建推送 `registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:<ver>`（FROM `registry.bcpcloud.cn/bcp/n8n:<ver>` + `COPY dist` 到 `.../n8n-editor-ui/dist` + `ENV N8N_DEFAULT_LOCALE=zh-CN`）。GitHub Releases 拉包对国内客户边端不稳（超时/CDN reset），registry 是正式交付通道，Releases 仅作公开存档。构建上下文传 TX-43（SSH `43.139.228.145:22` root，凭证库 `bcp_ipaas/server/txc_43`）本地构建推送秒级完成；客户实例首次需 `docker login registry.bcpcloud.cn`（凭证 `swr.txc_43`）
 7. **灰度验证（bcphub-bsi = YTJ1 `/opt/bcphub-test`）**：SSH 经 TX-43 FRP `43.139.228.145:60001`（凭证库 `bcp_ipaas/server/ytj1`）。流程：备份旧 dist（`mv dist dist-bak-<旧版>-<日期>`）→ 解包新 dist（`--strip-components=1`）→ `python3 ui-brand-patch/bsi-ui-brand-patch-*.py` 重放品牌 → `docker compose restart n8n`（重同步容器内 cache）→ 域名验证四件套：`/healthz`+`/healthz/readiness`、页面 title、新 bundle hash 与本机构建一致、**新增文案中文抽查**（挑只有新版才有的串 grep 线上 asset）
 8. **发布**：`git tag release/<ver> && git push origin release/<ver>` → `gh release create release/<ver> editor-ui-<ver>.tar.gz`
 9. **收尾**：更新 README「n8n 版本兼容说明」矩阵；若上游 index.ts 有变，重新生成 patch 一并提交
