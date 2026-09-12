@@ -64,6 +64,20 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 n8n 新旧目录布局兼容：CI 检测 `packages/frontend/editor-ui`（新布局）vs `packages/editor-ui`（旧布局）来决定 dist 打包路径与所用 fix 补丁。`fix_editor-ui.patch` 与 `fix_editor-ui.old.patch` 内容相同（CredentialConfig.vue 加空值保护），仅目标路径不同。
 
+## 手动构建发布 runbook（2026-09-12 对 2.38.7 全链路实战验证）
+
+Actions 未启用的现状下，追新版本按此 SOP 手动执行：
+
+1. **翻译对齐**：按「常用命令」节跑 `translate.js`（`N8N_EN_JSON_URL` pin 到目标 tag 或本地 curl 预下载），提交 `chore: auto translate`
+2. **源码准备**：`git clone --depth 1 --branch "n8n@<ver>" https://github.com/n8n-io/n8n.git`（约 320M）。engines 要求 **node≥24 / pnpm≥11.22**——pnpm 用 corepack 解决：`corepack enable --install-directory /tmp/corepack-bin && export PATH=/tmp/corepack-bin:$PATH`（n8n 的 packageManager 字段会自动 pin 到正确版本）
+3. **注入 + 补丁**：拷 `languages/zh-CN.json` 到 `packages/frontend/@n8n/i18n/src/locales/`；`git apply patches/feat__i18n_zhCn.patch`（失效则手动做等效两行修改并重新生成 patch，见「patch 注意事项」）
+4. **安装**：`CI=1 pnpm install --frozen-lockfile --filter "n8n-editor-ui..."`。🔴 两个关键：**`CI=1` 必须带**——根 `prepare.mjs` 会跑 lefthook 安装，非 CI 环境下因过滤安装没装 lefthook 而秒挂（ELIFECYCLE 无输出）；**过滤安装**只装 editor-ui 子图，避开后端原生依赖（isolated-vm 在新 Node 上 gyp 编译失败）
+5. **构建**：`CI=1 pnpm --filter "n8n-editor-ui..." build` → 产物在 `packages/frontend/editor-ui/dist/`
+6. **打包**：`tar -czf editor-ui-<ver>.tar.gz -C packages/frontend/editor-ui dist`（macOS tar 的 LIBARCHIVE.xattr 警告在 Linux 解包无害）
+7. **灰度验证（bcphub-bsi = YTJ1 `/opt/bcphub-test`）**：SSH 经 TX-43 FRP `43.139.228.145:60001`（凭证库 `bcp_ipaas/server/ytj1`）。流程：备份旧 dist（`mv dist dist-bak-<旧版>-<日期>`）→ 解包新 dist（`--strip-components=1`）→ `python3 ui-brand-patch/bsi-ui-brand-patch-*.py` 重放品牌 → `docker compose restart n8n`（重同步容器内 cache）→ 域名验证四件套：`/healthz`+`/healthz/readiness`、页面 title、新 bundle hash 与本机构建一致、**新增文案中文抽查**（挑只有新版才有的串 grep 线上 asset）
+8. **发布**：`git tag release/<ver> && git push origin release/<ver>` → `gh release create release/<ver> editor-ui-<ver>.tar.gz`
+9. **收尾**：更新 README「n8n 版本兼容说明」矩阵；若上游 index.ts 有变，重新生成 patch 一并提交
+
 ## patch 注意事项
 
 - `patches/feat__i18n_zhCn.patch` 修改 n8n 上游 `packages/frontend/@n8n/i18n/src/index.ts`：import zh-CN 语言 + 注册进 vue-i18n messages（`messages: { en: englishBaseText, 'zh-CN': cnBaseText }`）。**上游该文件每次重构都会使 patch 失效**——`git apply` 报 "patch does not apply" 时，直接在新版源码上手动做等效两行修改，再 `git diff` 重新生成 patch。当前版本：2026-09-12 针对 2.38.7 重新生成（git diff 格式）
