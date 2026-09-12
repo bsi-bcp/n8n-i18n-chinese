@@ -37,13 +37,13 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - raw.githubusercontent.com 同理：本机跑先 `curl` 把 en.json 下载到本地，`N8N_EN_JSON_URL=/path/en.json` 传入
 - 不要 `npm install` 全量依赖——`n8n-nodes-base@latest` 依赖原生模块 `isolated-vm`，新 Node 上 gyp 编译失败。隔离安装：`/tmp` 建目录装 `dotenv lodash p-limit@2`，运行时 `NODE_PATH` 指向
 - 实测可用组合：`gemini-3.5-flash-lite` + `OPENAI_BATCH_SIZE=15`（flash 免费档仅 5 RPM 不可用；OpenRouter key 无余额会 402；智谱 key 无模型权限）。2183 条 ≈ 10 分钟
-- 一次批量调用失败会记日志并跳过整批，失败的 key 不写入 zh-CN.json，下次运行自动补翻
+- 批量调用失败先二分降级重试（拆半直到单条），仅最终仍失败的单条记日志跳过、不写入 zh-CN.json，下次运行自动补翻
 
 ## 翻译流程（script/translate.js）
 
 1. 从 n8n master 拉官方 `en.json`，与本仓库 `script/en-nodes.json`（若存在，由 get-n8n-nodes.js 生成）lodash.merge 作为完整英文基准
 2. 三方对比（新 en.json / 旧基准 `script/en.json` / 现有 `languages/zh-CN.json`），只翻译：**新增 key** 或 **英文原文已变化的 key**
-3. key 用 `##` 分隔打平传给 LLM，回填时还原嵌套；LLM 输出剥掉 `<think>` 块（兼容推理模型）；429 时等待 1s 重试
+3. 批协议：key 用 `##` 打平仅用于内部回填，实际传给 LLM 的是等长 JSON 字符串数组（仅原文）；LLM 输出剥掉 `<think>` 块（兼容推理模型）与 markdown 代码围栏；429 退避 5s 重试，其余非 200 交给 retry 重试
 4. 产物按新 en.json 的 key 顺序排序写回 `languages/zh-CN.json`，并把新 en.json 存为下次的旧基准
 5. 单条翻译失败只记日志不中断，失败的 key 不会出现在 zh-CN.json 中
 
