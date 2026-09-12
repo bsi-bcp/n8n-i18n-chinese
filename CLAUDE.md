@@ -8,7 +8,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 - `languages/zh-CN.json` — 中文语言包（自动翻译产物）
 - `editor-ui.tar.gz` — 编译后的 editor-ui dist（CI 生成，GitHub Release 附件）
-- Docker 镜像 `blowsnow/n8n-chinese`（多架构，tag 触发）
+- Docker 镜像 → 2026-09-12 起指向 BCP 私有库 `registry.bcpcloud.cn/bcp/n8n-chinese`（image.yml 需配 `BCP_REGISTRY_USERNAME` / `BCP_REGISTRY_PASSWORD` secrets，真值见凭证库 `swr.txc_43`；原上游 DockerHub `blowsnow/n8n-chinese` 无发布权限且已冻结在 2.33.7）
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
@@ -28,6 +28,16 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - `OPENAI_API_KEY`、`OPENAI_API_BASE` — 必填，请求发往 `BASE + "/chat/completions"`
 - `OPENAI_MODEL` — 模型名
 - `OPENAI_API_CONCURRENT` — 并发数，默认 2
+- `OPENAI_BATCH_SIZE` — 单次 LLM 调用翻译条数，默认 1（上游逐条行为）。免费档 API 有 RPM 限制时设 15+，请求数降一个数量级
+- `N8N_EN_JSON_URL` — 英文源覆盖：http(s) URL（可 pin 到 n8n 版本 tag，`@` 写作 `%40`）或**本地文件路径**。默认 master（可能领先最新 Release）
+
+**国内本机运行注意（2026-09-12 实测）**：
+
+- Node fetch（undici）**不消费 http_proxy 环境变量**——curl 能通不代表 node fetch 能通，LLM 调用须加 `NODE_USE_ENV_PROXY=1`（Node 24+）
+- raw.githubusercontent.com 同理：本机跑先 `curl` 把 en.json 下载到本地，`N8N_EN_JSON_URL=/path/en.json` 传入
+- 不要 `npm install` 全量依赖——`n8n-nodes-base@latest` 依赖原生模块 `isolated-vm`，新 Node 上 gyp 编译失败。隔离安装：`/tmp` 建目录装 `dotenv lodash p-limit@2`，运行时 `NODE_PATH` 指向
+- 实测可用组合：`gemini-3.5-flash-lite` + `OPENAI_BATCH_SIZE=15`（flash 免费档仅 5 RPM 不可用；OpenRouter key 无余额会 402；智谱 key 无模型权限）。2183 条 ≈ 10 分钟
+- 一次批量调用失败会记日志并跳过整批，失败的 key 不写入 zh-CN.json，下次运行自动补翻
 
 ## 翻译流程（script/translate.js）
 

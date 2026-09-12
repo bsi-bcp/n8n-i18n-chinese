@@ -2,6 +2,9 @@
 # 安装教程
 
 ## 自带中文docker镜像
+> ⚠️ `blowsnow/n8n-chinese` 为原上游作者的镜像，**已停止更新（停在 n8n 2.33.7）**。本仓库不再向该地址发布。
+> 推荐改用下方「docker安装」方式：官方 n8n 镜像 + 挂载 editor-ui dist 目录。
+
 ```shell
 docker run -it --rm --name n8ntest \
 -p 15678:5678 \
