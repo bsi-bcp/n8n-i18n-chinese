@@ -12,6 +12,8 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
+**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。本 fork 的 GitHub Actions 从未运行（无 tag、无 Release、无 workflow run），翻译提交同样停在 2026-08-21 —— 下文「发布流水线」是 workflow 的设计行为，在本仓库从未实际执行。BCP 侧的实际消费方式：n8n >2.33.7 的部署**沿用 2.33.7 的 editor-ui dist**（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill；若要恢复追新，跑 `npm run i18n:translate`（en.json 拉自 n8n **master** 分支，注意 master 可能领先最新 Release）+ 手动走构建发布流程。
+
 ## 常用命令
 
 ```shell
@@ -41,7 +43,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`）：
 - `languages/zh-CN.json` 的嵌套结构与 en.json 同构
 - 两者都是自动生成物，CI 以 `chore: auto translate` 提交，不要手工改动结构；手工补译时保持 key 不变即可被下次运行保留
 
-## 发布流水线（.github/workflows/node.js.yml，每小时运行）
+## 发布流水线（.github/workflows/node.js.yml，每小时运行；⚠️ 本 fork Actions 从未启用，以下为设计行为）
 
 检测到 n8n 官方新 Release 且本仓库无对应 tag 时串联执行：
 
