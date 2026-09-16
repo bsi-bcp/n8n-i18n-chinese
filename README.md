@@ -70,8 +70,8 @@ N8N_DEFAULT_LOCALE=zh-CN
 # 版权与来源声明
 
 - 本仓库 fork 自 [other-blowsnow/n8n-i18n-chinese](https://github.com/other-blowsnow/n8n-i18n-chinese)（原作者 **imblowsnow**，该项目已于 2026-08-21 归档停更，最终版本 `release/2.33.7`）。
-- 原项目的全部内容（翻译词典、脚本、补丁、文档）版权归原作者所有。**原项目未附带开源许可证**，按默认版权保留处理；在 GitHub 平台内的使用遵循 [GitHub 服务条款](https://docs.github.com/zh/site-policy/github-terms/github-terms-of-service)。
-- 本仓库为社区延续维护 fork：在原项目停止维护后，继续跟进 n8n 新版本的简体中文翻译。通过 GitHub Release、Docker 镜像等渠道分发构建产物时，沿用原作者此前公开发布同类型产物的惯例。
+- 原项目的全部内容（翻译词典、脚本、补丁、文档）版权归原作者所有。原作者 imblowsnow 已于 2026-09-14 在 [issue #67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 中**明确授权本 fork 以 MIT 协议继续修改和分发**继承的翻译词典、脚本与补丁。本仓库据此补充 [LICENSE](LICENSE) 文件，其中完整保留原作者的版权声明。
+- 本仓库为社区延续维护 fork：在原项目停止维护后，继续跟进 n8n 新版本的简体中文翻译。通过 GitHub Release、Docker 镜像等渠道分发的构建产物同样适用上述 MIT 授权（n8n 本体除外，见下条）。
 - n8n 本体为 [Sustainable Use License](https://docs.n8n.io/license/)（fair-code），本项目的语言包为其界面文案的社区翻译，n8n 的使用须遵守其自身许可。
-- 本仓库在 fork 之后新增或修改的内容（构建脚本、文档、翻译增补等）由本仓库维护方持有。
+- 本仓库在 fork 之后新增或修改的内容（构建脚本、文档、翻译增补等）版权归维护方（商软信息 BSI）所有，一并以 MIT 协议授权，见 [LICENSE](LICENSE)。
 

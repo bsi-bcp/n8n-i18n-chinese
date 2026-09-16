@@ -12,7 +12,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
-**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。本 fork 的 GitHub Actions 从未运行（无 tag、无 Release、无 workflow run），翻译提交同样停在 2026-08-21 —— 下文「发布流水线」是 workflow 的设计行为，在本仓库从未实际执行。BCP 侧的实际消费方式：n8n >2.33.7 的部署**沿用 2.33.7 的 editor-ui dist**（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill；若要恢复追新，跑 `npm run i18n:translate`（en.json 拉自 n8n **master** 分支，注意 master 可能领先最新 Release）+ 手动走构建发布流程。
+**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。本 fork 的 GitHub Actions 从未运行（无 tag、无 Release、无 workflow run），翻译提交同样停在 2026-08-21 —— 下文「发布流水线」是 workflow 的设计行为，在本仓库从未实际执行。BCP 侧的实际消费方式：n8n >2.33.7 的部署**沿用 2.33.7 的 editor-ui dist**（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill；若要恢复追新，跑 `npm run i18n:translate`（en.json 拉自 n8n **master** 分支，注意 master 可能领先最新 Release）+ 手动走构建发布流程。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。
 
 ## 常用命令
 
