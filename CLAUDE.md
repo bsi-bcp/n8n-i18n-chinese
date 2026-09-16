@@ -12,7 +12,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
-**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。本 fork 的 GitHub Actions 从未运行（无 tag、无 Release、无 workflow run），翻译提交同样停在 2026-08-21 —— 下文「发布流水线」是 workflow 的设计行为，在本仓库从未实际执行。BCP 侧的实际消费方式：n8n >2.33.7 的部署**沿用 2.33.7 的 editor-ui dist**（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill；若要恢复追新，跑 `npm run i18n:translate`（en.json 拉自 n8n **master** 分支，注意 master 可能领先最新 Release）+ 手动走构建发布流程。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。
+**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。本 fork 的 GitHub Actions 从未运行（无 tag、无 Release、无 workflow run），翻译提交同样停在 2026-08-21 —— 下文「发布流水线」是 workflow 的设计行为，在本仓库从未实际执行。BCP 侧的实际消费方式：已恢复独立追新——**最新 Release 为 `release/2.39.6`（2026-09-16 发布，bcphub-bsi YTJ1 集群灰度验证通过）**，前作 `release/2.38.7`；存量边端仍沿用 2.33.7/2.38.7 dist（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill。追新流程：跑 `npm run i18n:translate`（`N8N_EN_JSON_URL` pin 到目标 tag，勿用 master）+ 手动走构建发布流程（下节 runbook 已经 2.38.7 与 2.39.6 两轮全链路实战验证，另有 `CHANGELOG.md` 记录发版史实与兼容区间）。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。
 
 ## 常用命令
 
@@ -76,8 +76,17 @@ Actions 未启用的现状下，追新版本按此 SOP 手动执行：
 6. **打包**：`tar -czf editor-ui-<ver>.tar.gz -C packages/frontend/editor-ui dist`（macOS tar 的 LIBARCHIVE.xattr 警告在 Linux 解包无害）
 6½. **镜像交付（国内客户渠道）**：在 TX-43 上构建推送 `registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:<ver>`（FROM `registry.bcpcloud.cn/bcp/n8n:<ver>` + `COPY dist` 到 `.../n8n-editor-ui/dist` + `ENV N8N_DEFAULT_LOCALE=zh-CN`）。GitHub Releases 拉包对国内客户边端不稳（超时/CDN reset），registry 是正式交付通道，Releases 仅作公开存档。构建上下文传 TX-43（SSH `43.139.228.145:22` root，凭证库 `bcp_ipaas/server/txc_43`）本地构建推送秒级完成；客户实例首次需 `docker login registry.bcpcloud.cn`（凭证 `swr.txc_43`）
 7. **灰度验证（bcphub-bsi = YTJ1 `/opt/bcphub-test`）**：SSH 经 TX-43 FRP `43.139.228.145:60001`（凭证库 `bcp_ipaas/server/ytj1`）。流程：备份旧 dist（`mv dist dist-bak-<旧版>-<日期>`）→ 解包新 dist（`--strip-components=1`）→ `python3 ui-brand-patch/bsi-ui-brand-patch-*.py` 重放品牌 → `docker compose restart n8n`（重同步容器内 cache）→ 域名验证四件套：`/healthz`+`/healthz/readiness`、页面 title、新 bundle hash 与本机构建一致、**新增文案中文抽查**（挑只有新版才有的串 grep 线上 asset）
-8. **发布**：`git tag release/<ver> && git push origin release/<ver>` → `gh release create release/<ver> editor-ui-<ver>.tar.gz`
-9. **收尾**：更新 README「n8n 版本兼容说明」矩阵；若上游 index.ts 有变，重新生成 patch 一并提交
+8. **发布**：`git tag release/<ver> && git push origin release/<ver>` → `gh release create release/<ver> editor-ui-<ver>.tar.gz`。🔴 **必须加 `-R bsi-bcp/n8n-i18n-chinese`**——本地配了 `upstream` remote 时 gh 会推断成已归档的上游仓库并拒绝（"tag exists locally but has not been pushed to other-blowsnow/..."）
+9. **收尾**：更新 README「n8n 版本兼容说明」矩阵 + CHANGELOG 固化版本段（Unreleased→正式版，含兼容区间/灰度结论/镜像地址）；若上游 index.ts 有变，重新生成 patch 一并提交
+
+### runbook 实战增补（2026-09-16 对 2.39.6 第二轮验证）
+
+- **镜像源绕行**：TX-43 与 YTJ1 均无法稳定拉 DockerHub（pull 直接失败/`unexpected EOF`）。同版本镜像走 `ghcr.io/n8n-io/n8n:<ver>` 与 `ghcr.io/n8n-io/runners:<ver>`（两边 manifest 实测可达），pull 后 retag 为 `n8nio/*` 供 compose 使用；中文镜像与基础镜像（`bcp/n8n:<ver>`、`bcp/n8n-runners:<ver>`）在 TX-43 从 ghcr 拉取后推 SWR。**YTJ1 直拉 SWR 大镜像（~2GB）反复 unexpected EOF**，边端拉取优先 ghcr 或分片传输
+- `corepack enable --install-directory <dir>` 要求目录**预先存在**，否则 ENOENT
+- pnpm 首跑 install 可能瞬时 ELIFECYCLE 无输出（重试即过）；诊断用 `--ignore-scripts` 对照 + `--reporter=ndjson` 定位 lifecycle
+- **bcphub-test compose**：worker 是单服务多副本（`--scale worker=3`）。旧部署遗留的孤儿容器（`bcphub-test-worker-N-1`）升版后仍在跑旧镜像消费队列，须 `docker compose up -d --remove-orphans` 清理——注意它会同时把 scale 缩回 compose 默认值 1，需再 `up -d --scale worker=3 worker`
+- **灰度文案抽查注意**：zh 词典在多个 `src-*` chunk 中的**特定一个**（2.39.6 为 `src-Dnwuzjmo.js`，含"部署名称"），别对 `grep -oE 'src-[^"]*\.js' | head -1` 的首个结果做检查；稳妥做法是对比该 chunk 线上 md5 与本机构建
+- 翻译耗时参考：104 条增量 batch=15 ≈ 1 分钟；2.39.6 的 i18n `index.ts` 与 2.38.7 **字节级一致**（patch 免重生成，但每次仍需 `git apply --check --reverse` 验证）
 
 ## patch 注意事项
 
