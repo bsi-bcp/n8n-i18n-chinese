@@ -1,6 +1,6 @@
 # n8n 简体中文汉化包 2.39.6 发布：自托管工作流编辑器全中文界面
 
-> GitHub：[bsi-bcp/n8n-i18n-chinese](https://github.com/bsi-bcp/n8n-i18n-chinese) ｜ 免费开源（MIT）｜ 持续跟进 n8n 官方版本
+> GitHub：[bsi-bcp/n8n-i18n-chinese](https://github.com/bsi-bcp/n8n-i18n-chinese) ｜ 免费获取（汉化包本身 MIT；n8n 本体 fair-code）｜ 持续跟进 n8n 官方版本
 
 ## TL;DR
 
@@ -10,7 +10,7 @@
 
 ## 背景：n8n 的中文界面，为什么官方一直没有？
 
-[n8n](https://github.com/n8n-io/n8n) 是目前最流行的开源自托管工作流自动化平台（Zapier / Make / 各种 iPaaS 的开源平替，最近凭 AI Agent 编排更是大热）。但它的编辑器 UI 至今只有英文——n8n 前端其实内置了 vue-i18n 框架，官方却从未发布中文语言包。
+[n8n](https://github.com/n8n-io/n8n) 是目前最流行的 fair-code（源码可得）自托管工作流自动化平台（Zapier / Make / 各种 iPaaS 的开源平替，最近凭 AI Agent 编排更是大热）。但它的编辑器 UI 至今只有英文——n8n 前端其实内置了 vue-i18n 框架，官方却从未发布中文语言包。
 
 社区长期依赖 [other-blowsnow/n8n-i18n-chinese](https://github.com/other-blowsnow/n8n-i18n-chinese) 这个经典汉化项目，但它已于 2026-08-21 归档停更，最终版本停在 **2.33.7**。而 n8n 官方仍在高速迭代（现已到 2.39.x，AI 助手 / agents 面板大改），老汉化包配新后端，越来越多界面回退英文。
 
@@ -89,5 +89,7 @@ COPY ./dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 - 上游原作者项目（已归档，感谢付出）：https://github.com/other-blowsnow/n8n-i18n-chinese
 
 ---
+
+> 声明：本项目为社区独立维护的 n8n 本地化修改版，与 n8n 官方无隶属关系；n8n® 为 n8n GmbH 商标，此处仅作描述性引用。
 
 *本文同步步于 BCP 技术博客。如果帮到你，欢迎 GitHub 点 Star ⭐ 支持持续维护。*
