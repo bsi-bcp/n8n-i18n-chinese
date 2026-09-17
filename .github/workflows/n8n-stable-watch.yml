@@ -1,0 +1,326 @@
+name: n8n Stable Watch
+
+# n8n 发新稳定版 → 兼容性评估 → 报告/自动发版（阶段开关 AUTO_RELEASE）
+# 评审修订（v2）：
+#  D1 版本选择：枚举 releases + 正则 + prerelease 过滤，只跟插件当前大版本线
+#  D2 引用：一律用 git tag n8n@X.Y.Z（不用 target_commitish，分支会被上游清理）
+#  D3 翻译缺口：与 translate.js 同口径（新增/源变更/zh 缺失三类都要重翻）
+#  D4 补丁检查：git apply --check 失败时降级 patch --fuzz=3 判黄灯
+#  D7 阶段开关：AUTO_RELEASE / report_only 显式控制
+
+on:
+  schedule:
+    - cron: "37 * * * *"
+  workflow_dispatch:
+    inputs:
+      force_version:
+        description: "强制评估该 n8n 版本号（如 2.40.1，可为 beta）；留空=自动探测最新稳定版"
+        type: string
+        default: ""
+      report_only:
+        description: "只评估报告，不自动发版（临时覆盖 AUTO_RELEASE）"
+        type: boolean
+        default: false
+
+concurrency:
+  group: n8n-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+      AUTO_RELEASE: ${{ vars.AUTO_RELEASE || 'false' }}
+      REPORT_ONLY: ${{ inputs.report_only }}
+      FORCE: ${{ inputs.force_version }}
+    steps:
+      - name: Restore watch state
+        uses: actions/cache@v4
+        with:
+          path: state
+          key: n8n-watch-state-${{ github.run_id }}
+          restore-keys: n8n-watch-state-
+
+      - name: Resolve target n8n version (D1)
+        id: ver
+        run: |
+          set -euo pipefail
+          mkdir -p state
+          [ -s state/watched.json ] || echo '{"watched":[]}' > state/watched.json
+          if [ -n "${FORCE:-}" ]; then
+            echo "version=$FORCE" >> "$GITHUB_OUTPUT"
+            echo "drill=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          curl -sS -m 30 "https://api.github.com/repos/n8n-io/n8n/releases?per_page=40" -o rels.json
+          # 本插件当前大版本线（取已有 release/x.y.z tag 的最大主版本，兜底 2）
+          OUR_MAJOR=$(curl -sS -m 30 "https://api.github.com/repos/$GITHUB_REPOSITORY/tags?per_page=100" \
+            | grep -oE '"name": *"release/[0-9]+' | grep -oE '[0-9]+' | sort -n | tail -1)
+          OUR_MAJOR=${OUR_MAJOR:-2}
+          TARGET=$(jq -r --argjson mj "$OUR_MAJOR" '
+            [ .[]
+              | select(.draft == false and .prerelease == false)
+              | select(.tag_name | test("^n8n@[0-9]+\\.[0-9]+\\.[0-9]+$"))
+              | .tag_name | ltrimstr("n8n@") ]
+            | map(select((split(".")[0] | tonumber) == $mj))
+            | sort_by(split(".") | map(tonumber))
+            | last // empty' rels.json)
+          if [ -z "$TARGET" ]; then
+            echo "::error::n8n 上未找到稳定版 release（过滤后为空）"
+            exit 1
+          fi
+          echo "version=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "drill=false" >> "$GITHUB_OUTPUT"
+          echo "探测到最新稳定版: n8n@$TARGET（跟随 ${OUR_MAJOR}.x 线）"
+
+      - name: Skip if released or already evaluated
+        id: gate
+        run: |
+          set -euo pipefail
+          T="${{ steps.ver.outputs.version }}"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/tags/release/$T")
+          if [ "$code" = "200" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "reason=released" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${{ steps.ver.outputs.drill }}" != "true" ] \
+            && jq -e --arg v "$T" '.watched | index($v)' state/watched.json >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "reason=evaluated" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Early exit (no action)
+        if: steps.gate.outputs.skip == 'true'
+        run: |
+          echo "- 目标版本 n8n@${{ steps.ver.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- 结果：本仓库已有对应 release（${{ steps.gate.outputs.reason }}），无需动作" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout n8n source at tag (D2)
+        if: steps.gate.outputs.skip == 'false'
+        uses: actions/checkout@v4
+        with:
+          repository: n8n-io/n8n
+          ref: n8n@${{ steps.ver.outputs.version }}
+          path: n8n
+          fetch-depth: 1
+
+      - name: Checkout plugin (patches / language snapshots)
+        if: steps.gate.outputs.skip == 'false'
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Evaluate patches (D4: strict → fuzz fallback)
+        if: steps.gate.outputs.skip == 'false'
+        id: patch
+        working-directory: n8n
+        run: |
+          VERDICT="green"; DETAILS=""
+          # 门禁只看发版流水线实际应用的 feat__i18n_zhCn.patch；其余 patch 仅报告；*.old.patch 忽略
+          for p in ../plugin/patches/*.patch; do
+            [ -e "$p" ] || continue
+            name=$(basename "$p")
+            case "$name" in *.old.patch) DETAILS="$DETAILS- ⚪ $name（.old，忽略）"$'\n'; continue;; esac
+            if git apply --check "$p" 2>/dev/null; then
+              DETAILS="$DETAILS- ✅ $name 完整贴合"$'\n'
+            elif patch -p1 --dry-run --fuzz=3 --silent < "$p" >/dev/null 2>&1; then
+              [ "$VERDICT" = "green" ] && VERDICT="yellow"
+              DETAILS="$DETAILS- 🟡 $name 需模糊贴合（fuzz≤3 可过）"$'\n'
+            else
+              if [ "$name" = "feat__i18n_zhCn.patch" ]; then VERDICT="red"; fi
+              err=$(git apply --check "$p" 2>&1 | head -2 | tr '\n' ' ' | cut -c1-160)
+              DETAILS="$DETAILS- ❌ $name 贴合失败：$err"$'\n'
+            fi
+          done
+          {
+            echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+            echo "details<<EOFDETAIL" >> "$GITHUB_OUTPUT"
+            printf '%s' "$DETAILS" >> "$GITHUB_OUTPUT"
+            echo "EOFDETAIL" >> "$GITHUB_OUTPUT"
+          }
+
+      - name: Evaluate translation delta (D3, 同 translate.js 口径)
+        if: steps.gate.outputs.skip == 'false'
+        id: strings
+        run: |
+          set -euo pipefail
+          V="${{ steps.ver.outputs.version }}"
+          URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40$V/packages/frontend/%40n8n/i18n/src/locales/en.json"
+          code=$(curl -sS -m 30 -o upstream_en.json -w '%{http_code}' "$URL" || echo 000)
+          if [ "$code" != "200" ]; then
+            echo "new=NA" >> "$GITHUB_OUTPUT"; echo "changed=NA" >> "$GITHUB_OUTPUT"
+            echo "todo=NA" >> "$GITHUB_OUTPUT"; echo "note=1" >> "$GITHUB_OUTPUT"
+            echo "::warning::上游 en.json 拉取失败(HTTP $code)，i18n 结构可能又变了"
+            exit 0
+          fi
+          jq -n \
+            --slurpfile new upstream_en.json \
+            --slurpfile old plugin/script/en.json \
+            --slurpfile zh plugin/languages/zh-CN.json '
+            def flat: reduce (paths(scalars)) as $p ({}; .[($p|join("##"))] = (getpath($p)|tostring));
+            ($new[0] | flat) as $N | ($old[0] | flat) as $O | ($zh[0] | flat) as $Z |
+            {
+              new_keys:     [$N | to_entries[] | select($O[$.key] == null)] | length,
+              changed:      [$N | to_entries[] | select($O[$.key] != null and $O[$.key] != $.value)] | length,
+              missing_zh:   [$N | to_entries[] | select($Z[$.key] == null)] | length,
+              to_translate: [$N | to_entries[] | select(($Z[$.key] == null) or ($O[$.key] == null) or ($O[$.key] != $.value))] | length
+            }' > delta.json
+          echo "new=$(jq -r .new_keys delta.json)" >> "$GITHUB_OUTPUT"
+          echo "changed=$(jq -r .changed delta.json)" >> "$GITHUB_OUTPUT"
+          echo "todo=$(jq -r .to_translate delta.json)" >> "$GITHUB_OUTPUT"
+          echo "note=0" >> "$GITHUB_OUTPUT"
+          cat delta.json
+
+      - name: Check docker base image tag
+        if: steps.gate.outputs.skip == 'false'
+        id: img
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
+            "https://registry.hub.docker.com/v2/repositories/n8nio/n8n/tags/${{ steps.ver.outputs.version }}" || echo 000)
+          if [ "$code" = "200" ]; then echo "exists=true" >> "$GITHUB_OUTPUT"
+          else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+          echo "hub http: $code"
+
+      - name: Compose evaluation report
+        if: steps.gate.outputs.skip == 'false'
+        id: report
+        run: |
+          set -euo pipefail
+          T="${{ steps.ver.outputs.version }}"
+          DRILL="${{ steps.ver.outputs.drill }}"
+          PV="${{ steps.patch.outputs.verdict }}"
+          IMG="${{ steps.img.outputs.exists }}"
+          case "$PV" in
+            green) PVM="🟢 补丁完整贴合";;
+            yellow) PVM="🟡 补丁需模糊贴合（可发版，建议人工复核补丁内容）";;
+            red) PVM="🔴 补丁无法贴合（需人工适配，暂不可发版）";;
+          esac
+          if [ "${{ steps.strings.outputs.note }}" = "1" ]; then
+            STR="⚠️ 上游 en.json 路径变化，翻译缺口无法统计"
+          else
+            STR="待翻译 **${{ steps.strings.outputs.todo }}** 条（新增 ${{ steps.strings.outputs.new }} / 源变更 ${{ steps.strings.outputs.changed }} / zh缺失 ${{ steps.strings.outputs.missing_zh }}）"
+          fi
+          if [ "$IMG" = "true" ]; then IMGM="✅ n8nio/n8n:$T 镜像已发布"
+          else IMGM="⏳ n8nio/n8n:$T 基础镜像未发布（自动发版将等待下轮）"; fi
+          TITLE="$([ "$DRILL" = "true" ] && echo '【演练】')n8n@$T 兼容性评估"
+          {
+            echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+            {
+              echo "md<<EOFMD"
+              echo "- **目标版本**：n8n@$T $([ "$DRILL" = "true" ] && echo '（演练，不入状态）')"
+              echo "- **补丁贴合**：$PVM"
+              printf '%b' "${{ steps.patch.outputs.details }}"
+              echo "- **翻译缺口**：$STR"
+              echo "- **基础镜像**：$IMGM"
+              echo "- **自动发版**：AUTO_RELEASE=$AUTO_RELEASE report_only=${REPORT_ONLY:-false}"
+              if [ "$PV" != "red" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ] && [ "$IMG" = "true" ]; then
+                echo "- **结论**：✅ 将自动发版（node.js.yml → Release → image.yml）"
+              elif [ "$PV" = "red" ]; then
+                echo "- **结论**：🛑 需人工适配补丁后重评"
+              else
+                echo "- **结论**：👁 具备发版条件，等待确认"
+                echo "- 一键发版：\`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`"
+              fi
+              echo "EOFMD"
+            } >> "$GITHUB_OUTPUT"
+          }
+
+      - name: Send evaluation card
+        if: steps.gate.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          COLOR="blue"; [ "${{ steps.patch.outputs.verdict }}" = "yellow" ] && COLOR="orange"
+          [ "${{ steps.patch.outputs.verdict }}" = "red" ] && COLOR="red"
+          jq -n --arg t "${{ steps.report.outputs.title }}" --arg c "$COLOR" \
+            --rawfile md <(printf '%s' "${{ steps.report.outputs.md }}") '
+            {msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
+             elements:[{tag:"markdown",content:$md}]}}' > payload.json
+          resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @payload.json "$WEBHOOK")
+          echo "feishu: $resp"
+          echo "$resp" | grep -Eq '"(code|StatusCode|statusCode)"[ ]*:[ ]*0'
+
+      - name: File issue if patch incompatible
+        if: steps.gate.outputs.skip == 'false' && steps.patch.outputs.verdict == 'red' && steps.ver.outputs.drill != 'true'
+        env:
+          T: ${{ steps.ver.outputs.version }}
+        run: |
+          gh label create n8n-compat --color D93F0B -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh issue create -R "$GITHUB_REPOSITORY" \
+            --title "n8n@$T 兼容性评估失败：补丁需人工适配" \
+            --label n8n-compat \
+            --body "$(printf '%s' "${{ steps.report.outputs.md }}")
+
+          评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          适配后手动重评：gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY"
+
+      - name: Auto release (阶段 2)
+        if: >-
+          steps.gate.outputs.skip == 'false' &&
+          steps.patch.outputs.verdict != 'red' &&
+          steps.img.outputs.exists == 'true' &&
+          env.AUTO_RELEASE == 'true' &&
+          inputs.report_only != true &&
+          steps.ver.outputs.drill != 'true'
+        id: rel
+        run: |
+          set -euo pipefail
+          T="${{ steps.ver.outputs.version }}"
+          START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run node.js.yml -R "$GITHUB_REPOSITORY" -f version="$T"
+          echo "已触发发版流水线，跟踪中…"
+          CONCL=""; RUNID=""
+          for i in $(seq 1 45); do
+            sleep 60
+            R=$(gh run list -R "$GITHUB_REPOSITORY" --workflow=node.js.yml \
+              --event=workflow_dispatch --created ">$START" --limit 1 \
+              --json databaseId,status,conclusion 2>/dev/null || echo '[]')
+            ST=$(echo "$R" | jq -r '.[0].status // ""')
+            CONCL=$(echo "$R" | jq -r '.[0].conclusion // ""')
+            RUNID=$(echo "$R" | jq -r '.[0].databaseId // ""')
+            echo "poll#$i status=$ST conclusion=$CONCL"
+            [ "$ST" = "completed" ] && break
+          done
+          echo "conclusion=${CONCL:-timeout}" >> "$GITHUB_OUTPUT"
+          echo "runid=$RUNID" >> "$GITHUB_OUTPUT"
+
+      - name: Send release result card (阶段 2)
+        if: always() && steps.rel.outputs.conclusion != ''
+        run: |
+          set -euo pipefail
+          T="${{ steps.ver.outputs.version }}"
+          C="${{ steps.rel.outputs.conclusion }}"
+          if [ "$C" = "success" ]; then COLOR="green"; M="✅ 发版成功：Release 与 tag 已创建（镜像构建由 image.yml 接力）"
+          else COLOR="red"; M="❌ 发版流水线结果：$C，需人工介入"; fi
+          RUNURL=""
+          [ -n "${{ steps.rel.outputs.runid }}" ] && RUNURL="日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.rel.outputs.runid }}"
+          jq -n --arg t "[${{ github.repository }}] n8n@$T 自动发版" --arg c "$COLOR" \
+             --arg m "$M"$'\n'"$RUNURL" \
+            '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
+              elements:[{tag:"markdown",content:$m}]}}' > p2.json
+          resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @p2.json "$WEBHOOK")
+          echo "feishu: $resp"
+
+      - name: Update watched state
+        if: steps.gate.outputs.skip == 'false' && steps.ver.outputs.drill != 'true'
+        run: |
+          set -euo pipefail
+          T="${{ steps.ver.outputs.version }}"
+          jq -n --slurpfile s state/watched.json --arg v "$T" \
+            '{watched: ((($s[0].watched // []) + [$v]) | unique | .[-200:])}' > state/watched.json.new
+          mv state/watched.json.new state/watched.json
+          cat state/watched.json
+          echo "- 已评估版本入状态：$T" >> "$GITHUB_STEP_SUMMARY"
