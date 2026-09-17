@@ -216,12 +216,13 @@ jobs:
           fi
           if [ "$IMG" = "true" ]; then IMGM="✅ n8nio/n8n:$T 镜像已发布"
           else IMGM="⏳ n8nio/n8n:$T 基础镜像未发布（自动发版将等待下轮）"; fi
-          TITLE="$([ "$DRILL" = "true" ] && echo '【演练】')n8n@$T 兼容性评估"
+          TITLE="n8n@$T 兼容性评估"
+          if [ "$DRILL" = "true" ]; then TITLE="【演练】$TITLE"; DRILLNOTE="（演练，不入状态）"; else DRILLNOTE=""; fi
           {
             echo "title=$TITLE" >> "$GITHUB_OUTPUT"
             {
               echo "md<<EOFMD"
-              echo "- **目标版本**：n8n@$T $([ "$DRILL" = "true" ] && echo '（演练，不入状态）')"
+              echo "- **目标版本**：n8n@$T $DRILLNOTE"
               echo "- **补丁贴合**：$PVM"
               printf '%b' "${{ steps.patch.outputs.details }}"
               echo "- **翻译缺口**：$STR"
