@@ -228,6 +228,7 @@ jobs:
               echo "- **翻译缺口**：$STR"
               echo "- **基础镜像**：$IMGM"
               echo "- **自动发版**：AUTO_RELEASE=$AUTO_RELEASE report_only=${REPORT_ONLY:-false}"
+              echo "> 🤖 来源：GitHub Actions · n8n Stable Watch · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
               if [ "$PV" != "red" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ] && [ "$IMG" = "true" ]; then
                 echo "- **结论**：✅ 将自动发版（node.js.yml → Release → image.yml）"
               elif [ "$PV" = "red" ]; then
@@ -308,8 +309,9 @@ jobs:
           else COLOR="red"; M="❌ 发版流水线结果：$C，需人工介入"; fi
           RUNURL=""
           [ -n "${{ steps.rel.outputs.runid }}" ] && RUNURL="日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.rel.outputs.runid }}"
+          SRC="> 🤖 来源：GitHub Actions · n8n Stable Watch · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
           jq -n --arg t "[${{ github.repository }}] n8n@$T 自动发版" --arg c "$COLOR" \
-             --arg m "$M"$'\n'"$RUNURL" \
+             --arg m "$M"$'\n'"$RUNURL"$'\n'"$SRC" \
             '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
               elements:[{tag:"markdown",content:$m}]}}' > p2.json
           resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @p2.json "$WEBHOOK")
