@@ -123,7 +123,7 @@ jobs:
         with:
           path: plugin
 
-      - name: Evaluate patches (D4: strict → fuzz fallback)
+      - name: Evaluate patches (D4 strict, fuzz fallback)
         if: steps.gate.outputs.skip == 'false'
         id: patch
         working-directory: n8n
