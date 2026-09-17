@@ -62,9 +62,9 @@ jobs:
             echo "drill=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          curl -sS -m 30 "https://api.github.com/repos/n8n-io/n8n/releases?per_page=40" -o rels.json
+          curl -sS -m 30 -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/n8n-io/n8n/releases?per_page=40" -o rels.json
           # 本插件当前大版本线（取已有 release/x.y.z tag 的最大主版本，兜底 2）
-          OUR_MAJOR=$(curl -sS -m 30 "https://api.github.com/repos/$GITHUB_REPOSITORY/tags?per_page=100" \
+          OUR_MAJOR=$(curl -sS -m 30 -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$GITHUB_REPOSITORY/tags?per_page=100" \
             | grep -oE '"name": *"release/[0-9]+' | grep -oE '[0-9]+' | sort -n | tail -1)
           OUR_MAJOR=${OUR_MAJOR:-2}
           TARGET=$(jq -r --argjson mj "$OUR_MAJOR" '
@@ -173,10 +173,10 @@ jobs:
             def flat: reduce (paths(scalars)) as $p ({}; .[($p|join("##"))] = (getpath($p)|tostring));
             ($new[0] | flat) as $N | ($old[0] | flat) as $O | ($zh[0] | flat) as $Z |
             {
-              new_keys:     [$N | to_entries[] | select($O[$.key] == null)] | length,
-              changed:      [$N | to_entries[] | select($O[$.key] != null and $O[$.key] != $.value)] | length,
-              missing_zh:   [$N | to_entries[] | select($Z[$.key] == null)] | length,
-              to_translate: [$N | to_entries[] | select(($Z[$.key] == null) or ($O[$.key] == null) or ($O[$.key] != $.value))] | length
+              new_keys:     ([$N | to_entries[] | select($O[$.key] == null)] | length),
+              changed:      ([$N | to_entries[] | select($O[$.key] != null and $O[$.key] != $.value)] | length),
+              missing_zh:   ([$N | to_entries[] | select($Z[$.key] == null)] | length),
+              to_translate: ([$N | to_entries[] | select(($Z[$.key] == null) or ($O[$.key] == null) or ($O[$.key] != $.value))] | length)
             }' > delta.json
           echo "new=$(jq -r .new_keys delta.json)" >> "$GITHUB_OUTPUT"
           echo "changed=$(jq -r .changed delta.json)" >> "$GITHUB_OUTPUT"
