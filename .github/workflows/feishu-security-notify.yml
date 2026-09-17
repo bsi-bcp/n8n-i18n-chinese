@@ -31,25 +31,44 @@ jobs:
         env:
           API: https://api.github.com/repos/${{ github.repository }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 可选增强：fine-grained PAT（仅该仓库 Security events: read-only）时放入 GH_ALERTS_TOKEN，
+          # 即可轮询 Dependabot 告警；留空则依赖「自动修复 PR→PR 通知」兜底（无修复方案的告警不会被推送）。
+          DB_TOKEN: ${{ secrets.GH_ALERTS_TOKEN }}
           WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           BACKFILL: ${{ inputs.full_backfill }}
         run: |
           set -euo pipefail
           mkdir -p state
           [ -s state/notified.json ] || echo '{"dependabot":[],"code_scanning":[],"last_run":""}' > state/notified.json
-          curl -sS -m 30 -H "Authorization: Bearer $TOKEN" "$API/dependabot/alerts?state=open&per_page=100&sort=created" -o db.json
-          curl -sS -m 30 -H "Authorization: Bearer $TOKEN" "$API/code-scanning/alerts?state=open&per_page=100" -o cs.json
           IS_BACKFILL=$([ "$BACKFILL" = "true" ] && echo true || echo false)
           NEWNOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo '[]' > db_new.json
+          DBN=0
+          NOTE=""
 
-          # 新 = 编号不在已通知列表；代码扫描额外要求创建时间晚于上次运行（有上次运行时）
-          jq --slurpfile s state/notified.json --argjson b "$IS_BACKFILL" '
-            [ .[] | select( ($b == true) or ((.number|tostring) | IN($s[0].dependabot[]) | not) ) ]
-          ' db.json > db_new.json
+          # --- Dependabot alerts（需 PAT；GITHUB_TOKEN 会被 403 拒绝） ---
+          if [ -n "${DB_TOKEN:-}" ]; then
+            curl -sS -m 30 -H "Authorization: Bearer $DB_TOKEN" "$API/dependabot/alerts?state=open&per_page=100&sort=created" -o db.json
+            if jq -e 'type=="array"' db.json >/dev/null 2>&1; then
+              jq --slurpfile s state/notified.json --argjson b "$IS_BACKFILL" '
+                [ .[] | select( ($b == true) or ((.number|tostring) | IN($s[0].dependabot[]) | not) ) ]
+              ' db.json > db_new.json
+              DBN=$(jq 'length' db_new.json)
+            else
+              NOTE="dependabot API 非数组响应: $(head -c 120 db.json)"
+            fi
+          else
+            NOTE="GH_ALERTS_TOKEN 未配置，跳过 Dependabot 告警轮询（由自动修复 PR 通知兜底）"
+          fi
+
+          # --- Code scanning alerts（GITHUB_TOKEN 可用） ---
+          curl -sS -m 30 -H "Authorization: Bearer $TOKEN" "$API/code-scanning/alerts?state=open&per_page=100" -o cs.json
+          jq -e 'type=="array"' cs.json >/dev/null || { echo "code-scanning API 返回异常:"; head -c 300 cs.json; exit 1; }
           jq --slurpfile s state/notified.json --argjson b "$IS_BACKFILL" '
             [ .[] | select( ($b == true) or ((.number|tostring) | IN($s[0].code_scanning[]) | not) )
                   | select( ($b == true) or ($s[0].last_run == "") or ((.created_at // "") >= $s[0].last_run) ) ]
           ' cs.json > cs_new.json
+          CSN=$(jq 'length' cs_new.json)
 
           send_card() { # $1=title $2=color $3=mdfile
             jq -n --arg t "$1" --arg c "$2" --rawfile md "$3" '
@@ -61,7 +80,6 @@ jobs:
             echo "$resp" | grep -Eq '"(code|StatusCode|statusCode)"[ ]*:[ ]*0'
           }
 
-          DBN=$(jq 'length' db_new.json); CSN=$(jq 'length' cs_new.json)
           if [ "$DBN" -gt 0 ]; then
             jq -r '.[0:15][] | "- **\(.security_advisory.severity // "?")** · `\(.security_vulnerability.package.name // "?")` · \(.security_vulnerability.vulnerable_version_range // "") → 修复: \(.security_vulnerability.first_patched_version // "待定")\n  [!#\(.number) \(.security_advisory.summary // "" | .[0:80])](\(.html_url))"' db_new.json > dbmd.txt
             [ "$DBN" -gt 15 ] && echo "…另有 $((DBN - 15)) 条见 Security 页" >> dbmd.txt
@@ -79,4 +97,7 @@ jobs:
               code_scanning: ((($s[0].code_scanning // []) + ($cs[0] | map(.number|tostring))) | .[-500:]),
               last_run: $lr }' > state/notified.json.new
           mv state/notified.json.new state/notified.json
-          echo "- dependabot new: $DBN, code-scanning new: $CSN, backfill: $IS_BACKFILL" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "- dependabot new: $DBN, code-scanning new: $CSN, backfill: $IS_BACKFILL"
+            [ -n "$NOTE" ] && echo "- 备注: $NOTE"
+          } >> "$GITHUB_STEP_SUMMARY"
