@@ -83,11 +83,13 @@ jobs:
           if [ "$DBN" -gt 0 ]; then
             jq -r '.[0:15][] | "- **\(.security_advisory.severity // "?")** · `\(.security_vulnerability.package.name // "?")` · \(.security_vulnerability.vulnerable_version_range // "") → 修复: \(.security_vulnerability.first_patched_version // "待定")\n  [!#\(.number) \(.security_advisory.summary // "" | .[0:80])](\(.html_url))"' db_new.json > dbmd.txt
             [ "$DBN" -gt 15 ] && echo "…另有 $((DBN - 15)) 条见 Security 页" >> dbmd.txt
+            { echo; echo "> 🤖 来源：GitHub Actions · Feishu Security Alerts Notify · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"; } >> dbmd.txt
             send_card "🛡 $GITHUB_REPOSITORY 依赖漏洞告警 +$DBN" "red" dbmd.txt
           fi
           if [ "$CSN" -gt 0 ]; then
             jq -r '.[0:15][] | "- **\(.rule.severity // .severity // "?")** · \(.rule.name // .tool.name)\n  [!#\(.number) \((.most_recent_instance.message.text // "") | .[0:80])](\(.html_url))"' cs_new.json > csmd.txt
             [ "$CSN" -gt 15 ] && echo "…另有 $((CSN - 15)) 条见 Security 页" >> csmd.txt
+            { echo; echo "> 🤖 来源：GitHub Actions · Feishu Security Alerts Notify · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"; } >> csmd.txt
             send_card "🧪 $GITHUB_REPOSITORY 代码扫描告警 +$CSN" "orange" csmd.txt
           fi
 
