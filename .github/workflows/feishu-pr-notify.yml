@@ -1,0 +1,49 @@
+name: Feishu PR Notify
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize, closed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # 草稿 PR 不打扰（除非直接被关闭），ready_for_review 时恢复提醒
+    if: github.event.action == 'closed' || github.event.action == 'ready_for_review' || github.event.pull_request.draft == false
+    steps:
+      - name: Send PR card to Feishu
+        env:
+          WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          ACTION: ${{ github.event.action }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.label }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          case "$ACTION" in
+            opened) TAG="🆕 新 PR"; COLOR="blue";;
+            reopened) TAG="🔄 PR 重开"; COLOR="blue";;
+            synchronize) TAG="🔁 PR 更新（新提交）"; COLOR="orange";;
+            ready_for_review) TAG="📣 PR 转正式待评审"; COLOR="blue";;
+            closed)
+              if [ "$MERGED" = "true" ]; then TAG="✅ PR 已合并"; COLOR="green"; else TAG="❌ PR 已关闭"; COLOR="grey"; fi;;
+            *) TAG="PR 动态"; COLOR="blue";;
+          esac
+          {
+            printf '%b' "**$TAG** [$PR_TITLE]($PR_URL)\n"
+            printf '%b' "- 仓库：\`$REPO\`\n- 分支：\`$PR_HEAD\` → \`$PR_BASE\`\n- 作者：$PR_AUTHOR\n- 触发人：$ACTOR\n- 最新提交：\`${SHA:0:7}\`\n"
+          } > md.txt
+          jq -n --arg t "[$REPO] $TAG #$PR_NUM" --arg c "$COLOR" --rawfile md md.txt \
+            '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},elements:[{tag:"markdown",content:$md}]}}' \
+            > payload.json
+          resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @payload.json "$WEBHOOK")
+          echo "feishu resp: $resp"
+          echo "$resp" | grep -Eq '"(code|StatusCode|statusCode)"[ ]*:[ ]*0' || exit 1
