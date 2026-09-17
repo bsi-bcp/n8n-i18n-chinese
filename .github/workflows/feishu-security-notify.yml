@@ -29,7 +29,7 @@ jobs:
 
       - name: Detect new alerts and push to Feishu
         env:
-          API: https://api.github.com/repos/$GITHUB_REPOSITORY
+          API: https://api.github.com/repos/${{ github.repository }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           BACKFILL: ${{ inputs.full_backfill }}
