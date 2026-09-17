@@ -2,50 +2,59 @@ name: Release Docker Image
 
 on:
   release:
-    types: [published]  # 当有新的 Release 发布时触发
+    types: [published]  # 当有新的 Release 发布时触发（需由 PAT 创建的 Release 才会触发，GITHUB_TOKEN 创建的不触发）
   workflow_dispatch:
-  
+    inputs:
+      version:
+        description: "中文包版本号（release/x.y.z 的数字部分，如 2.39.6）；留空=自动取最新 Release"
+        type: string
+        default: ""
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment: test
     steps:
+      # 🔴 启用本 workflow 前需在 repo secrets 配置 BCP_REGISTRY_USERNAME / BCP_REGISTRY_PASSWORD
+      #    （registry.bcpcloud.cn htpasswd 账号，真值见凭证库 swr.txc_43）
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            V="${{ inputs.version }}"
+            if [ -z "$V" ]; then
+              V=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                https://api.github.com/repos/${{ github.repository }}/releases/latest \
+                | jq -r '.tag_name' | sed 's#^release/##')
+            fi
+            TAG="release/$V"
+          fi
+          VERSION="${TAG#release/}"
+          VERSION="${VERSION#v}"
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION (from $TAG)"
+
+      # v2：无论 release 事件还是手动 dispatch，都 checkout 产物所在 tag
+      #（原先 dispatch 路径 checkout main，而 editor-ui-dist 只存在于 release tag 的提交里）
       - name: Checkout tag code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: refs/tags/${{ steps.extract_version.outputs.tag }}
           fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 🔴 启用本 workflow 前需在 repo secrets 配置 BCP_REGISTRY_USERNAME / BCP_REGISTRY_PASSWORD
-      #    （registry.bcpcloud.cn htpasswd 账号，真值见凭证库 swr.txc_43）
       - name: Log in to BCP Registry
         uses: docker/login-action@v3
         with:
           registry: registry.bcpcloud.cn
           username: ${{ secrets.BCP_REGISTRY_USERNAME }}
           password: ${{ secrets.BCP_REGISTRY_PASSWORD }}
-
-      - name: Extract version from release tag
-        id: extract_version
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#release/}"
-          else
-            VERSION=$(curl -s \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              https://api.github.com/repos/${{ github.repository }}/releases/latest \
-              | jq -r '.tag_name')
-          
-            VERSION="${VERSION#release/}"
-          fi
-          
-          VERSION="${VERSION#v}"
-          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Extracted version: $VERSION"
 
       - name: Build and push multi-arch Docker images
         run: |
@@ -56,3 +65,19 @@ jobs:
             -t registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:$RELEASE_VERSION \
             --push \
             .
+
+      # v2（评审 D5）：失败不再静默——推卡片到研发部群
+      - name: Notify Feishu on failure
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          jq -n --arg t "[$REPO] 🔴 中文镜像构建/推送失败（$RELEASE_VERSION）" --arg c "red" \
+            --arg m "版本：\`$RELEASE_VERSION\`
+          常见原因：BCP_REGISTRY_* 凭证缺失/过期、n8nio/n8n:$RELEASE_VERSION 基础镜像未发布、dist 产物缺失
+          日志：$RUN_URL" \
+            '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
+              elements:[{tag:"markdown",content:$m}]}}' > payload.json
+          curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @payload.json "$WEBHOOK" || true
