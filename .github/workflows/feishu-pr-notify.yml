@@ -40,6 +40,7 @@ jobs:
           {
             printf '%b' "**$TAG** [$PR_TITLE]($PR_URL)\n"
             printf '%b' "- 仓库：\`$REPO\`\n- 分支：\`$PR_HEAD\` → \`$PR_BASE\`\n- 作者：$PR_AUTHOR\n- 触发人：$ACTOR\n- 最新提交：\`${SHA:0:7}\`\n"
+            printf '%b' "> 🤖 来源：GitHub Actions · Feishu PR Notify · $ACTION · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)\n"
           } > md.txt
           jq -n --arg t "[$REPO] $TAG #$PR_NUM" --arg c "$COLOR" --rawfile md md.txt \
             '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},elements:[{tag:"markdown",content:$md}]}}' \
