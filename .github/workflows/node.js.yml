@@ -1,27 +1,46 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+# 构建中文 editor-ui 并发版：
+#   入口统一为 n8n-stable-watch.yml 评估通过后 dispatch（或人工 dispatch 并传 version）
+#   原每小时 cron 已移除（避免绕过兼容性评估盲跑，且与 watcher 双触发）
+# v2 变更（评审 D1/D2/D3）：
+#   - version 入参优先；兜底解析改为"枚举过滤后的最新稳定 tag"（不再是 target_commitish，
+#     n8n 的 release/x.y.z 分支会被上游清理，且 /releases/latest 可能命中移动的 stable release）
+#   - n8n 源码 checkout 一律用 git tag n8n@<版本>
+#   - 翻译源 N8N_EN_JSON_URL 固定 pin 到同一 tag（原先默认 master，可能领先所构建版本）
 
 name: package editor-ui languages
 
 on:
-  schedule:
-  - cron: "0 * * * *"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "n8n 版本号（如 2.39.6）；留空=自动取最新稳定 tag（不推荐）"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: test
-    strategy:
-      matrix:
-        node-version: [22.x]
     steps:
-    - name: Get latest N8N release version
-      id: latest_release
+    - name: Resolve n8n version (input 优先，兜底稳定 tag)
+      id: ver
       run: |
-        LATEST_VERSION=$(curl -s https://api.github.com/repos/n8n-io/n8n/releases/latest | jq -r '.target_commitish')
-        echo "Latest release tag: $LATEST_VERSION"
-        echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT
+        if [ -n "${{ inputs.version }}" ]; then
+          VERSION="${{ inputs.version }}"
+        else
+          VERSION=$(curl -s https://api.github.com/repos/n8n-io/n8n/releases?per_page=30 | jq -r '
+            [ .[] | select(.draft == false and .prerelease == false)
+                   | select(.tag_name | test("^n8n@[0-9]+\\.[0-9]+\\.[0-9]+$"))
+                   | .tag_name | ltrimstr("n8n@") ]
+            | sort_by(split(".") | map(tonumber)) | last // empty')
+        fi
+        VERSION="${VERSION#v}"
+        [ -n "$VERSION" ] || { echo "::error::无法解析 n8n 版本"; exit 1; }
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "n8n tag: n8n@$VERSION / 本仓 tag: release/$VERSION"
 
     - name: Install pnpm
       run: npm install -g pnpm@10
@@ -31,18 +50,10 @@ jobs:
       with:
         path: ./n8n-i18n-chinese
 
-    # - name: Read version from package.json
-    #   id: get_version
-    #   run: |
-    #     VERSION=$(jq -r '.version' package.json)
-    #     echo "Version: $VERSION"
-    #     echo "version=$VERSION" >> $GITHUB_OUTPUT
-    #   working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
-
     - name: Check if tag exists
       id: check_tag
       run: |
-        TAG="${{ steps.latest_release.outputs.latest }}"
+        TAG="release/${{ steps.ver.outputs.version }}"
         echo "Checking for remote tag: $TAG"
         if git ls-remote --tags origin | grep "refs/tags/$TAG$"; then
           echo "exists=true" >> $GITHUB_OUTPUT
@@ -58,37 +69,38 @@ jobs:
 
     - name: Translate New Strings
       if: steps.check_tag.outputs.exists == 'false'
-      run: pnpm install && node --input-type=module translate.js
+      run: pnpm install && N8N_EN_JSON_URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json" node translate.js
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/script
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         OPENAI_API_BASE: ${{ vars.OPENAI_API_BASE }}
         OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
         OPENAI_API_CONCURRENT: ${{ vars.OPENAI_API_CONCURRENT }}
+        OPENAI_BATCH_SIZE: ${{ vars.OPENAI_BATCH_SIZE }}
 
     - name: Translate Publish Git
       if: steps.check_tag.outputs.exists == 'false'
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
-        
+
         git add languages/* script/en.json || true
-        
+
         # 如果没有变更就跳过
         if git diff --cached --quiet; then
           echo "No changes to commit."
         else
-          git commit -m "chore: auto translate"
+          git commit -m "chore: auto translate for n8n@${{ steps.ver.outputs.version }}"
           git push origin
         fi
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
 
-    - name: Checkout n8n
+    - name: Checkout n8n (git tag，勿用 target_commitish——release 分支会被上游清理)
       if: steps.check_tag.outputs.exists == 'false'
       uses: actions/checkout@v4
       with:
         repository: n8n-io/n8n
-        ref: ${{ steps.latest_release.outputs.latest }}
+        ref: n8n@${{ steps.ver.outputs.version }}
         path: ./n8n
 
     - uses: actions/setup-node@v4.2.0
@@ -156,20 +168,19 @@ jobs:
     - name: Update docker-compose.yml version
       if: steps.check_tag.outputs.exists == 'false'
       run: |
-        RAW_TAG="${{ steps.latest_release.outputs.latest }}"
-        VERSION="${RAW_TAG#release/}"  # 去掉前缀 n8n@
+        VERSION="${{ steps.ver.outputs.version }}"
         echo "Replacing {version} with $VERSION in docker-compose.yml"
         sed -i "s/{version}/$VERSION/g" /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/docker-compose.yml
 
     - name: 创建 git tag
       if: steps.check_tag.outputs.exists == 'false'
       run: |
-        TAG="${{ steps.latest_release.outputs.latest }}"
+        TAG="release/${{ steps.ver.outputs.version }}"
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git add editor-ui-dist
         git add docker-compose.yml
-        git commit -m "chore: add built editor-ui dist for ${{ steps.latest_release.outputs.latest }}"
+        git commit -m "chore: add built editor-ui dist for n8n@${{ steps.ver.outputs.version }}"
         git tag $TAG
         git push origin $TAG
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
@@ -179,10 +190,10 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ steps.latest_release.outputs.latest }}
-        name: Release editor-ui to ${{ steps.latest_release.outputs.latest }}
+        tag_name: release/${{ steps.ver.outputs.version }}
+        name: Release editor-ui to ${{ steps.ver.outputs.version }}（n8n 中文版）
         body: |
-          自动发布的中文语言包版本。
+          自动发布的中文语言包版本（对应 n8n@${{ steps.ver.outputs.version }}）。
         draft: false
         prerelease: false
         files: ${{ steps.editorui_dir.outputs.dir }}/editor-ui.tar.gz
