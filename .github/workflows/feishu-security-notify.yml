@@ -1,0 +1,82 @@
+name: Feishu Security Alerts Notify
+
+on:
+  schedule:
+    - cron: "13 * * * *"
+  workflow_dispatch:
+    inputs:
+      full_backfill:
+        description: "把当前所有未处理告警视为新告警推送一次（首跑/验证连通性用）"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Restore notify state
+        uses: actions/cache@v4
+        with:
+          path: state
+          key: feishu-sec-state-${{ github.run_id }}
+          restore-keys: feishu-sec-state-
+
+      - name: Detect new alerts and push to Feishu
+        env:
+          API: https://api.github.com/repos/$GITHUB_REPOSITORY
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          BACKFILL: ${{ inputs.full_backfill }}
+        run: |
+          set -euo pipefail
+          mkdir -p state
+          [ -s state/notified.json ] || echo '{"dependabot":[],"code_scanning":[],"last_run":""}' > state/notified.json
+          curl -sS -m 30 -H "Authorization: Bearer $TOKEN" "$API/dependabot/alerts?state=open&per_page=100&sort=created" -o db.json
+          curl -sS -m 30 -H "Authorization: Bearer $TOKEN" "$API/code-scanning/alerts?state=open&per_page=100" -o cs.json
+          IS_BACKFILL=$([ "$BACKFILL" = "true" ] && echo true || echo false)
+          NEWNOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # 新 = 编号不在已通知列表；代码扫描额外要求创建时间晚于上次运行（有上次运行时）
+          jq --slurpfile s state/notified.json --argjson b "$IS_BACKFILL" '
+            [ .[] | select( ($b == true) or ((.number|tostring) | IN($s[0].dependabot[]) | not) ) ]
+          ' db.json > db_new.json
+          jq --slurpfile s state/notified.json --argjson b "$IS_BACKFILL" '
+            [ .[] | select( ($b == true) or ((.number|tostring) | IN($s[0].code_scanning[]) | not) )
+                  | select( ($b == true) or ($s[0].last_run == "") or ((.created_at // "") >= $s[0].last_run) ) ]
+          ' cs.json > cs_new.json
+
+          send_card() { # $1=title $2=color $3=mdfile
+            jq -n --arg t "$1" --arg c "$2" --rawfile md "$3" '
+              {msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
+               elements:[{tag:"markdown",content:$md}]}}' > payload.json
+            local resp
+            resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @payload.json "$WEBHOOK")
+            echo "feishu resp: $resp"
+            echo "$resp" | grep -Eq '"(code|StatusCode|statusCode)"[ ]*:[ ]*0'
+          }
+
+          DBN=$(jq 'length' db_new.json); CSN=$(jq 'length' cs_new.json)
+          if [ "$DBN" -gt 0 ]; then
+            jq -r '.[0:15][] | "- **\(.security_advisory.severity // "?")** · `\(.security_vulnerability.package.name // "?")` · \(.security_vulnerability.vulnerable_version_range // "") → 修复: \(.security_vulnerability.first_patched_version // "待定")\n  [!#\(.number) \(.security_advisory.summary // "" | .[0:80])](\(.html_url))"' db_new.json > dbmd.txt
+            [ "$DBN" -gt 15 ] && echo "…另有 $((DBN - 15)) 条见 Security 页" >> dbmd.txt
+            send_card "🛡 $GITHUB_REPOSITORY 依赖漏洞告警 +$DBN" "red" dbmd.txt
+          fi
+          if [ "$CSN" -gt 0 ]; then
+            jq -r '.[0:15][] | "- **\(.rule.severity // .severity // "?")** · \(.rule.name // .tool.name)\n  [!#\(.number) \((.most_recent_instance.message.text // "") | .[0:80])](\(.html_url))"' cs_new.json > csmd.txt
+            [ "$CSN" -gt 15 ] && echo "…另有 $((CSN - 15)) 条见 Security 页" >> csmd.txt
+            send_card "🧪 $GITHUB_REPOSITORY 代码扫描告警 +$CSN" "orange" csmd.txt
+          fi
+
+          # 发送全部成功后才记录状态（失败则下小时重试）
+          jq -n --slurpfile s state/notified.json --slurpfile db db_new.json --slurpfile cs cs_new.json --arg lr "$NEWNOW" '
+            { dependabot:    ((($s[0].dependabot // [])    + ($db[0] | map(.number|tostring))) | .[-500:]),
+              code_scanning: ((($s[0].code_scanning // []) + ($cs[0] | map(.number|tostring))) | .[-500:]),
+              last_run: $lr }' > state/notified.json.new
+          mv state/notified.json.new state/notified.json
+          echo "- dependabot new: $DBN, code-scanning new: $CSN, backfill: $IS_BACKFILL" >> "$GITHUB_STEP_SUMMARY"
