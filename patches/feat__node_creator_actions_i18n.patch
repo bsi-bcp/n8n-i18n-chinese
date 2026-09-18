@@ -1,0 +1,36 @@
+diff --git a/packages/frontend/editor-ui/src/features/shared/nodeCreator/components/ItemTypes/ActionItem.vue b/packages/frontend/editor-ui/src/features/shared/nodeCreator/components/ItemTypes/ActionItem.vue
+index e83279767e3..05ffa68eee6 100644
+--- a/packages/frontend/editor-ui/src/features/shared/nodeCreator/components/ItemTypes/ActionItem.vue
++++ b/packages/frontend/editor-ui/src/features/shared/nodeCreator/components/ItemTypes/ActionItem.vue
+@@ -9,6 +9,7 @@ import NodeIcon from '@/app/components/NodeIcon.vue';
+ import { useViewStacks } from '../../composables/useViewStacks';
+ import { useActions } from '../../composables/useActions';
+ import { useTelemetry } from '@n8n/composables/useTelemetry';
++import { useI18n } from '@n8n/i18n';
+ 
+ import { N8nNodeCreatorNode } from '@n8n/design-system';
+ export interface Props {
+@@ -39,6 +40,14 @@ const draggableStyle = computed<{ top: string; left: string }>(() => ({
+ 
+ const actionData = computed(() => getActionData(props.action));
+ 
++// 汉化补丁：操作标题查词典 headers.actionTitles.<英文短语>，未命中回退原文
++const title = computed(() =>
++	i18n.headerText({
++		key: `headers.actionTitles.${props.action.displayName}`,
++		fallback: props.action.displayName,
++	}),
++);
++
+ const isTriggerAction = (action: ActionTypeDescription) =>
+ 	action.name?.toLowerCase().includes('trigger') || action.name === WEBHOOK_NODE_TYPE;
+ 
+@@ -102,7 +111,7 @@ const { draggableDataTransfer, dragging } = toRefs(state);
+ 	<N8nNodeCreatorNode
+ 		draggable
+ 		:class="$style.action"
+-		:title="action.displayName"
++		:title="title"
+ 		:is-trigger="isTriggerAction(action)"
+ 		data-keyboard-nav="true"
+ 		@dragstart="onDragStart"

@@ -18,7 +18,10 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 ```shell
 npm run i18n:translate        # 增量翻译（script/translate.js）
-node script/get-n8n-nodes.js  # 从 node_modules/n8n-nodes-base 提取节点文案 → script/en-nodes.json（需先 npm install）
+NODE_PATH=/tmp/n8n-ts-extract/node_modules node script/extract-node-headers.js <n8n源码worktree>
+# ↑ 从 n8n 源码静态提取节点级描述 + 节点面板操作标题 → script/en-nodes.json（TS 编译器 API 解析 .node.ts，无需编译 n8n）
+#   typescript 隔离安装：mkdir -p /tmp/n8n-ts-extract && cd /tmp/n8n-ts-extract && npm init -y && npm i typescript@5 dotenv lodash p-limit@2
+#   源码用 git worktree pin 到目标 tag：git -C <n8n clone> worktree add /tmp/n8n-<ver>-src "n8n@<ver>" --detach
 ```
 
 无测试、无 lint。Node ≥18（translate.js 用全局 `fetch`），CI 用 Node 22。
@@ -41,7 +44,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 ## 翻译流程（script/translate.js）
 
-1. 从 n8n master 拉官方 `en.json`，与本仓库 `script/en-nodes.json`（若存在，由 get-n8n-nodes.js 生成）lodash.merge 作为完整英文基准
+1. 从 n8n master 拉官方 `en.json`，与本仓库 `script/en-nodes.json`（若存在）lodash.merge 作为完整英文基准。en-nodes.json 由 `extract-node-headers.js` 生成：`headers.<节点短名>.description`（面板第二层节点描述，568 节点）+ `headers.actionTitles.<英文短语>`（面板第三层操作标题，456 条），均与 n8n 版本 tag 对齐提取
 2. 三方对比（新 en.json / 旧基准 `script/en.json` / 现有 `languages/zh-CN.json`），只翻译：**新增 key** 或 **英文原文已变化的 key**
 3. 批协议：key 用 `##` 打平仅用于内部回填，实际传给 LLM 的是等长 JSON 字符串数组（仅原文）；LLM 输出剥掉 `<think>` 块（兼容推理模型）与 markdown 代码围栏；429 退避 5s 重试，其余非 200 交给 retry 重试
 4. 产物按新 en.json 的 key 顺序排序写回 `languages/zh-CN.json`，并把新 en.json 存为下次的旧基准
@@ -59,7 +62,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 1. 运行 translate.js → 提交语言包变更
 2. checkout n8n-io/n8n 对应 ref（tag 取自 release 的 target_commitish，去掉 `release/` 前缀）→ `pnpm install --frozen-lockfile` 构建整仓（CI 用 Node 22 + pnpm 10）
-3. 拷贝 zh-CN.json 进 `packages/frontend/@n8n/i18n/src/locales/`，应用 `patches/feat__i18n_zhCn.patch`
+3. 拷贝 zh-CN.json 进 `packages/frontend/@n8n/i18n/src/locales/`，应用 `patches/feat__i18n_zhCn.patch` + 节点面板增强两 patch（2026-09-18 起，见「patch 注意事项」）
 4. 打包 editor-ui dist → 提交进仓库 → 打与 n8n 同名 tag → GitHub Release 附 editor-ui.tar.gz；tag 再触发 image.yml 推送 Docker 镜像
 
 n8n 新旧目录布局兼容：CI 检测 `packages/frontend/editor-ui`（新布局）vs `packages/editor-ui`（旧布局）来决定 dist 打包路径与所用 fix 补丁。`fix_editor-ui.patch` 与 `fix_editor-ui.old.patch` 内容相同（CredentialConfig.vue 加空值保护），仅目标路径不同。
@@ -70,7 +73,7 @@ Actions 未启用的现状下，追新版本按此 SOP 手动执行：
 
 1. **翻译对齐**：按「常用命令」节跑 `translate.js`（`N8N_EN_JSON_URL` pin 到目标 tag 或本地 curl 预下载），提交 `chore: auto translate`
 2. **源码准备**：`git clone --depth 1 --branch "n8n@<ver>" https://github.com/n8n-io/n8n.git`（约 320M）。engines 要求 **node≥24 / pnpm≥11.22**——pnpm 用 corepack 解决：`corepack enable --install-directory /tmp/corepack-bin && export PATH=/tmp/corepack-bin:$PATH`（n8n 的 packageManager 字段会自动 pin 到正确版本）
-3. **注入 + 补丁**：拷 `languages/zh-CN.json` 到 `packages/frontend/@n8n/i18n/src/locales/`；`git apply patches/feat__i18n_zhCn.patch`（失效则手动做等效两行修改并重新生成 patch，见「patch 注意事项」）
+3. **注入 + 补丁**：拷 `languages/zh-CN.json` 到 `packages/frontend/@n8n/i18n/src/locales/`；`git apply patches/feat__i18n_zhCn.patch patches/feat__node_creator_actions_i18n.patch patches/fix__hardcoded_labels.patch`（失效则手动做等效修改并重新生成 patch，见「patch 注意事项」）
 4. **安装**：`CI=1 pnpm install --frozen-lockfile --filter "n8n-editor-ui..."`。🔴 两个关键：**`CI=1` 必须带**——根 `prepare.mjs` 会跑 lefthook 安装，非 CI 环境下因过滤安装没装 lefthook 而秒挂（ELIFECYCLE 无输出）；**过滤安装**只装 editor-ui 子图，避开后端原生依赖（isolated-vm 在新 Node 上 gyp 编译失败）
 5. **构建**：`CI=1 pnpm --filter "n8n-editor-ui..." build` → 产物在 `packages/frontend/editor-ui/dist/`
 6. **打包**：`tar -czf editor-ui-<ver>.tar.gz -C packages/frontend/editor-ui dist`（macOS tar 的 LIBARCHIVE.xattr 警告在 Linux 解包无害）
@@ -92,4 +95,7 @@ Actions 未启用的现状下，追新版本按此 SOP 手动执行：
 
 - `patches/feat__i18n_zhCn.patch` 修改 n8n 上游 `packages/frontend/@n8n/i18n/src/index.ts`：import zh-CN 语言 + 注册进 vue-i18n messages（`messages: { en: englishBaseText, 'zh-CN': cnBaseText }`）。**上游该文件每次重构都会使 patch 失效**——`git apply` 报 "patch does not apply" 时，直接在新版源码上手动做等效两行修改，再 `git diff` 重新生成 patch。当前版本：2026-09-12 针对 2.38.7 重新生成（git diff 格式）
 - `patches/fix_editor-ui.patch`（旧 `fix_editor-ui.old.patch` 同理）：CredentialConfig.vue 空值保护。**2.38.x 起上游已自行修复，对新版源码不再需要**；仅构建 ≤2.33 旧版时使用。另注意 2.38.x 的 editor-ui src 重构为 `features/` 结构（CredentialConfig.vue 迁至 `src/features/credentials/components/CredentialEdit/`）
+- `patches/feat__node_creator_actions_i18n.patch`（2026-09-18 针对 2.39.7 新增）：editor-ui 节点面板第三层 `ActionItem.vue` 标题查表 `headers.actionTitles.<英文短语>`（词典由 extract-node-headers.js 产出，未命中回退原文）。上游重构 ActionItem.vue 或 useActionsGeneration.ts 的 action 生成逻辑会使其失效
+- `patches/fix__hardcoded_labels.patch`（2026-09-18 针对 2.39.7 新增）：SourceControl Pull/Push 弹窗各 3 处硬编码标签（Workflows/Credentials/Data Tables）改走既有 locale key（`generic.workflows`/`generic.credentials`/`workflows.dependencies.type.dataTables`）——「Data tables 未翻译」实锤根因（bundle 实证）。上游若自行 i18n 化该弹窗，此 patch 应删除。两弹窗另有 Variables/Tags/Folders/Projects/New/Modified/Deleted 等硬编码串未处理（低频，按需再扩）
+- ⚠️ 节点描述含 "deprecated" 字样的条目，翻译必须保留英文词（NodeItem 靠 `description.includes('deprecated')` 打弃用徽标，翻成「已弃用」会丢徽标）；目前仅 1 条（outputParserAutofixing，已手工修为「已弃用（Deprecated），…」），每次提取新版本后需复查
 - 手动修改源码后验证：`git -C <n8n源码目录> apply --check --reverse <patch路径>`（已应用状态应通过，同时证明格式可解析）

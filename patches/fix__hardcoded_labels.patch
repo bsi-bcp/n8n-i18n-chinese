@@ -1,0 +1,52 @@
+diff --git a/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPullModal.vue b/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPullModal.vue
+index 2887481f178..6c62173b3e3 100644
+--- a/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPullModal.vue
++++ b/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPullModal.vue
+@@ -280,17 +280,17 @@ const filtersNoResultText = computed(() => {
+ const tabs = computed(() => {
+ 	return [
+ 		{
+-			label: 'Workflows',
++			label: i18n.baseText('generic.workflows'),
+ 			value: SOURCE_CONTROL_FILE_TYPE.workflow,
+ 			total: groupedFilesByType.value[SOURCE_CONTROL_FILE_TYPE.workflow]?.length || 0,
+ 		},
+ 		{
+-			label: 'Credentials',
++			label: i18n.baseText('generic.credentials'),
+ 			value: SOURCE_CONTROL_FILE_TYPE.credential,
+ 			total: groupedFilesByType.value[SOURCE_CONTROL_FILE_TYPE.credential]?.length || 0,
+ 		},
+ 		{
+-			label: 'Data Tables',
++			label: i18n.baseText('workflows.dependencies.type.dataTables'),
+ 			value: SOURCE_CONTROL_FILE_TYPE.datatable,
+ 			total: groupedFilesByType.value[SOURCE_CONTROL_FILE_TYPE.datatable]?.length || 0,
+ 		},
+diff --git a/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPushModal.vue b/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPushModal.vue
+index 10f3a3e5c34..633149c8fe0 100644
+--- a/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPushModal.vue
++++ b/packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPushModal.vue
+@@ -802,19 +802,19 @@ const activeSelection = computed(() => {
+ const tabs = computed(() => {
+ 	return [
+ 		{
+-			label: 'Workflows',
++			label: i18n.baseText('generic.workflows'),
+ 			value: SOURCE_CONTROL_FILE_TYPE.workflow,
+ 			selected: selectedWorkflows.size,
+ 			total: changes.value.workflow.length,
+ 		},
+ 		{
+-			label: 'Credentials',
++			label: i18n.baseText('generic.credentials'),
+ 			value: SOURCE_CONTROL_FILE_TYPE.credential,
+ 			selected: selectedCredentials.size,
+ 			total: changes.value.credential.length,
+ 		},
+ 		{
+-			label: 'Data Tables',
++			label: i18n.baseText('workflows.dependencies.type.dataTables'),
+ 			value: SOURCE_CONTROL_FILE_TYPE.datatable,
+ 			selected: selectedDataTables.size,
+ 			total: changes.value.datatable.length,

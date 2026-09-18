@@ -154,6 +154,15 @@ jobs:
         head -n 30 /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/packages/frontend/@n8n/i18n/src/index.ts
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
 
+    - name: Patch editor-ui zh enhancements（节点面板描述/操作标题汉化 + 源码控制弹窗硬编码标签）
+      if: steps.editorui_dir.outputs.flag == 'new' && steps.check_tag.outputs.exists == 'false'
+      run: |
+        BASE=/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/patches
+        git apply "$BASE/feat__node_creator_actions_i18n.patch"
+        git apply "$BASE/fix__hardcoded_labels.patch"
+        echo "==== 补丁应用完成 ===="
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+
     - name: Pnpm build editor-ui
       if: steps.check_tag.outputs.exists == 'false'
       run: |
