@@ -27,9 +27,12 @@ jobs:
     steps:
     - name: Resolve n8n version (input 优先，兜底稳定 tag)
       id: ver
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
       run: |
-        if [ -n "${{ inputs.version }}" ]; then
-          VERSION="${{ inputs.version }}"
+        # 🔒 输入只经 env 进入 shell（防表达式内插注入），并强制裁剪为 semver 白名单
+        if [ -n "$INPUT_VERSION" ]; then
+          VERSION="$INPUT_VERSION"
         else
           VERSION=$(curl -s https://api.github.com/repos/n8n-io/n8n/releases?per_page=30 | jq -r '
             [ .[] | select(.draft == false and .prerelease == false)
@@ -38,7 +41,10 @@ jobs:
             | sort_by(split(".") | map(tonumber)) | last // empty')
         fi
         VERSION="${VERSION#v}"
-        [ -n "$VERSION" ] || { echo "::error::无法解析 n8n 版本"; exit 1; }
+        if ! [[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+          echo "::error::版本号未通过 semver 白名单校验: '$VERSION'"
+          exit 1
+        fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "n8n tag: n8n@$VERSION / 本仓 tag: release/$VERSION"
 
@@ -46,7 +52,7 @@ jobs:
       run: npm install -g pnpm@10
 
     - name: Checkout local
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       with:
         path: ./n8n-i18n-chinese
 
@@ -102,13 +108,13 @@ jobs:
 
     - name: Checkout n8n (git tag，勿用 target_commitish——release 分支会被上游清理)
       if: steps.check_tag.outputs.exists == 'false'
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       with:
         repository: n8n-io/n8n
         ref: n8n@${{ steps.ver.outputs.version }}
         path: ./n8n
 
-    - uses: actions/setup-node@v4.2.0
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       if: steps.check_tag.outputs.exists == 'false'
       with:
         node-version: 22.x
@@ -193,7 +199,7 @@ jobs:
     - name: 创建 GitHub Release
       if: steps.check_tag.outputs.exists == 'false'
       id: create_release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
       with:
         tag_name: release/${{ steps.ver.outputs.version }}
         name: Release editor-ui to ${{ steps.ver.outputs.version }}（n8n 中文版）
@@ -203,7 +209,7 @@ jobs:
         prerelease: false
         files: ${{ steps.editorui_dir.outputs.dir }}/editor-ui.tar.gz
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     # 发布说明：上游 notes 中文总结（DeepSeek）+ 汉化变更 + 兼容区间；LLM 失败自动降级为原文
     - name: 生成发布说明
@@ -215,7 +221,7 @@ jobs:
         cat release-notes.md
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
       env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         OPENAI_API_BASE: ${{ vars.OPENAI_API_BASE }}
         OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
@@ -226,4 +232,19 @@ jobs:
       run: gh release edit "release/${{ steps.ver.outputs.version }}" --notes-file release-notes.md
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
       env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # 🔒 安全修复（2026-09-18 评审 #2）：不再依赖 PAT 创建 Release 来触发 image.yml 的
+    #    release 事件——workflow_dispatch 是 GITHUB_TOKEN 唯二可触发的事件之一，
+    #    由此以最小权限内置 token 联动镜像构建，全权限 classic PAT 退役。
+    - name: 联动触发镜像构建
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        for i in 1 2 3; do
+          gh workflow run image.yml --ref main -f version="${{ steps.ver.outputs.version }}" && { echo "已触发 image.yml"; exit 0; }
+          sleep 10
+        done
+        echo "::error::触发 image.yml 失败（可手动 dispatch 兜底）"
+        exit 1
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

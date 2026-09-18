@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
+      security-events: read  # 只读 code-scanning alerts API，write 可被利用伪造扫描结果（2026-09-18 评审 #10）
     steps:
       - name: Restore notify state
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: state
           key: feishu-sec-state-${{ github.run_id }}

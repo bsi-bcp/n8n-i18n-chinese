@@ -10,21 +10,29 @@ on:
         type: string
         default: ""
 
+permissions:
+  contents: read
+
+# 🔴 启用本 workflow 前需在 repo secrets 配置 BCP_REGISTRY_USERNAME / BCP_REGISTRY_PASSWORD
+#    （registry.bcpcloud.cn htpasswd 账号，真值见凭证库 swr.txc_43）
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment: test
     steps:
-      # 🔴 启用本 workflow 前需在 repo secrets 配置 BCP_REGISTRY_USERNAME / BCP_REGISTRY_PASSWORD
-      #    （registry.bcpcloud.cn htpasswd 账号，真值见凭证库 swr.txc_43）
-
+      # 🔒 安全修复（2026-09-18 评审 #2/#3）：inputs/tag_name 不再直接内插 shell，
+      #    经 env 传入并强制 semver 白名单校验后才使用
       - name: Extract version
         id: extract_version
+        env:
+          EVT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
-            TAG="${{ github.event.release.tag_name }}"
+            TAG="$EVT_TAG"
           else
-            V="${{ inputs.version }}"
+            V="$INPUT_VERSION"
             if [ -z "$V" ]; then
               V=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                 https://api.github.com/repos/${{ github.repository }}/releases/latest \
@@ -34,23 +42,27 @@ jobs:
           fi
           VERSION="${TAG#release/}"
           VERSION="${VERSION#v}"
-          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          if ! [[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+            echo "::error::版本号未通过 semver 白名单校验: '$VERSION'"
+            exit 1
+          fi
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Extracted version: $VERSION (from $TAG)"
 
       # v2：无论 release 事件还是手动 dispatch，都 checkout 产物所在 tag
       #（原先 dispatch 路径 checkout main，而 editor-ui-dist 只存在于 release tag 的提交里）
       - name: Checkout tag code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: refs/tags/${{ steps.extract_version.outputs.tag }}
           fetch-depth: 0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to BCP Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: registry.bcpcloud.cn
           username: ${{ secrets.BCP_REGISTRY_USERNAME }}

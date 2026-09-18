@@ -45,7 +45,7 @@ jobs:
       FORCE: ${{ inputs.force_version }}
     steps:
       - name: Restore watch state
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: state
           key: n8n-watch-state-${{ github.run_id }}
@@ -58,6 +58,12 @@ jobs:
           mkdir -p state
           [ -s state/watched.json ] || echo '{"watched":[]}' > state/watched.json
           if [ -n "${FORCE:-}" ]; then
+            # 🔒 安全修复（2026-09-18 评审 #3）：drill 版本强制 semver 白名单，
+            #    防止经 GITHUB_OUTPUT 二次内插回 shell 的注入链
+            if ! [[ "$FORCE" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+              echo "::error::force_version 未通过 semver 白名单校验: '$FORCE'"
+              exit 1
+            fi
             echo "version=$FORCE" >> "$GITHUB_OUTPUT"
             echo "drill=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -110,7 +116,7 @@ jobs:
 
       - name: Checkout n8n source at tag (D2)
         if: steps.gate.outputs.skip == 'false'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: n8n-io/n8n
           ref: n8n@${{ steps.ver.outputs.version }}
@@ -119,7 +125,7 @@ jobs:
 
       - name: Checkout plugin (patches / language snapshots)
         if: steps.gate.outputs.skip == 'false'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           path: plugin
 
