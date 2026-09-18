@@ -11,6 +11,23 @@
 - **就近兼容** = 搭配相邻后端版本实测可用；旧 dist 配新后端时，新增文案回退英文（功能不受影响）
 - **不兼容** = 跨大版本区间错配可能白屏，请勿使用
 
+## [2.39.7-v3] - 2026-09-18（v3 增强：节点面板第二/三层汉化 + Data tables 修复）
+
+**兼容**：n8n 2.39.7（精确匹配）；**就近兼容** 2.39.0 ~ 2.39.6（新词典键在旧后端无对应面板文案时静默回退，无害）；**不兼容** > 2.39.7 后端。
+
+YTJ1 灰度四件套 + 面板新项抽查全绿（bundle hash 三文件与本机构建一致、两层文案命中、index chunk 硬编码清零）；本版手动构建，CI 流水线自下个上游版本起自动携带新词典与补丁。
+
+### Added
+- 节点面板第二层节点描述汉化：568 节点（含 AI/langchain 包 117 个），走上游原生 `headers.<短名>.description` 查表，无需源码补丁
+- 节点面板第三层操作标题汉化：456 条，新增 `feat__node_creator_actions_i18n.patch`（ActionItem 标题查表 `headers.actionTitles.*`，未命中回退原文，触发器 onEvent 模板等已有中文的自动免疫）
+- `script/extract-node-headers.js`：TS 编译器 API 静态提取节点描述与操作标题（免编译 n8n，版本化节点深度去重 + baseDescription/构造函数赋值双回退），词典管线化随版本增量维护
+
+### Fixed
+- 🔴 **「Data tables」未翻译**：根因为 Source Control Pull/Push 弹窗 6 处硬编码标签（Workflows/Credentials/Data Tables，线上 bundle 取证实锤），新增 `fix__hardcoded_labels.patch` 改走既有词典 key
+
+### Changed
+- 语言包 8350 → 9374 键；镜像 `n8n-chinese:2.39.7` 已覆写为 v3 内容
+
 ## [2.39.7] - 2026-09-18（v2 重发：翻译质量大修 + 安全加固）
 
 **兼容**：n8n 2.39.7（精确匹配）；**就近兼容** 2.39.0 ~ 2.39.6（YTJ1 2.39.6 后端 + 2.39.7 dist 灰度实测，四件套全绿）；**不兼容** > 2.39.7 后端（新文案回退英文）。
