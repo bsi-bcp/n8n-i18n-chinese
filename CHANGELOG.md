@@ -11,6 +11,30 @@
 - **就近兼容** = 搭配相邻后端版本实测可用；旧 dist 配新后端时，新增文案回退英文（功能不受影响）
 - **不兼容** = 跨大版本区间错配可能白屏，请勿使用
 
+## [2.39.8] - 2026-09-19（首次全自动无人值守发版 + 交付渠道切华为云 SWR + 产物命名规则）
+
+**兼容**：n8n 2.39.8（精确匹配）；**就近兼容** 2.39.0 ~ 2.39.7（同大版本线）；**不兼容** > 2.39.8 后端。
+
+上游 2.39.8 为补丁版共 3 修复：AI Assistant 工作流预览空白（#38915，前端）、数据加密 key 修复（#38911）、子执行 parked 清理（#38949），词典零增量。**本版为 CI 全自动完整包产线首次端到端无人值守发版**：watcher 三项评估绿灯后自动「翻译 → 覆盖率门禁 → 构建 → Release → 镜像」全链无人工动作；同窗口完成交付渠道迁移与产物命名规则落地。
+
+### Added
+
+- **产物命名规则（2026-09-19 定）**：GitHub Releases 部署包统一 `n8n-editor-ui@<版本号>.tar.gz`（Release 标题同名）；中文镜像统一 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>`；`-vN` 发布序号只进 tag 不进产物名。现有 4 个 Release 已按新规则重建（tag 与正文保留）
+- image.yml v3：构建源改为 Release 资产下载（不再依赖 tag 内是否提交 dist，Dockerfile 与基础镜像恒用 main 最新）；版本白名单支持 `-vN` 后缀（如 `2.39.7-v3` → 镜像 tag `2.39.7`）
+- 旧版本全量回填 SWR：`2.39.7`（v3 内容）/`2.39.6`/`2.38.7`，全部 docker manifest list 双架构（amd64 + arm64）
+
+### Changed
+
+- **交付渠道迁移**：`registry.bcpcloud.cn`（TX-43 自建 registry:2）→ 华为云 SWR `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese`；`BCP_REGISTRY_*` secrets 切 SWR 登录指令（凭证库 `swr.hwc_bj4`）；旧库冻结为存量服务，被污染的 2.39.8 tag 已删除
+- 基础镜像构建源 DockerHub → ghcr.io（runner 匿名限流致构建卡死 35min+ 实锤；交付层无差异）
+
+### Fixed
+
+- 🔴 **SWR 拒收 buildx 默认输出**：buildx 0.13+ 默认 OCI 媒体类型 + zstd 压缩层，SWR 解析器不认（`Invalid image, fail to parse 'manifest.json'` 三连复现）；仅 `--provenance=false --sbom=false` 不够，须 `--output type=registry,oci-mediatypes=false,compression=gzip`。排障方法论：registry v2 API 实证——SWR 对 docker manifest list / OCI index 实际都接受，问题纯在 buildx 输出侧
+- 🔴 **editor-ui-dist 嵌套污染**：`cp -r …/dist editor-ui-dist` 在目录已存在时嵌套成 `editor-ui-dist/dist`（1013 文件新旧混放，镜像 COPY 错位）——node.js.yml 打包前先 `rm -rf`；仓库树已从干净 Release 资产重建
+- **CodeQL 误报清零（130 → 0）**：① 对提交进仓库的 editor-ui-dist 构建产物加 `.github/codeql.yml` paths-ignore；② pinned codeql-action 不自动发现配置文件，init 必须显式 `config-file`（augmented config 为空 `{}` 实锤，告警一度翻倍）
+- ⚠️ release 事件触发 image.yml 用的是 **tag 指向提交里的 workflow 版本**而非 main——重建历史 release 会触发旧逻辑（本次 4 个旧 release 重建全部空跑失败、无实害）；重推历史版本一律走 `workflow_dispatch`
+
 ## [2.39.7-v3] - 2026-09-18（v3 增强：节点面板第二/三层汉化 + Data tables 修复）
 
 **兼容**：n8n 2.39.7（精确匹配）；**就近兼容** 2.39.0 ~ 2.39.6（新词典键在旧后端无对应面板文案时静默回退，无害）；**不兼容** > 2.39.7 后端。
@@ -61,6 +85,8 @@ CI 流水线 v2 首次实战发版（watcher 评估 → 手动 dispatch → 构�
 bcphub-bsi（YTJ1 Queue Mode 集群 main + 3×worker + webhook + runners）灰度升级验证通过：healthz/readiness 200、品牌 title 保留、bundle hash 与本机构建一致、2.39.x 新增文案线上命中且词典 chunk md5 一致。
 
 镜像：`registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:2.39.6`（同步推送基础镜像 `bcp/n8n:2.39.6`、`bcp/n8n-runners:2.39.6`；DockerHub 对境内边端不可达时可用此私有库替代）。
+
+> 📌 2026-09-19 追注：交付渠道已迁移华为云 SWR，2.39.6 镜像已回填 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.6`（amd64 + arm64）；上文旧库地址仅作历史记录，Queue Mode 的 runners 镜像仍在旧库。
 
 ### Added
 
