@@ -12,7 +12,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
-**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。CI v2 已于 2026-09-18 起实战运行（stable-watch 每小时监控 + 手动 dispatch 发版 + 飞书通知；2.39.7 v2 起全链自动化含镜像联动）。BCP 侧的实际消费方式：已恢复独立追新——**最新 Release 为 `release/2.39.7-v3`（2026-09-18：节点面板第二/三层汉化——568 节点描述 + 456 操作标题词典 + 两个新 patch，修复 Data tables 弹窗硬编码，YTJ1 灰度全绿；v2 为同日翻译质量大修 728 处 + 安全加固）**，前作 `release/2.39.6`/`release/2.38.7`；存量边端仍沿用 2.33.7/2.38.7 dist（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill。追新流程：跑 `npm run i18n:translate`（`N8N_EN_JSON_URL` pin 到目标 tag，勿用 master）+ 手动走构建发布流程（下节 runbook 已经 2.38.7 与 2.39.6 两轮全链路实战验证，另有 `CHANGELOG.md` 记录发版史实与兼容区间）。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。
+**仓库现状（2026-09-18 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。**CI 全自动已上线**：watcher 每小时监控 n8n 官方稳定版 → 三项确定性评估（补丁贴合/翻译缺口/基础镜像）→ 飞书研发部群卡片；仓库变量 `AUTO_RELEASE=true`（2026-09-18 晚起）——绿灯即自动「翻译→构建→Release→镜像→部署通知」全链，红灯自动建 `n8n-compat` Issue 等人工适配（全链唯一人工介入点）。**最新 Release 为 `release/2.39.7-v3`——2.39.7 的唯一发布**（v1/v2 已并入其发布说明，旧 Release 对象已删、tag 保留）：词典 8350→**9500 键**，含节点面板第二层 568 节点描述 + 第三层 582 操作标题、翻译质量大修 727 处、Data tables 等硬编码修复；YTJ1 灰度全绿。前作 `release/2.39.6`/`release/2.38.7`；存量边端仍沿用 2.33.7/2.38.7 dist（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill。正常情况下无需人工动作（CI 承包）；下节 runbook 仅供 CI 不可用/本地验证时使用（已经 2.38.7/2.39.6/2.39.7-v3 三轮实战），`CHANGELOG.md` 记录发版史实与兼容区间。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。
 
 ## 常用命令
 
@@ -44,7 +44,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 ## 翻译流程（script/translate.js）
 
-1. 从 n8n master 拉官方 `en.json`，与本仓库 `script/en-nodes.json`（若存在）lodash.merge 作为完整英文基准。en-nodes.json 由 `extract-node-headers.js` 生成：`headers.<节点短名>.description`（面板第二层节点描述，568 节点）+ `headers.actionTitles.<英文短语>`（面板第三层操作标题，456 条），均与 n8n 版本 tag 对齐提取
+1. 从 n8n master 拉官方 `en.json`，与本仓库 `script/en-nodes.json`（若存在）lodash.merge 作为完整英文基准。en-nodes.json 由 `extract-node-headers.js` 生成：`headers.<节点短名>.description`（面板第二层节点描述，568 节点）+ `headers.actionTitles.<英文短语>`（面板第三层操作标题，582 条），均与 n8n 版本 tag 对齐提取
 2. 三方对比（新 en.json / 旧基准 `script/en.json` / 现有 `languages/zh-CN.json`），只翻译：**新增 key** 或 **英文原文已变化的 key**
 3. 批协议：key 用 `##` 打平仅用于内部回填，实际传给 LLM 的是等长 JSON 字符串数组（仅原文）；LLM 输出剥掉 `<think>` 块（兼容推理模型）与 markdown 代码围栏；429 退避 5s 重试，其余非 200 交给 retry 重试
 4. 产物按新 en.json 的 key 顺序排序写回 `languages/zh-CN.json`，并把新 en.json 存为下次的旧基准
@@ -56,20 +56,21 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - `languages/zh-CN.json` 的嵌套结构与 en.json 同构
 - 两者都是自动生成物，CI 以 `chore: auto translate` 提交，不要手工改动结构；手工补译时保持 key 不变即可被下次运行保留
 
-## 发布流水线（.github/workflows/node.js.yml，每小时运行；⚠️ 本 fork Actions 从未启用，以下为设计行为）
+## 发布流水线（CI 全自动，2026-09-18 起实战）
 
-检测到 n8n 官方新 Release 且本仓库无对应 tag 时串联执行：
+三个 workflow 串联，图文详解见 `docs-inner/2026-09-18-n8n汉化自动化工作流介绍.md`（mermaid 流程图+时序图+告警体系）：
 
-1. 运行 translate.js → 提交语言包变更
-2. checkout n8n-io/n8n 对应 ref（tag 取自 release 的 target_commitish，去掉 `release/` 前缀）→ `pnpm install --frozen-lockfile` 构建整仓（CI 用 Node 22 + pnpm 10）
-3. 拷贝 zh-CN.json 进 `packages/frontend/@n8n/i18n/src/locales/`，应用 `patches/feat__i18n_zhCn.patch` + 节点面板增强两 patch（2026-09-18 起，见「patch 注意事项」）
-4. 打包 editor-ui dist → 提交进仓库 → 打与 n8n 同名 tag → GitHub Release 附 editor-ui.tar.gz；tag 再触发 image.yml 推送 Docker 镜像
+1. **`n8n-stable-watch.yml`**（每小时 cron `37 * * * *` + 手动入口）：GitHub API 枚举 n8n releases，过滤 prerelease 且只跟本插件当前大版本线 → 门禁（已有 tag / watched.json 状态机已评估则 8 秒早退）→ 三项评估：补丁 `git apply --check`（失败降级 `patch --fuzz=3` 判黄）、翻译缺口（与 translate.js 同口径）、基础镜像探测 → 飞书卡片（绿/黄/红）。`AUTO_RELEASE=true` 时绿灯自动 dispatch 发版；红灯自动建 `n8n-compat` Issue。手动入口：`force_version` 演练（semver 白名单校验）/ `report_only` 只报告。
+2. **`node.js.yml`**（仅 dispatch，原每小时 cron 已移除）：translate.js 增量翻译（`N8N_EN_JSON_URL` 固定 pin 到同版本 tag，评审 D2）→ 提交词典 → checkout n8n **git tag**（勿用 target_commitish，release 分支会被上游清理）→ 过滤安装（`--filter "n8n-editor-ui..."`，CI=1）→ 注入词典 + 三个 patch → 构建 → 打 `release/x.y.z` tag → GitHub Release（说明由 `gen-release-notes.sh` 生成，LLM 总结失败降级原文）→ dispatch 联动镜像。
+3. **`image.yml`**（Release dispatch 触发）：版本 semver 白名单校验 → buildx multi-arch（amd64+arm64）推 SWR → 成功/失败均推飞书研发部群卡片。
+
+告警体系：评估三色卡、发版结果卡、镜像成功绿卡/失败红卡、红灯 Issue；飞书卡片 jq 程序括号层级 = elements 在 card 对象内（`template:$c},elements:...]}}`），改卡片必须先本地 jq 验证。辅助通知：`feishu-pr-notify.yml`（PR 生命周期）、`feishu-security-notify.yml`（每小时 CodeQL 告警去重推送）。
 
 n8n 新旧目录布局兼容：CI 检测 `packages/frontend/editor-ui`（新布局）vs `packages/editor-ui`（旧布局）来决定 dist 打包路径与所用 fix 补丁。`fix_editor-ui.patch` 与 `fix_editor-ui.old.patch` 内容相同（CredentialConfig.vue 加空值保护），仅目标路径不同。
 
-## 手动构建发布 runbook（2026-09-12 对 2.38.7 全链路实战验证）
+## 手动构建发布 runbook（2.38.7 / 2.39.6 / 2.39.7-v3 三轮实战验证）
 
-Actions 未启用的现状下，追新版本按此 SOP 手动执行：
+正常情况下 CI 全自动承包，本 SOP 仅在 CI 不可用、补丁红灯本地适配、或需要本地验证时使用：
 
 1. **翻译对齐**：按「常用命令」节跑 `translate.js`（`N8N_EN_JSON_URL` pin 到目标 tag 或本地 curl 预下载），提交 `chore: auto translate`
 2. **源码准备**：`git clone --depth 1 --branch "n8n@<ver>" https://github.com/n8n-io/n8n.git`（约 320M）。engines 要求 **node≥24 / pnpm≥11.22**——pnpm 用 corepack 解决：`corepack enable --install-directory /tmp/corepack-bin && export PATH=/tmp/corepack-bin:$PATH`（n8n 的 packageManager 字段会自动 pin 到正确版本）
@@ -90,6 +91,14 @@ Actions 未启用的现状下，追新版本按此 SOP 手动执行：
 - **bcphub-test compose**：worker 是单服务多副本（`--scale worker=3`）。旧部署遗留的孤儿容器（`bcphub-test-worker-N-1`）升版后仍在跑旧镜像消费队列，须 `docker compose up -d --remove-orphans` 清理——注意它会同时把 scale 缩回 compose 默认值 1，需再 `up -d --scale worker=3 worker`
 - **灰度文案抽查注意**：zh 词典在多个 `src-*` chunk 中的**特定一个**（2.39.6 为 `src-Dnwuzjmo.js`，含"部署名称"），别对 `grep -oE 'src-[^"]*\.js' | head -1` 的首个结果做检查；稳妥做法是对比该 chunk 线上 md5 与本机构建
 - 翻译耗时参考：104 条增量 batch=15 ≈ 1 分钟；2.39.6 的 i18n `index.ts` 与 2.38.7 **字节级一致**（patch 免重生成，但每次仍需 `git apply --check --reverse` 验证）
+
+### runbook 实战增补三（2026-09-18 对 2.39.7-v3 第三轮验证）
+
+- **pnpm 11 + Node 24 本机构建**：过滤安装会拉进 isolated-vm（gyp 编不过）——用 `--ignore-scripts` 安装（前端工具链全走平台二进制可选依赖，无副作用）；`package.json` 的 `pnpm.neverBuiltDependencies` **pnpm 11 已不读**（配置迁到 pnpm-workspace.yaml 也无效于本场景），别在这上面浪费时间
+- **补丁重放铁律**：worktree 里重新生成任一 patch 前的 `git stash`/`checkout -- .` 会清掉**全部**补丁——重建前必须三补丁齐放，并 grep 标记验证（`cnBaseText`×2 / `actionTitles`×2 / `const i18n = useI18n()`×1 / `get label()`×2）
+- **产物验证门**：分发前必须 grep 构建产物含 zh 串（`数据转换` + 本版新增译串各一）——曾产出无词典 dist 险些全量交付；@n8n/i18n 的 dist 是词典真正入口，编辑器消费的是它的构建产物
+- 仓库 patch 文件改完**必须 git add**（曾漏提交致 HEAD 带旧版 patch，CI 下次发版即复现故障）；patch 内用 `useI18n` 必须同时声明 `const i18n = useI18n()`（vite 构建不报错，运行时才炸）
+- 飞书卡片：`elements` 必须在 `card` 对象内（正确形态 `template:$c},elements:...]}}`），发版链三张卡 + PR/安全通知共 5 处，改完逐处 jq 验证
 
 ## patch 注意事项
 
