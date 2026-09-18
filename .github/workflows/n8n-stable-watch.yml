@@ -141,7 +141,12 @@ jobs:
           for p in ../plugin/patches/*.patch; do
             [ -e "$p" ] || continue
             name=$(basename "$p")
-            case "$name" in *.old.patch) DETAILS="$DETAILS- ⚪ $name（.old，忽略）"$'\n'; continue;; esac
+            case "$name" in
+              *.old.patch) DETAILS="$DETAILS- ⚪ $name（.old，忽略）"$'\n'; continue;;
+              # fix_editor-ui.patch：CredentialConfig.vue 空值保护，上游 2.38.x 起已自修且文件
+              # 迁至 features/ 布局——watcher 只跟最新稳定版，此补丁恒不适用（≤2.33 手动构建才用）
+              fix_editor-ui.patch) DETAILS="$DETAILS- ⚪ $name（仅 ≤2.33 旧布局构建需要，忽略）"$'\n'; continue;;
+            esac
             if git apply --check "$p" 2>/dev/null; then
               DETAILS="$DETAILS- ✅ $name 完整贴合"$'\n'
             elif patch -p1 --dry-run --fuzz=3 --silent < "$p" >/dev/null 2>&1; then
