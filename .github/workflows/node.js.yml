@@ -67,6 +67,11 @@ jobs:
       run: |
         echo "Tags exist, stopping workflow."
 
+    - name: 记录翻译前键数（供发布说明计算翻译增量）
+      if: steps.check_tag.outputs.exists == 'false'
+      run: echo "PREV_KEY_COUNT=$(jq '[paths(scalars)] | length' languages/zh-CN.json)" >> "$GITHUB_ENV"
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+
     - name: Translate New Strings
       if: steps.check_tag.outputs.exists == 'false'
       run: pnpm install && N8N_EN_JSON_URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json" node translate.js
@@ -199,3 +204,26 @@ jobs:
         files: ${{ steps.editorui_dir.outputs.dir }}/editor-ui.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    # 发布说明：上游 notes 中文总结（DeepSeek）+ 汉化变更 + 兼容区间；LLM 失败自动降级为原文
+    - name: 生成发布说明
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        ZH_KEY_COUNT=$(jq '[paths(scalars)] | length' languages/zh-CN.json) \
+          bash script/gen-release-notes.sh "${{ steps.ver.outputs.version }}" release-notes.md
+        echo "---- release-notes.md ----"
+        cat release-notes.md
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        OPENAI_API_BASE: ${{ vars.OPENAI_API_BASE }}
+        OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+        PREV_KEY_COUNT: ${{ env.PREV_KEY_COUNT }}
+
+    - name: 回写 Release 说明
+      if: steps.check_tag.outputs.exists == 'false'
+      run: gh release edit "release/${{ steps.ver.outputs.version }}" --notes-file release-notes.md
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
