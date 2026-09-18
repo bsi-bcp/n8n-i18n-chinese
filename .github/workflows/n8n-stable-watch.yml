@@ -331,11 +331,13 @@ jobs:
 
       - name: Update watched state
         # 仅当发版链真正成功（rel 未执行＝红光/AUTO 关闭；或 rel 成功收尾）才入状态；
-        # dispatch 失败/构建失败不入状态 → 下个整点自动重试
+        # dispatch 失败/构建失败不入状态 → 下个整点自动重试；
+        # 绿灯但基础镜像未发布也不入状态——兑现评估卡「自动发版将等待下轮」的承诺
         if: >-
           steps.gate.outputs.skip == 'false' &&
           steps.ver.outputs.drill != 'true' &&
-          (steps.rel.outcome != 'success' || steps.rel.outputs.conclusion == 'success')
+          (steps.rel.outcome != 'success' || steps.rel.outputs.conclusion == 'success') &&
+          !(env.AUTO_RELEASE == 'true' && steps.patch.outputs.verdict != 'red' && steps.img.outputs.exists == 'false')
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
