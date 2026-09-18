@@ -202,11 +202,16 @@ jobs:
         id: img
         run: |
           set -euo pipefail
+          # 探测源 = image.yml 的实际构建源（ghcr；DockerHub 为上游另一双源之一，
+          # 偶发不同步会导致评估卡与构建实际可用性错位——2026-09-19 对齐）
+          GT=$(curl -s -m 20 "https://ghcr.io/token?scope=repository:n8n-io/n8n:pull" | jq -r .token)
           code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
-            "https://registry.hub.docker.com/v2/repositories/n8nio/n8n/tags/${{ steps.ver.outputs.version }}" || echo 000)
+            -H "Authorization: Bearer $GT" \
+            -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json" \
+            "https://ghcr.io/v2/n8n-io/n8n/manifests/${{ steps.ver.outputs.version }}" || echo 000)
           if [ "$code" = "200" ]; then echo "exists=true" >> "$GITHUB_OUTPUT"
           else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
-          echo "hub http: $code"
+          echo "ghcr http: $code"
 
       - name: Compose evaluation report
         if: steps.gate.outputs.skip == 'false'
@@ -227,8 +232,8 @@ jobs:
           else
             STR="待翻译 **${{ steps.strings.outputs.todo }}** 条（新增 ${{ steps.strings.outputs.new }} / 源变更 ${{ steps.strings.outputs.changed }} / zh缺失 ${{ steps.strings.outputs.missing_zh }}）"
           fi
-          if [ "$IMG" = "true" ]; then IMGM="✅ n8nio/n8n:$T 镜像已发布"
-          else IMGM="⏳ n8nio/n8n:$T 基础镜像未发布（自动发版将等待下轮）"; fi
+          if [ "$IMG" = "true" ]; then IMGM="✅ ghcr.io/n8n-io/n8n:$T 镜像已发布"
+          else IMGM="⏳ ghcr.io/n8n-io/n8n:$T 基础镜像未发布（自动发版将等待下轮）"; fi
           TITLE="n8n@$T 兼容性评估"
           if [ "$DRILL" = "true" ]; then TITLE="【演练】$TITLE"; DRILLNOTE="（演练，不入状态）"; else DRILLNOTE=""; fi
           {

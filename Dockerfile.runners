@@ -1,0 +1,5 @@
+ARG VERSION
+
+# n8n-runners 镜像无 UI、无汉化内容——从官方 ghcr 源整体搬运到 SWR，
+# 供 Queue Mode 客户在境内拉取（与 n8n-chinese 同版本号发布）
+FROM ghcr.io/n8n-io/runners:${VERSION}
