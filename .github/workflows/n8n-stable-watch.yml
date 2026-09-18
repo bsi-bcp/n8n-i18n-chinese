@@ -269,6 +269,14 @@ jobs:
           T: ${{ steps.ver.outputs.version }}
         run: |
           gh label create n8n-compat --color D93F0B -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+          # 查重：watched 状态走 actions/cache（7 天不用会被逐出），逐出后同一红灯版本会重复评估；
+          # 已有同版本 open Issue 则不再重复创建
+          EXISTING=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --label n8n-compat \
+            --search "n8n@$T 兼容性评估失败 in:title" --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "已存在 open 的 n8n@$T 兼容性 Issue，跳过重复创建"
+            exit 0
+          fi
           gh issue create -R "$GITHUB_REPOSITORY" \
             --title "n8n@$T 兼容性评估失败：补丁需人工适配" \
             --label n8n-compat \

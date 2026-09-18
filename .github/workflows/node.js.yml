@@ -20,6 +20,8 @@ on:
 permissions:
   contents: write
   actions: write  # workflow_dispatch 联动 image.yml 需要（GITHUB_TOKEN 可触发的唯二事件之一）
+  workflows: write  # tag 推送可能携带 main 上的 workflow 文件变更（构建窗口内 main 有 workflow 提交时，
+                    # tag 历史会引入它们；无此权限 GitHub 会拒绝推送——2.39.8 首跑实锤）
 
 jobs:
   build:
@@ -89,6 +91,40 @@ jobs:
         OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
         OPENAI_API_CONCURRENT: ${{ vars.OPENAI_API_CONCURRENT }}
         OPENAI_BATCH_SIZE: ${{ vars.OPENAI_BATCH_SIZE }}
+
+    # 词典覆盖率门禁（2026-09-18 复盘新增）：translate.js 对 LLM 失败条目只记日志跳过、
+    # 进程仍退出 0——API 余额耗尽时缺译 dist 会带病发版且零告警。这里先补翻一轮
+    # （zh 缺失键即补翻条件，瞬时故障自愈），仍超阈值则失败，由 watcher 红卡兜底。
+    - name: 词典覆盖率门禁（缺失>0 补翻一轮，补后 >1% 失败）
+      if: steps.check_tag.outputs.exists == 'false'
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/script
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        OPENAI_API_BASE: ${{ vars.OPENAI_API_BASE }}
+        OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+        OPENAI_API_CONCURRENT: ${{ vars.OPENAI_API_CONCURRENT }}
+        OPENAI_BATCH_SIZE: ${{ vars.OPENAI_BATCH_SIZE }}
+        UPSTREAM_EN: "https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json"
+      run: |
+        miss() {
+          jq -n --slurpfile en en.json --slurpfile zh ../languages/zh-CN.json \
+            '[($en[0]|paths(scalars)) as $p | select(($zh[0]|getpath($p)) == null)] | length'
+        }
+        total() {
+          jq '[paths(scalars)] | length' en.json
+        }
+        MISS=$(miss); TOTAL=$(total)
+        echo "zh 缺失 $MISS / 共 $TOTAL 键"
+        if [ "$MISS" -gt 0 ]; then
+          echo "::warning::首轮翻译缺失 $MISS 条（LLM 失败被静默跳过），补翻一轮…"
+          N8N_EN_JSON_URL="$UPSTREAM_EN" node translate.js
+          MISS=$(miss)
+          echo "补翻后缺失：$MISS"
+        fi
+        if [ "$((MISS * 100))" -gt "$TOTAL" ]; then
+          echo "::error::词典覆盖率不足 99%（缺失 $MISS/$TOTAL），疑似 LLM API 持续失败，阻断发版"
+          exit 1
+        fi
 
     - name: Translate Publish Git
       if: steps.check_tag.outputs.exists == 'false'
@@ -259,3 +295,20 @@ jobs:
         done
         echo "::error::触发 image.yml 失败（可手动 dispatch 兜底）"
         exit 1
+
+    # 飞书失败告警（2026-09-18 复盘新增）：此前 node.js.yml 自身无任何通知，
+    # 失败告警单点依赖 watcher 的 60s 轮询（watcher 挂了/被取消就静默）。
+    # 此卡与 watcher 红卡冗余双保险，两处 jq 形态均按已验证的 elements-in-card 结构。
+    - name: 飞书失败告警（研发部群）
+      if: failure()
+      env:
+        WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+      run: |
+        set -euo pipefail
+        TITLE="[${{ github.repository }}] n8n@${{ steps.ver.outputs.version }} 发版流水线失败"
+        M="❌ node.js.yml 构建失败，Release 与镜像未产出，需人工介入"$'\n'"日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        jq -n --arg t "$TITLE" --arg m "$M" \
+          '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:"red"},
+            elements:[{tag:"markdown",content:$m}]}}' > p_fail.json
+        resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @p_fail.json "$WEBHOOK")
+        echo "feishu: $resp"
