@@ -12,7 +12,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
-**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。本 fork 的 GitHub Actions 从未运行（无 tag、无 Release、无 workflow run），翻译提交同样停在 2026-08-21 —— 下文「发布流水线」是 workflow 的设计行为，在本仓库从未实际执行。BCP 侧的实际消费方式：已恢复独立追新——**最新 Release 为 `release/2.39.6`（2026-09-16 发布，bcphub-bsi YTJ1 集群灰度验证通过）**，前作 `release/2.38.7`；存量边端仍沿用 2.33.7/2.38.7 dist（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill。追新流程：跑 `npm run i18n:translate`（`N8N_EN_JSON_URL` pin 到目标 tag，勿用 master）+ 手动走构建发布流程（下节 runbook 已经 2.38.7 与 2.39.6 两轮全链路实战验证，另有 `CHANGELOG.md` 记录发版史实与兼容区间）。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。
+**仓库现状（2026-09-12 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。CI v2 已于 2026-09-18 起实战运行（stable-watch 每小时监控 + 手动 dispatch 发版 + 飞书通知；2.39.7 v2 起全链自动化含镜像联动）。BCP 侧的实际消费方式：已恢复独立追新——**最新 Release 为 `release/2.39.7`（2026-09-18 v2 重发：翻译质量大修 728 处 + 安全加固，YTJ1 灰度四件套全绿）**，前作 `release/2.39.6`/`release/2.38.7`；存量边端仍沿用 2.33.7/2.38.7 dist（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill。追新流程：跑 `npm run i18n:translate`（`N8N_EN_JSON_URL` pin 到目标 tag，勿用 master）+ 手动走构建发布流程（下节 runbook 已经 2.38.7 与 2.39.6 两轮全链路实战验证，另有 `CHANGELOG.md` 记录发版史实与兼容区间）。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。
 
 ## 常用命令
 
@@ -36,7 +36,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - Node fetch（undici）**不消费 http_proxy 环境变量**——curl 能通不代表 node fetch 能通，LLM 调用须加 `NODE_USE_ENV_PROXY=1`（Node 24+）
 - raw.githubusercontent.com 同理：本机跑先 `curl` 把 en.json 下载到本地，`N8N_EN_JSON_URL=/path/en.json` 传入
 - 不要 `npm install` 全量依赖——`n8n-nodes-base@latest` 依赖原生模块 `isolated-vm`，新 Node 上 gyp 编译失败。隔离安装：`/tmp` 建目录装 `dotenv lodash p-limit@2`，运行时 `NODE_PATH` 指向
-- 实测可用组合：`gemini-3.5-flash-lite` + `OPENAI_BATCH_SIZE=15`（flash 免费档仅 5 RPM 不可用；OpenRouter key 无余额会 402；智谱 key 无模型权限）。2183 条 ≈ 10 分钟
+- 主用组合（2026-09-18 起，CI secrets 已配）：DeepSeek v4（`deepseek-chat`，api.deepseek.com）+ `OPENAI_BATCH_SIZE=15`；备用 gemini-3.5-flash-lite（flash 免费档仅 5 RPM 不可用；OpenRouter key 无余额会 402；智谱 key 无模型权限）。2183 条 ≈ 10 分钟
 - 批量调用失败先二分降级重试（拆半直到单条），仅最终仍失败的单条记日志跳过、不写入 zh-CN.json，下次运行自动补翻
 
 ## 翻译流程（script/translate.js）
