@@ -1149,7 +1149,7 @@
     "credentialSelectModal.continue": "继续",
     "credentialSelectModal.searchForApp": "搜索应用...",
     "credentialSelectModal.selectAnAppOrServiceToConnectTo": "选择要连接的应用或服务",
-    "credentialsList.addNew": "添加新凭证",
+    "credentialsList.addNew": "添加新凭据",
     "credentialsList.confirmMessage.cancelButtonText": "",
     "credentialsList.confirmMessage.confirmButtonText": "是，删除",
     "credentialsList.confirmMessage.headline": "删除凭据？",
