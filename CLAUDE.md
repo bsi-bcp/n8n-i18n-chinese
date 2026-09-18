@@ -10,7 +10,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 - Release 部署包 `n8n-editor-ui@<版本号>.tar.gz` — 编译后的 editor-ui dist（CI 生成，GitHub Release 附件）
 - Docker 镜像 → 交付渠道为华为云 SWR **`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<ver>`**（2026-09-19 自 TX-43 自建库 registry.bcpcloud.cn 迁移，旧库存量 tag 见凭证库 `swr/txc_43_registry`；image.yml 需配 `BCP_REGISTRY_USERNAME` / `BCP_REGISTRY_PASSWORD` secrets，真值见凭证库 `swr.hwc_bj4`——username=`cn-north-4@AK`，password=登录指令 `swr_docker_login` 中 `-p` 的密钥；若 SWR 侧重置登录指令需同步更新 secrets；原上游 DockerHub `blowsnow/n8n-chinese` 无发布权限且已冻结在 2.33.7）
 
-**产物命名规则（2026-09-19 定）**：GitHub Releases 部署包 = `n8n-editor-ui@<版本号>.tar.gz`（Release 标题同名）；中文镜像 = `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>`。版本号跟随上游 n8n；发布序号 `-vN` 只进 release tag（如 `release/2.39.7-v3`），不进产物名（镜像 tag 与部署包名取基础版本号）
+**产物命名规则（2026-09-19 定）**：GitHub Releases 部署包 = `n8n-editor-ui@<版本号>.tar.gz`（Release 标题同名）；中文镜像 = `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>`。版本号跟随上游 n8n；发布序号 `-vN` 只进 release tag（如 `release/2.39.7-v3`），不进产物名（镜像 tag 与部署包名取基础版本号）。⚠️ release 事件触发 image.yml 用的是 **tag 指向提交里的 workflow 版本**，不是 main——重建历史 release 会 firing 旧逻辑（2026-09-19 实锤：重建 4 个旧 release 全部触发 v2 时代 workflow 失败）；重推历史版本一律走 `workflow_dispatch`（main 最新逻辑）
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
