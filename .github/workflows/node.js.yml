@@ -1,10 +1,9 @@
-# 构建 n8n 简体中文汉化补丁包并发版（2026-09-18 起收窄为补丁包模式）：
+# 构建完整 n8n 简体中文汉化包（editor-ui dist）并发版：
 #   入口统一为 n8n-stable-watch.yml 评估通过后 dispatch（或人工 dispatch 并传 version）
-#   自动化只产出「汉化补丁包」= zh-CN 词典 + 源码补丁 + manifest（Release 附件）；
-#   完整 editor-ui dist / Docker 镜像回归人工 runbook 构建（三轮实战验证的可靠路径；
-#   CI 全量构建在 2.39.8 首日实战连环暴露 3 缺陷后移出自动化）
-#   原每小时 cron 已移除（避免绕过兼容性评估盲跑，且与 watcher 双触发）
-name: package zh-CN patch bundle
+#   产出=完整汉化 dist（Release 附件 editor-ui.tar.gz）→ dispatch image.yml 推 SWR 镜像
+#   历史注记：2026-09-18 曾收窄为补丁包模式，同日按用户决策恢复完整包模式；
+#   2.39.8 首日实战的三处缺陷均已修复并保留（见下各 🔒/🔴 标注）
+name: package editor-ui languages
 
 on:
   workflow_dispatch:
@@ -15,16 +14,17 @@ on:
         default: ""
 
 permissions:
-  contents: write  # 翻译提交 + release tag + Release 附件
+  contents: write   # 翻译/dist 提交 + release tag + Release 附件
+  actions: write    # workflow_dispatch 联动 image.yml（GITHUB_TOKEN 可触发的唯二事件之一）
   # ⚠️ 不可加 workflows:write——GITHUB_TOKEN 不支持该 scope，声明即整个文件非法
-  #    （startup_failure，dispatch 同被拒，2.39.8 实锤）。tag 推送的 workflow 提交
+  #    （startup_failure，dispatch 连锁 403，2.39.8 实锤）。tag 推送的 workflow 提交
   #    竞态用「打 tag 前 rebase origin/main」策略规避。
 
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: test
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
     - name: Resolve n8n version (input 优先，兜底稳定 tag)
       id: ver
@@ -74,6 +74,11 @@ jobs:
       run: |
         echo "Tags exist, stopping workflow."
 
+    - name: 记录翻译前键数（供发布说明计算翻译增量）
+      if: steps.check_tag.outputs.exists == 'false'
+      run: echo "PREV_KEY_COUNT=$(jq '[paths(scalars)] | length' languages/zh-CN.json)" >> "$GITHUB_ENV"
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+
     - name: Translate New Strings
       if: steps.check_tag.outputs.exists == 'false'
       run: pnpm install && N8N_EN_JSON_URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json" node translate.js
@@ -86,7 +91,7 @@ jobs:
         OPENAI_BATCH_SIZE: ${{ vars.OPENAI_BATCH_SIZE }}
 
     # 词典覆盖率门禁（2026-09-18 复盘新增）：translate.js 对 LLM 失败条目只记日志跳过、
-    # 进程仍退出 0——API 余额耗尽时缺译词典会带病入库且零告警。这里先补翻一轮
+    # 进程仍退出 0——API 余额耗尽时缺译 dist 会带病发版且零告警。这里先补翻一轮
     # （zh 缺失键即补翻条件，瞬时故障自愈），仍超阈值则失败，由红卡兜底。
     - name: 词典覆盖率门禁（缺失>0 补翻一轮，补后 >1% 失败）
       if: steps.check_tag.outputs.exists == 'false'
@@ -132,79 +137,169 @@ jobs:
           echo "No changes to commit."
         else
           git commit -m "chore: auto translate for n8n@${{ steps.ver.outputs.version }}"
+          git push origin
         fi
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
 
-    # 组装汉化补丁包：词典 + 源码补丁 + manifest + 应用说明（Release 附件）
-    - name: 组装汉化补丁包
+    - name: Checkout n8n (git tag，勿用 target_commitish——release 分支会被上游清理)
       if: steps.check_tag.outputs.exists == 'false'
-      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        repository: n8n-io/n8n
+        ref: n8n@${{ steps.ver.outputs.version }}
+        path: ./n8n
+
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      if: steps.check_tag.outputs.exists == 'false'
+      with:
+        node-version: 22.x
+
+    - name: Set pnpm resolution mode
+      if: steps.check_tag.outputs.exists == 'false'
+      run: echo "resolution-mode=highest" >> /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/.npmrc
+
+    - run: pnpm install --frozen-lockfile
+      if: steps.check_tag.outputs.exists == 'false'
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+
+    - name: check n8n editor-ui is old
+      id: editorui_dir
+      run: |
+        DIR_PATH="/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/packages/frontend/editor-ui"       # 新目录布局
+        FALLBACK_DIR="/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/packages/editor-ui" # 旧目录布局（≤2.33）
+
+        if [ -d "$DIR_PATH" ]; then
+          echo "flag=new" >> $GITHUB_OUTPUT
+          echo "dir=$DIR_PATH" >> $GITHUB_OUTPUT
+        else
+          echo "flag=old" >> $GITHUB_OUTPUT
+          echo "dir=$FALLBACK_DIR" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Move editor-ui i18n language
+      if: steps.check_tag.outputs.exists == 'false'
+      run:     cp -r /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/languages/* "/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/packages/frontend/@n8n/i18n/src/locales/"
+
+    - name: Patch I18n zhCn
+      if: steps.editorui_dir.outputs.flag == 'new' && steps.check_tag.outputs.exists == 'false'
+      run: |
+        git apply /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/patches/feat__i18n_zhCn.patch
+        echo "==== /packages/frontend/@n8n/i18n/src/index.ts 内容 ===="
+        head -n 30 /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/packages/frontend/@n8n/i18n/src/index.ts
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+
+    - name: Patch editor-ui zh enhancements（节点面板描述/操作标题汉化 + 源码控制弹窗硬编码标签）
+      if: steps.editorui_dir.outputs.flag == 'new' && steps.check_tag.outputs.exists == 'false'
+      run: |
+        BASE=/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/patches
+        git apply "$BASE/feat__node_creator_actions_i18n.patch"
+        git apply "$BASE/fix__hardcoded_labels.patch"
+        echo "==== 补丁应用完成 ===="
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+
+    - name: Pnpm build editor-ui
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        pnpm run build:n8n || echo "构建失败，重新检测是否成功"
+        if [ -d "/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/packages/frontend/editor-ui/dist" ]; then
+          echo "n8n-editor-ui:build 存在，构建成功"
+        else
+          echo "n8n-editor-ui:build 不存在，构建失败"
+          exit 1
+        fi
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+
+    - name: 打包 dist 产物
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        tar -czvf editor-ui.tar.gz dist
+      working-directory: ${{ steps.editorui_dir.outputs.dir }}
+
+    - name: 拷贝 dist 到项目目录
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        cp -r ${{ steps.editorui_dir.outputs.dir }}/dist /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/editor-ui-dist
+
+    - name: Update docker-compose.yml version
+      if: steps.check_tag.outputs.exists == 'false'
       run: |
         VERSION="${{ steps.ver.outputs.version }}"
-        ZH_KEYS=$(jq '[paths(scalars)] | length' languages/zh-CN.json)
-        EN_KEYS=$(jq '[paths(scalars)] | length' script/en.json)
-        jq -n --arg v "$VERSION" --argjson zh "$ZH_KEYS" --argjson en "$EN_KEYS" \
-          '{version:$v, n8n_tag:("n8n@"+$v), generated_at:(now|todateiso8601),
-            zh_keys:$zh, en_keys:$en,
-            patches:["feat__i18n_zhCn.patch","feat__node_creator_actions_i18n.patch","fix__hardcoded_labels.patch","fix_editor-ui.patch"],
-            note:"fix_editor-ui.patch 仅 ≤2.33 旧目录布局构建需要；≥2.38 上游已自修，新版忽略"}' > patch-manifest.json
-        cat > README-应用说明.md <<'MD'
-        # n8n 简体中文汉化补丁包
+        echo "Replacing {version} with $VERSION in docker-compose.yml"
+        sed -i "s/{version}/$VERSION/g" /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/docker-compose.yml
 
-        内容：`languages/zh-CN.json` 中文词典、`patches/` 源码补丁、`script/en.json` 英文基准、`patch-manifest.json` 版本信息。
-
-        应用（对应 n8n 源码 tag `n8n@<版本>`，见 manifest.json）：
-        1. 将 `languages/zh-CN.json` 拷入 n8n 源码 `packages/frontend/@n8n/i18n/src/locales/`
-        2. 在 n8n 源码根目录执行：
-           git apply patches/feat__i18n_zhCn.patch patches/feat__node_creator_actions_i18n.patch patches/fix__hardcoded_labels.patch
-        3. 仅构建 ≤2.33 旧目录布局时另加：git apply patches/fix_editor-ui.patch
-        4. 构建 editor-ui dist；用户侧设 N8N_DEFAULT_LOCALE=zh-CN 生效
-
-        完整构建步骤见本仓库 CLAUDE.md「手动构建发布 runbook」。
-        MD
-        EXTRA=""
-        [ -f script/en-nodes.json ] && EXTRA="script/en-nodes.json"
-        # shellcheck disable=SC2086
-        tar -czf "n8n-zh-patch-$VERSION.tar.gz" languages/zh-CN.json script/en.json $EXTRA \
-          patches/feat__i18n_zhCn.patch patches/feat__node_creator_actions_i18n.patch \
-          patches/fix__hardcoded_labels.patch patches/fix_editor-ui.patch \
-          patch-manifest.json README-应用说明.md
-        echo "---- 补丁包内容 ----"
-        tar -tzf "n8n-zh-patch-$VERSION.tar.gz"
-
-    # 🔒 打 tag 前 rebase origin/main：构建窗口内 main 的 workflow 提交不得进入 tag 历史
-    #    （GITHUB_TOKEN 无 workflows scope 可授，push 携带未入库的 workflow 变更会被
-    #    GitHub 拒收——2.39.8 首跑实锤）。补丁包模式无长构建窗口，竞态窗口趋近于零。
-    - name: 创建 git tag 并推送
+    # 🔒 先提交 dist 再 rebase origin/main 后打 tag：构建窗口内 main 的 workflow 提交
+    #    不得进入 tag 历史（GITHUB_TOKEN 无 workflows scope 可授，push 携带未入库的
+    #    workflow 变更会被 GitHub 拒收——2.39.8 实锤）。rebase 后 tag 祖先 ⊆ 远端 main，
+    #    唯一新提交（dist）不含 workflow 文件，推送必然被接受。
+    - name: 创建 git tag
       if: steps.check_tag.outputs.exists == 'false'
-      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
       run: |
         TAG="release/${{ steps.ver.outputs.version }}"
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
+        git add editor-ui-dist
+        git add docker-compose.yml
+        git commit -m "chore: add built editor-ui dist for n8n@${{ steps.ver.outputs.version }}"
         git fetch origin main
         git rebase origin/main
         git tag $TAG
         git push origin main
         git push origin $TAG
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
 
-    - name: 创建 GitHub Release（补丁包附件）
+    - name: 创建 GitHub Release
       if: steps.check_tag.outputs.exists == 'false'
+      id: create_release
       uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
       with:
         tag_name: release/${{ steps.ver.outputs.version }}
-        name: n8n@${{ steps.ver.outputs.version }} 简体中文汉化补丁包
+        name: Release editor-ui to ${{ steps.ver.outputs.version }}（n8n 中文版）
         body: |
-          自动发布的 n8n 简体中文汉化**补丁包**（对应 n8n@${{ steps.ver.outputs.version }}）。
-
-          - 附件 `n8n-zh-patch-*.tar.gz`：zh-CN 词典 + 源码补丁 + manifest 与应用说明
-          - ⚠️ 不含完整 editor-ui dist；完整汉化包（dist / Docker 镜像）按仓库 runbook 人工构建
-          - 客户正式交付通道为 registry 镜像（`registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:<ver>`）
+          自动发布的中文语言包版本（对应 n8n@${{ steps.ver.outputs.version }}）。
         draft: false
         prerelease: false
-        files: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/n8n-zh-patch-*.tar.gz
+        files: ${{ steps.editorui_dir.outputs.dir }}/editor-ui.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # 发布说明：上游 notes 中文总结（DeepSeek）+ 汉化变更 + 兼容区间；LLM 失败自动降级为原文
+    - name: 生成发布说明
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        ZH_KEY_COUNT=$(jq '[paths(scalars)] | length' languages/zh-CN.json) \
+          bash script/gen-release-notes.sh "${{ steps.ver.outputs.version }}" release-notes.md
+        echo "---- release-notes.md ----"
+        cat release-notes.md
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        OPENAI_API_BASE: ${{ vars.OPENAI_API_BASE }}
+        OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+        PREV_KEY_COUNT: ${{ env.PREV_KEY_COUNT }}
+
+    - name: 回写 Release 说明
+      if: steps.check_tag.outputs.exists == 'false'
+      run: gh release edit "release/${{ steps.ver.outputs.version }}" --notes-file release-notes.md
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # 🔒 安全修复（2026-09-18 评审 #2）：不再依赖 PAT 创建 Release 来触发 image.yml 的
+    #    release 事件——workflow_dispatch 是 GITHUB_TOKEN 唯二可触发的事件之一，
+    #    由此以最小权限内置 token 联动镜像构建，全权限 classic PAT 退役。
+    - name: 联动触发镜像构建
+      if: steps.check_tag.outputs.exists == 'false'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_REPO: ${{ github.repository }}  # 显式指定仓库：不依赖 cwd 的 git remote 解析
+      run: |
+        for i in 1 2 3; do
+          gh workflow run image.yml --ref main -f version="${{ steps.ver.outputs.version }}" && { echo "已触发 image.yml"; exit 0; }
+          sleep 10
+        done
+        echo "::error::触发 image.yml 失败（可手动 dispatch 兜底）"
+        exit 1
 
     # 飞书失败告警（2026-09-18 复盘新增）：此前 node.js.yml 自身无任何通知，
     # 失败告警单点依赖 watcher 的 60s 轮询（watcher 挂了/被取消就静默）。
@@ -215,8 +310,8 @@ jobs:
         WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
       run: |
         set -euo pipefail
-        TITLE="[${{ github.repository }}] n8n@${{ steps.ver.outputs.version }} 补丁包发版失败"
-        M="❌ node.js.yml 补丁包流水线失败，Release 与 tag 未产出，需人工介入"$'\n'"日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        TITLE="[${{ github.repository }}] n8n@${{ steps.ver.outputs.version }} 发版流水线失败"
+        M="❌ node.js.yml 构建失败，Release 与镜像未产出，需人工介入"$'\n'"日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         jq -n --arg t "$TITLE" --arg m "$M" \
           '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:"red"},
             elements:[{tag:"markdown",content:$m}]}}' > p_fail.json

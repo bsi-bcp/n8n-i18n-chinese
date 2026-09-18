@@ -228,7 +228,7 @@ jobs:
             STR="待翻译 **${{ steps.strings.outputs.todo }}** 条（新增 ${{ steps.strings.outputs.new }} / 源变更 ${{ steps.strings.outputs.changed }} / zh缺失 ${{ steps.strings.outputs.missing_zh }}）"
           fi
           if [ "$IMG" = "true" ]; then IMGM="✅ n8nio/n8n:$T 镜像已发布"
-          else IMGM="⏳ n8nio/n8n:$T 基础镜像未发布（不阻塞补丁包发版；完整包人工构建前需确认）"; fi
+          else IMGM="⏳ n8nio/n8n:$T 基础镜像未发布（自动发版将等待下轮）"; fi
           TITLE="n8n@$T 兼容性评估"
           if [ "$DRILL" = "true" ]; then TITLE="【演练】$TITLE"; DRILLNOTE="（演练，不入状态）"; else DRILLNOTE=""; fi
           {
@@ -242,8 +242,8 @@ jobs:
               echo "- **基础镜像**：$IMGM"
               echo "- **自动发版**：AUTO_RELEASE=$AUTO_RELEASE report_only=${REPORT_ONLY:-false}"
               echo "> 🤖 来源：GitHub Actions · n8n Stable Watch · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
-              if [ "$PV" != "red" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ]; then
-                echo "- **结论**：✅ 将自动发布补丁包（翻译 → 补丁包 Release；完整 dist/镜像按 runbook 人工构建）"
+              if [ "$PV" != "red" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ] && [ "$IMG" = "true" ]; then
+                echo "- **结论**：✅ 将自动发版（翻译 → 完整包构建 → Release → 镜像）"
               elif [ "$PV" = "red" ]; then
                 echo "- **结论**：🛑 需人工适配补丁后重评"
               else
@@ -294,6 +294,7 @@ jobs:
         if: >-
           steps.gate.outputs.skip == 'false' &&
           steps.patch.outputs.verdict != 'red' &&
+          steps.img.outputs.exists == 'true' &&
           env.AUTO_RELEASE == 'true' &&
           inputs.report_only != true &&
           steps.ver.outputs.drill != 'true'
@@ -329,8 +330,8 @@ jobs:
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
           C="${{ steps.rel.outputs.conclusion }}"
-          if [ "$C" = "success" ]; then COLOR="green"; M="✅ 补丁包发布成功：翻译已提交，Release 附件为汉化补丁包；完整 dist/镜像按 runbook 人工构建"
-          else COLOR="red"; M="❌ 补丁包流水线结果：$C，需人工介入"; fi
+          if [ "$C" = "success" ]; then COLOR="green"; M="✅ 发版成功：Release 与 tag 已创建（镜像构建由 image.yml 接力）"
+          else COLOR="red"; M="❌ 发版流水线结果：$C，需人工介入"; fi
           RUNURL=""
           [ -n "${{ steps.rel.outputs.runid }}" ] && RUNURL="日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.rel.outputs.runid }}"
           SRC="> 🤖 来源：GitHub Actions · n8n Stable Watch · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
@@ -342,12 +343,14 @@ jobs:
           echo "feishu: $resp"
 
       - name: Update watched state
-        # 仅当补丁包发版链真正成功（rel 未执行＝红光/AUTO 关闭；或 rel 成功收尾）才入状态；
-        # dispatch 失败/流水线失败不入状态 → 下个整点自动重试
+        # 仅当发版链真正成功（rel 未执行＝红光/AUTO 关闭；或 rel 成功收尾）才入状态；
+        # dispatch 失败/流水线失败不入状态 → 下个整点自动重试；
+        # 绿灯但基础镜像未发布也不入状态——兑现评估卡「自动发版将等待下轮」的承诺
         if: >-
           steps.gate.outputs.skip == 'false' &&
           steps.ver.outputs.drill != 'true' &&
-          (steps.rel.outcome != 'success' || steps.rel.outputs.conclusion == 'success')
+          (steps.rel.outcome != 'success' || steps.rel.outputs.conclusion == 'success') &&
+          !(env.AUTO_RELEASE == 'true' && steps.patch.outputs.verdict != 'red' && steps.img.outputs.exists == 'false')
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
