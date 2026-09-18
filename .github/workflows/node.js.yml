@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  actions: write  # workflow_dispatch 联动 image.yml 需要（GITHUB_TOKEN 可触发的唯二事件之一）
 
 jobs:
   build:
@@ -239,6 +240,9 @@ jobs:
     #    由此以最小权限内置 token 联动镜像构建，全权限 classic PAT 退役。
     - name: 联动触发镜像构建
       if: steps.check_tag.outputs.exists == 'false'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_REPO: ${{ github.repository }}  # 显式指定仓库：不依赖 cwd 的 git remote 解析
       run: |
         for i in 1 2 3; do
           gh workflow run image.yml --ref main -f version="${{ steps.ver.outputs.version }}" && { echo "已触发 image.yml"; exit 0; }
@@ -246,5 +250,3 @@ jobs:
         done
         echo "::error::触发 image.yml 失败（可手动 dispatch 兜底）"
         exit 1
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

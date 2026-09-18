@@ -76,6 +76,20 @@ else
   NEAR="**就近兼容** 上一 minor 补丁线（以实测为准，新增文案回退英文）"
 fi
 
+# ---------- 3.5) 本仓库变更（上一 Release tag → 本 tag 的提交摘要） ----------
+# 需要 GH_REPO（CI 中=github.repository）；本地未设置则跳过
+REPO_CHANGES=""
+if [ -n "${GH_REPO:-}" ] && [ -n "${GH_TOKEN:-}" ]; then
+  gh api "repos/$GH_REPO/releases?per_page=20" > "$TMPDIR_NOTES/rels.json" 2>/dev/null || true
+  PREV_TAG=$(jq -r --arg cur "release/$V" \
+    '[.[] | select((.tag_name | test("^release/[0-9]+[.][0-9]+[.][0-9]+$")) and .tag_name != $cur) | .tag_name | ltrimstr("release/")] | sort_by(split(".") | map(tonumber)) | last // empty' "$TMPDIR_NOTES/rels.json" 2>/dev/null || true)
+  if [ -n "$PREV_TAG" ]; then
+    REPO_CHANGES=$(gh api "repos/$GH_REPO/compare/release/$PREV_TAG...release/$V" \
+      --jq '[.commits[].commit.message | split("\n")[0]] | unique | .[] | select(startswith("chore:") | not) | "- " + .' 2>/dev/null | head -30 || true)
+    [ -n "$REPO_CHANGES" ] && REPO_CHANGES="（${PREV_TAG} → ${V}）"$'\n\n'"$REPO_CHANGES"
+  fi
+fi
+
 # ---------- 4) 组装 markdown ----------
 cat > "$OUT" <<EOF
 > 本 Release 由 CI 流水线自动构建发布，对应上游 n8n@${V}。
@@ -89,6 +103,12 @@ ${UP_SUMMARY}
 ${DELTA_LINE:-- 汉化 dist 由 n8n@${V} 源码原生构建，含上游全部 editor 修复}
 ${KEYS_LINE}
 - \`patches/feat__i18n_zhCn.patch\` 与上游 ${V} 源码贴合，CI 全链路构建通过
+
+${REPO_CHANGES:+
+## 📝 本仓库变更
+
+$REPO_CHANGES
+}
 
 ## 🔖 兼容版本
 
