@@ -1,20 +1,33 @@
+# n8n 简体中文汉化包
+
+n8n 编辑器 UI 简体中文汉化包（社区延续维护 [fork](https://github.com/other-blowsnow/n8n-i18n-chinese)，原项目已归档停更）。将 zh-CN 语言包编译进 editor-ui，**CI 全自动跟随 n8n 官方发版**，当前覆盖 **n8n 2.39.8**（语言包 9522 键全量汉化）。
+
+| 交付物 | 获取方式 |
+|---|---|
+| 🐳 **中文 Docker 镜像**（推荐） | `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>`（华为云 SWR，amd64 + arm64，内置中文界面） |
+| 📦 **editor-ui 部署包** | 本仓库 [Releases](https://github.com/bsi-bcp/n8n-i18n-chinese/releases) 附件 `n8n-editor-ui@<版本号>.tar.gz`（bind mount 覆盖用） |
+
+- 版本选择见下方「[n8n 版本兼容说明](#n8n-版本兼容说明)」；上游发新版本后本仓库自动跟进
+- 汉化包 MIT 许可（© imblowsnow + BSI，经原作者授权）；非 n8n 官方项目，n8n® 为 n8n GmbH 商标，n8n 本体受 [Sustainable Use License](https://docs.n8n.io/license/)（fair-code）约束
 
 # 安装教程
 
-## 自带中文docker镜像
-> ⚠️ `blowsnow/n8n-chinese` 为原上游作者的镜像，**已停止更新（停在 n8n 2.33.7）**。本仓库不再向该地址发布。
-> 推荐改用下方「docker安装」方式：官方 n8n 镜像 + 挂载 editor-ui dist 目录。
+## 方式一：中文 Docker 镜像（推荐）
+
+> 镜像 = 官方 n8n + 汉化 editor-ui，默认中文界面，开箱即用。首次需 `docker login swr.cn-north-4.myhuaweicloud.com`（凭证向管理员获取）。
 
 ```shell
 docker run -it --rm --name n8ntest \
 -p 15678:5678 \
 -v ~/.n8n:/home/node/.n8n \
 -e N8N_SECURE_COOKIE=false \
-blowsnow/n8n-chinese
+swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8
 ```
 
-## docker安装
-> 其他命令参考n8n官方文档
+## 方式二：官方镜像 + 挂载汉化 dist
+
+> 适合已在跑官方镜像、只想加中文的场景；`【替换为下载的编辑器UI目录】` = Releases 部署包解压出的 `dist/` 目录。其他命令参考 n8n 官方文档。
+
 ```shell
 docker run -it --rm --name n8ntest \
 -p 15678:5678 \
@@ -25,6 +38,7 @@ docker run -it --rm --name n8ntest \
 n8nio/n8n
 ```
 
+> ⚠️ `blowsnow/n8n-chinese` 为原上游作者的镜像，**已停止更新（停在 n8n 2.33.7）**，本仓库不再向该地址发布；老用户请迁移到方式一。
 
 ## npx本地启动n8n替换安装
 > 其他本地方式启动的话参考这个即可
@@ -45,8 +59,9 @@ n8nio/n8n
 | 2.34 ~ 2.38.6 | `release/2.39.6`（首选）或 `release/2.38.7` | 本仓库 Releases | 实测可用（2.38.4 / 2.38.7 后端实证）；新 dist 配旧后端安全 |
 | 2.38.7 | `release/2.38.7`（精确匹配）或 `release/2.39.6` | 本仓库 Releases | 8341 条全量汉化 |
 | **2.39.0 ~ 2.39.6** | **`release/2.39.6`（精确匹配）或 `release/2.39.7-v3`（就近，YTJ1 实测）** | 本仓库 Releases / 镜像 | 8372 条全量汉化，AI 助手新界面含中文；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.6`（已回填 SWR） |
+| **2.39.8** | **`release/2.39.8`（精确匹配）** | 本仓库 Releases / 镜像 | 9522 键全量汉化（补丁版，词典沿用 v3 + 上游 AI Assistant 预览修复随版带入）；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8` |
 | **2.39.7** | **`release/2.39.7-v3`（精确匹配）** | 本仓库 Releases / 镜像 | 9374 键全量汉化（含 v2 术语大修）+ 节点面板第二/三层汉化（568 节点描述 + 456 操作标题）+ Data tables 等弹窗硬编码标签修复；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.7`（v3 内容，已回填 SWR） |
-| > 2.39.7 | 就近低版本 dist 搭配 | 本仓库 Releases | 等本仓库跟进发版；期间新文案回退英文，功能不受影响 |
+| > 2.39.8 | 就近低版本 dist 搭配 | 本仓库 Releases | 等本仓库跟进发版（CI 自动）；期间新文案回退英文，功能不受影响 |
 
 补充规则：
 
