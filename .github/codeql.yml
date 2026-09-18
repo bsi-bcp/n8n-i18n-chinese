@@ -1,0 +1,9 @@
+# CodeQL 分析范围配置（github/codeql-action/init 自动读取本文件）
+# editor-ui-dist/ 是提交进仓库的 n8n 官方编译产物（node.js.yml 产物提交步骤），
+# 全部为上游 minified chunk，对其扫描只产生误报噪音（2026-09-18 实测 65 条 warning
+# 全部指向 editor-ui-dist/assets/*.js，自有脚本零告警），且每提交新版 dist 都会
+# 再触发一波新告警与飞书推送。排除后存量告警随下次分析自动关闭。
+name: "CodeQL config"
+
+paths-ignore:
+  - "editor-ui-dist/**"
