@@ -208,7 +208,7 @@ function putEntry(name, description, file) {
 }
 
 // 文件级回退：本文件没提到任何节点时，找含 displayName+name+description 的基础描述对象
-// （覆盖 Slack/Agent 等 `...baseDescription` 展开、VersionedNodeType 构造注入模式）
+// （覆盖 Slack/Agent 等 `...baseDescription` 展开、VersionedNodeType 构造注入、顶层 const 描述 等模式）
 function fileFallback(file, sf, prefix) {
     let found = null;
     const walk = (node) => {
@@ -218,7 +218,11 @@ function fileFallback(file, sf, prefix) {
             const name = getStringLiteral(node, 'name');
             const description = getStringLiteral(node, 'description');
             if (displayName && name && description) {
-                found = { name: prefix && !name.startsWith('@') ? prefix + name : name, description };
+                found = {
+                    name: prefix && !name.startsWith('@') ? prefix + name : name,
+                    description,
+                    obj: node,
+                };
                 return;
             }
         }
@@ -228,6 +232,8 @@ function fileFallback(file, sf, prefix) {
     if (found) {
         fallbackCount++;
         putEntry(found.name, found.description, file);
+        // 回退命中的对象同样是完整节点描述（如 DateTimeV2 顶层 const），操作标题一并提取
+        extractActionTitles(found.obj, found.name);
     } else {
         skipped.push(`${path.relative(N8N_ROOT, file)}  (无可识别的节点描述)`);
     }
@@ -246,10 +252,11 @@ for (const { dir: rel, prefix } of SOURCES) {
                 && node.initializer && ts.isObjectLiteralExpression(unwrap(node.initializer))) {
                 obj = unwrap(node.initializer);
             }
-            // 形态2：构造函数内 this.description = {...}（HttpRequestV3 等）
+            // 形态2：构造函数内 this.description = {...}（DateTimeV2/HttpRequestV3 等 versioned 节点）
+            // 🔴 this 是 ThisKeyword 而非 Identifier，不能用 ts.isIdentifier 判断
             if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
-                && ts.isPropertyAccessExpression(node.left) && ts.isIdentifier(node.left.expression)
-                && node.left.expression.text === 'this' && node.left.name.text === 'description'
+                && ts.isPropertyAccessExpression(node.left) && node.left.expression.kind === ts.SyntaxKind.ThisKeyword
+                && node.left.name.text === 'description'
                 && ts.isObjectLiteralExpression(unwrap(node.right))) {
                 obj = unwrap(node.right);
             }
@@ -258,10 +265,12 @@ for (const { dir: rel, prefix } of SOURCES) {
                 const name = getStringLiteral(obj, 'name');
                 const description = getStringLiteral(obj, 'description');
                 const full = name && prefix && !name.startsWith('@') ? prefix + name : name;
+                // 只要带内联 properties 就提取操作标题（展开注入 ...baseDescription 的对象没有 name/description 字面量，
+                // 但 properties/操作选项是节点真实数据——DateTime/Slack 等_versioned 节点全走这条）
+                if (getArrayLiteral(obj, 'properties')) extractActionTitles(obj, full ?? file);
                 if (full && description) {
                     fileHits++;
                     putEntry(full, description, file);
-                    extractActionTitles(obj, full);
                 } else {
                     skipped.push(`${path.relative(N8N_ROOT, file)}  (name=${name ? '有' : '缺失'} description=${description ? '非字面量' : '缺失'})`);
                 }

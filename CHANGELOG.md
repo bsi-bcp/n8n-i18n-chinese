@@ -24,6 +24,7 @@ YTJ1 灰度四件套 + 面板新项抽查全绿（bundle hash 三文件与本机
 
 ### Fixed
 - 🔴 **「Data tables」未翻译**：根因为 Source Control Pull/Push 弹窗 6 处硬编码标签（Workflows/Credentials/Data Tables，线上 bundle 取证实锤），新增 `fix__hardcoded_labels.patch` 改走既有词典 key
+- 灰度实测发现 Code / Date & Time 等带操作子面板的节点点击异常：`feat__node_creator_actions_i18n.patch` 漏声明 i18n 实例（`const i18n = useI18n()`），发版窗口内修复重发；vue-i18n 全量 9500 键解析扫描 0 抛错背书
 
 ### Changed
 - 语言包 8350 → 9374 键；镜像 `n8n-chinese:2.39.7` 已覆写为 v3 内容
