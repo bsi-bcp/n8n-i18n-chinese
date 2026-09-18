@@ -98,14 +98,16 @@ jobs:
       - name: Build and push multi-arch Docker images
         run: |
           # 构建并直接推送 multi-arch 镜像（amd64 + arm64）到华为云 SWR
-          # --provenance=false --sbom=false：SWR 不认 attestation 附件 manifest（见头注释）
+          # --provenance=false --sbom=false：不带 attestation 附件 manifest
+          # --output oci-mediatypes=false,compression=gzip：buildx 0.13+ 默认 OCI
+          #   媒体类型 + zstd 层，SWR 解析器不认（"Invalid image, fail to parse
+          #   'manifest.json'" 三连实锤；v2 API 实证 docker list 本身 SWR 是收的）
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --provenance=false \
             --sbom=false \
             --build-arg VERSION=$IMAGE_TAG \
-            -t swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG \
-            --push \
+            --output "type=registry,name=swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG,push=true,oci-mediatypes=false,compression=gzip" \
             .
 
       # 部署成功通知（2026-09-18）：镜像推送完成 → 研发部群卡片（交付物就绪提醒）
