@@ -64,6 +64,10 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Extracted version: $VERSION (from $TAG) → image tag: $IMAGE_TAG"
 
+      # v3：只取 main 的 Dockerfile/构建上下文（dist 来自 Release 资产，见下一步）
+      - name: Checkout main (Dockerfile context)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
       # v3：从 Release 资产取 dist（tag 里未必有 editor-ui-dist，资产恒有）
       - name: Download and unpack editor-ui dist
         env:
