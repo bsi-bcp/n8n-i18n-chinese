@@ -21,7 +21,7 @@
 
 - **产物命名规则（2026-09-19 定）**：GitHub Releases 部署包统一 `n8n-editor-ui@<版本号>.tar.gz`（Release 标题同名）；中文镜像统一 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>`；`-vN` 发布序号只进 tag 不进产物名。现有 4 个 Release 已按新规则重建（tag 与正文保留）
 - image.yml v3：构建源改为 Release 资产下载（不再依赖 tag 内是否提交 dist，Dockerfile 与基础镜像恒用 main 最新）；版本白名单支持 `-vN` 后缀（如 `2.39.7-v3` → 镜像 tag `2.39.7`）
-- 旧版本全量回填 SWR：`2.39.7`（v3 内容）/`2.39.6`/`2.38.7`，全部 docker manifest list 双架构（amd64 + arm64）
+- 旧版本全量回填 SWR：`2.39.7`（v3 内容）/`2.39.6`/`2.38.7`，全部 docker manifest list 双架构（amd64 + arm64）；同批回填 Queue Mode 用的 `n8n-runners` 镜像（`2.39.8`/`2.39.7`/`2.39.6`/`2.38.7`，官方镜像搬运，image.yml 自此每版自动附带）
 
 ### Changed
 
@@ -86,7 +86,7 @@ bcphub-bsi（YTJ1 Queue Mode 集群 main + 3×worker + webhook + runners）灰�
 
 镜像：`registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:2.39.6`（同步推送基础镜像 `bcp/n8n:2.39.6`、`bcp/n8n-runners:2.39.6`；DockerHub 对境内边端不可达时可用此私有库替代）。
 
-> 📌 2026-09-19 追注：交付渠道已迁移华为云 SWR，2.39.6 镜像已回填 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.6`（amd64 + arm64）；上文旧库地址仅作历史记录，Queue Mode 的 runners 镜像仍在旧库。
+> 📌 2026-09-19 追注：交付渠道已迁移华为云 SWR，2.39.6 镜像已回填 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.6`（amd64 + arm64，Queue Mode 的 `n8n-runners:2.39.6` 同批回填）；上文旧库地址仅作历史记录。
 
 ### Added
 
