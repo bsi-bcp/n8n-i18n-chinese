@@ -138,6 +138,22 @@ function putObjectValue(obj, key, value) {
     current[keys[keys.length - 1]] = value;
 }
 
+// 🔴 内容级安全校验：LLM 译文直进编译产物、交付客户浏览器（曾实锤指令串泄漏进 UI）。
+//    拒绝：脚本/事件注入标签（源无同等标签时）、原文没有的 URL、长度异常膨胀、指令回显特征。
+//    命中即跳过该条（不写入，下次运行自动补翻），留痕日志。
+function isSuspiciousTranslation(source, output) {
+    if (typeof output !== 'string') return true;
+    const danger = /<script|<iframe|<svg|onerror\s*=|onclick\s*=|javascript:/i;
+    if (danger.test(output) && !danger.test(source)) return true;
+    const urls = output.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+    for (const u of urls) {
+        if (!source.includes(u)) return true;
+    }
+    if (source && output.length > Math.max(source.length * 5, 200)) return true;
+    if (/限制[:：]\s*仅输出|不包含任何额外信息|作为\s*AI|as an AI/i.test(output)) return true;
+    return false;
+}
+
 // 批次翻译 + 二分降级：反复失败（模型输出抖动/格式不服从）时拆半重试直到单条，
 // 单条时「等长校验」天然无歧义；仍失败则放弃并记日志（key 不写入，下次运行自动补翻）
 async function translateBatchWithSplit(items, targetObject, targetLanguage, depth = 0) {
@@ -147,8 +163,13 @@ async function translateBatchWithSplit(items, targetObject, targetLanguage, dept
             2, 2000
         );
         items.forEach((item, idx) => {
-            putObjectValue(targetObject, item.key, results[idx]);
-            console.log("翻译 key", item.key, "为", targetLanguage, ":", item.message, ' => ', results[idx]);
+            const out = results[idx];
+            if (isSuspiciousTranslation(item.message, out)) {
+                console.log("🚨 译文未通过内容安全校验，跳过:", item.key, "=>", String(out).slice(0, 100));
+                return;
+            }
+            putObjectValue(targetObject, item.key, out);
+            console.log("翻译 key", item.key, "为", targetLanguage, ":", item.message, ' => ', out);
         })
     } catch (e) {
         if (items.length > 1) {
@@ -194,6 +215,15 @@ function collectMessages(oldSourceLanguages, newSourceLanguages, targetLanguages
         if (newSourceLanguages[key] instanceof Object) {
             collectMessages(oldSourceLanguages[key]  || {}, newSourceLanguages[key], targetLanguages[key] || {}, currentKey, waitTranslateList);
         } else {
+            // 🔴 空源值防护：无内容可翻必须跳过。曾实锤 LLM 收到空串后把协议指令
+            //    （"限制：仅输出翻译内容…"）当译文写回 zh-CN.json 泄漏到 UI（存档弹窗取消按钮）。
+            //    同时镜像清空目标侧存量污染，使其与上游空源保持一致。
+            if (typeof newSourceLanguages[key] !== "string" || newSourceLanguages[key].trim() === "") {
+                if (typeof targetLanguages[key] === "string" && targetLanguages[key] !== "") {
+                    targetLanguages[key] = "";
+                }
+                continue;
+            }
             if (targetLanguages[key] === undefined
                 || oldSourceLanguages[key] === undefined
                 || oldSourceLanguages[key] !== newSourceLanguages[key]) {
