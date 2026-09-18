@@ -29,6 +29,7 @@ concurrency:
 permissions:
   contents: read
   issues: write
+  actions: write
 
 jobs:
   watch:
@@ -37,6 +38,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      actions: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
@@ -288,7 +290,11 @@ jobs:
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
           START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          gh workflow run node.js.yml -R "$GITHUB_REPOSITORY" -f version="$T"
+          if ! gh workflow run node.js.yml -R "$GITHUB_REPOSITORY" -f version="$T"; then
+            # dispatch 失败（如权限缺失）必须让下个整点重试，且红卡要发得出来
+            echo "conclusion=dispatch-failed" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           echo "已触发发版流水线，跟踪中…"
           CONCL=""; RUNID=""
           for i in $(seq 1 45); do
@@ -324,7 +330,12 @@ jobs:
           echo "feishu: $resp"
 
       - name: Update watched state
-        if: steps.gate.outputs.skip == 'false' && steps.ver.outputs.drill != 'true'
+        # 仅当发版链真正成功（rel 未执行＝红光/AUTO 关闭；或 rel 成功收尾）才入状态；
+        # dispatch 失败/构建失败不入状态 → 下个整点自动重试
+        if: >-
+          steps.gate.outputs.skip == 'false' &&
+          steps.ver.outputs.drill != 'true' &&
+          (steps.rel.outcome != 'success' || steps.rel.outputs.conclusion == 'success')
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
