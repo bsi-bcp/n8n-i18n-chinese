@@ -116,8 +116,8 @@ $REPO_CHANGES
 
 ## 📦 交付渠道
 
-- Release 附件：\`editor-ui.tar.gz\`（解包覆盖 \`n8n-editor-ui/dist\`，bind mount 方式）
-- Docker 镜像：\`registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese:${V}\`（国内边端正式交付通道）
+- Release 部署包：\`n8n-editor-ui@${V}.tar.gz\`（解包覆盖容器内 \`n8n-editor-ui/dist\`，bind mount 方式）
+- Docker 镜像：\`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:${V}\`（华为云 SWR，国内边端正式交付通道）
 
 ## 🔗 上游
 

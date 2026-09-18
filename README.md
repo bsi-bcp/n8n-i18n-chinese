@@ -30,7 +30,7 @@ n8nio/n8n
 > 其他本地方式启动的话参考这个即可
 1. 找到路径：C:\Users\xxxxxx\AppData\Local\npm-cache\_npx\n8n\node_modules\n8n-editor-ui\dist
    （新版本也可能是C:\Users\xxxxxx\AppData\Roaming\npm\node_modules\n8n\node_modules\n8n-editor-ui\dist）
-2. 下载对应版本editor-ui.tar.gz文件
+2. 下载对应版本的部署包 `n8n-editor-ui@<版本号>.tar.gz`
 3. 解压到 dist目录下替换
 4. 设置环境变量 N8N_DEFAULT_LOCALE=zh-CN，自行咨询AI设置方法
 5. 重启 n8n 服务
@@ -44,8 +44,8 @@ n8nio/n8n
 | ≤ 2.33.7 | 与后端**精确匹配**的版本 | [上游 Release](https://github.com/other-blowsnow/n8n-i18n-chinese/releases)（已归档停更） | 旧版 editor-ui 对版本敏感，错位可能白屏 |
 | 2.34 ~ 2.38.6 | `release/2.39.6`（首选）或 `release/2.38.7` | 本仓库 Releases | 实测可用（2.38.4 / 2.38.7 后端实证）；新 dist 配旧后端安全 |
 | 2.38.7 | `release/2.38.7`（精确匹配）或 `release/2.39.6` | 本仓库 Releases | 8341 条全量汉化 |
-| **2.39.0 ~ 2.39.6** | **`release/2.39.6`（精确匹配）或 `release/2.39.7-v3`（就近，YTJ1 实测）** | 本仓库 Releases / 镜像 | 8372 条全量汉化，AI 助手新界面含中文；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.6`（2.39.6 及更早 tag 由旧库迁入，尚未回填新库） |
-| **2.39.7** | **`release/2.39.7-v3`（精确匹配）** | 本仓库 Releases / 镜像 | 9374 键全量汉化（含 v2 术语大修）+ 节点面板第二/三层汉化（568 节点描述 + 456 操作标题）+ Data tables 等弹窗硬编码标签修复；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.7`（v3 内容，同上待回填） |
+| **2.39.0 ~ 2.39.6** | **`release/2.39.6`（精确匹配）或 `release/2.39.7-v3`（就近，YTJ1 实测）** | 本仓库 Releases / 镜像 | 8372 条全量汉化，AI 助手新界面含中文；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.6`（已回填 SWR） |
+| **2.39.7** | **`release/2.39.7-v3`（精确匹配）** | 本仓库 Releases / 镜像 | 9374 键全量汉化（含 v2 术语大修）+ 节点面板第二/三层汉化（568 节点描述 + 456 操作标题）+ Data tables 等弹窗硬编码标签修复；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.7`（v3 内容，已回填 SWR） |
 | > 2.39.7 | 就近低版本 dist 搭配 | 本仓库 Releases | 等本仓库跟进发版；期间新文案回退英文，功能不受影响 |
 
 补充规则：

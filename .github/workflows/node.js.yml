@@ -1,6 +1,8 @@
 # 构建完整 n8n 简体中文汉化包（editor-ui dist）并发版：
 #   入口统一为 n8n-stable-watch.yml 评估通过后 dispatch（或人工 dispatch 并传 version）
-#   产出=完整汉化 dist（Release 附件 editor-ui.tar.gz）→ dispatch image.yml 推 SWR 镜像
+#   产出=完整汉化 dist（Release 部署包 n8n-editor-ui@<版本>.tar.gz）→ dispatch image.yml 推 SWR 镜像
+#   📌 产物命名规则（2026-09-19 定）：Release 部署包 = n8n-editor-ui@<版本号>.tar.gz，
+#   中文镜像 = swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>
 #   历史注记：2026-09-18 曾收窄为补丁包模式，同日按用户决策恢复完整包模式；
 #   2.39.8 首日实战的三处缺陷均已修复并保留（见下各 🔒/🔴 标注）
 name: package editor-ui languages
@@ -212,7 +214,7 @@ jobs:
     - name: 打包 dist 产物
       if: steps.check_tag.outputs.exists == 'false'
       run: |
-        tar -czvf editor-ui.tar.gz dist
+        tar -czvf "n8n-editor-ui@${{ steps.ver.outputs.version }}.tar.gz" dist
       working-directory: ${{ steps.editorui_dir.outputs.dir }}
 
     - name: 拷贝 dist 到项目目录
@@ -256,12 +258,12 @@ jobs:
       uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
       with:
         tag_name: release/${{ steps.ver.outputs.version }}
-        name: Release editor-ui to ${{ steps.ver.outputs.version }}（n8n 中文版）
+        name: n8n-editor-ui@${{ steps.ver.outputs.version }}（n8n 中文版部署包）
         body: |
           自动发布的中文语言包版本（对应 n8n@${{ steps.ver.outputs.version }}）。
         draft: false
         prerelease: false
-        files: ${{ steps.editorui_dir.outputs.dir }}/editor-ui.tar.gz
+        files: ${{ steps.editorui_dir.outputs.dir }}/n8n-editor-ui@${{ steps.ver.outputs.version }}.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
