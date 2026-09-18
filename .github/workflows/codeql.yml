@@ -31,6 +31,9 @@ jobs:
         uses: github/codeql-action/init@c20e34f438d671fc35777cc9820dd7adf8252874 # v3
         with:
           languages: ${{ matrix.language }}
+          # 🔴 必须显式指定：pinned 版本不会自动发现 .github/codeql.yml（2026-09-18 实测
+          #    augmented config 为空 {}，paths-ignore 未生效、告警翻倍）
+          config-file: ./.github/codeql.yml
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@c20e34f438d671fc35777cc9820dd7adf8252874 # v3
         with:

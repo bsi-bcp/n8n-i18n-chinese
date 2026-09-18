@@ -218,6 +218,9 @@ jobs:
     - name: 拷贝 dist 到项目目录
       if: steps.check_tag.outputs.exists == 'false'
       run: |
+        # 🔴 目录已存在时 cp -r 会嵌套成 editor-ui-dist/dist（2.39.8 实锤：仓库内新旧两份
+        #    dist 混放、镜像 COPY 错位）——先清空再拷，保证顶层布局恒为 dist 内容本身
+        rm -rf /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/editor-ui-dist
         cp -r ${{ steps.editorui_dir.outputs.dir }}/dist /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/editor-ui-dist
 
     - name: Update docker-compose.yml version
