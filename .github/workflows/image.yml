@@ -93,7 +93,7 @@ jobs:
           客户实例升级：.env 镜像整体交付直接改版本号；bind mount 实例从 Release 附件解包覆盖后重放品牌补丁
           Release：$REL_URL
           > 🤖 来源：GitHub Actions · $GITHUB_WORKFLOW · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($RUN_URL)" \
-            '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c}},
+            '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
               elements:[{tag:"markdown",content:$m}]}}' > payload.json
           resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @payload.json "$WEBHOOK" || true)
           echo "feishu: $resp"
