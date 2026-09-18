@@ -77,6 +77,8 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --pattern "editor-ui*.tar.gz" \
             --output /tmp/editor-ui.tar.gz
+          # main 工作树可能已带 editor-ui-dist（dist 提交），先清空——构建源以 Release 资产为唯一真相
+          rm -rf editor-ui-dist
           mkdir editor-ui-dist
           # 资产结构为 dist/ 顶层（tar -C 构建目录打包），剥掉一层得到 index.html/assets 布局
           tar -xzf /tmp/editor-ui.tar.gz -C editor-ui-dist --strip-components=1
