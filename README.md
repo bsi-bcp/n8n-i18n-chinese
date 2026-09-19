@@ -47,6 +47,8 @@ n8nio/n8n
 
 **🔀 Queue Mode 集群**：除 main/worker/webhook 外，还需一个 **Task Runners 容器**执行 Code 节点——用同版本配套镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:<版本号>`（公开拉取，同样免登录）。⚠️ runners 与 n8n 后端**版本必须严格一致**，不可混搭。
 
+> ⚠️ `blowsnow/n8n-chinese` 为原上游作者的镜像，**已停止更新（停在 n8n 2.33.7）**，本仓库不再向该地址发布；老用户请迁移到方式一。
+
 ## 升级操作一览
 
 ```shell
