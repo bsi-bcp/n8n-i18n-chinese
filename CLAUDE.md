@@ -67,6 +67,17 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - `languages/zh-CN.json` 的嵌套结构与 en.json 同构
 - 两者都是自动生成物，CI 以 `chore: auto translate` 提交，不要手工改动结构；手工补译时保持 key 不变即可被下次运行保留
 
+## 节点参数汉化管线（2026-09-19 立项，M2 完成 / M3 已接线待灰度）
+
+参数面板串（displayName/options/description/hint/placeholder）硬编码于 nodes-base 源码、经后端 types payload 直出、**前端渲染不过 i18n 查表**（审计实证），故走「构建期对 dist 定向替换」路线（M0 POC 于 YTJ1 实机验证注入层）。命令见「常用命令」节。产物：`script/params-zh-map.json`（en→zh 映射，**按英文原文锚定、结构无关**——上游重构不影响映射表）。
+
+- **双源提取**：types payload（`extract-node-parameters.cjs`，主源但只含各节点当前版参数）+ dist 对账（`extract-params-from-dist.cjs`，补多版本节点旧版参数与 credentials 描述）。⚠️ types 基线勿从被 POC 污染的实例拉（Code 节点串已中文化，2026-09-19 剔除过 8 条）
+- **翻译器**（`translate-params.cjs`）：DeepSeek 批 15 + 术语表强约束 + 增量跳过已译 + 批级补译 + 每 300 条断点落盘。🔴 batch 元素必须带 `i` 字段且发送/响应查找共用同一份数组——曾因缺 `i` 致 `obj[String(b.i)]` 恒 miss，30 条假性"被安全校验拦截"（实为 bug 误诊）
+- **注入器**（`inject-params.cjs`）：只动显示语境属性（displayName/description/placeholder/hint/label 全量；**name 仅替换非标识符形态**——`^[a-z][A-Za-z0-9_]*$` 视为参数键保护）；反转义后按原文精确匹配；输出统一双引号风格字面量（单/双转义混用会炸语法）；`node --check` 校验失败且原文可过才回滚（🔴 dist 是 ESM，--check 须 `.mjs` 判定，否则原文基线全挂）；替换日志报告命中率，命中率骤降=上游重构信号
+- **接线**：Dockerfile 构建期 `RUN node inject-params.cjs`（运行时零开销）；映射表随 main 走，image.yml checkout main 天然取最新，CI 无需额外步骤
+- **验证**：测试床用 `npm pack n8n-nodes-base@<ver>` tarball（⚠️ 上游 npm 不发 patch 版：2.39.7/8 无包）。2.39.6 终验：68696 处替换 / 0 回滚 / 利用率 95%（余 5% 为跨版本差，随版收敛）
+- 待办：YTJ1 灰度四件套 + 参数面板抽查（M3 出口）；「全量评审 vs 抽样+客户反馈回路」待用户定
+
 ## 发布流水线（CI 全自动，2026-09-18 实战定型）
 
 三个 workflow，图文详解+高频问答见 `docs-inner/2026-09-18-n8n汉化自动化工作流介绍.md`（mermaid 流程图+时序图+告警体系）：
