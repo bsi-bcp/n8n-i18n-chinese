@@ -17,6 +17,8 @@
 
 上游 2.39.8 为补丁版共 3 修复：AI Assistant 工作流预览空白（#38915，前端）、数据加密 key 修复（#38911）、子执行 parked 清理（#38949），词典零增量。**YTJ1 实战升级验证通过（2026-09-19）**：bcphub-bsi 全栈 2.39.7→2.39.8（main+3worker+webhook+runners），dist 换装+品牌重放，四件套+Task Broker+真实域名 healthz 全绿。**本版为 CI 全自动完整包产线首次端到端无人值守发版**：watcher 三项评估绿灯后自动「翻译 → 覆盖率门禁 → 构建 → Release → 镜像」全链无人工动作；同窗口完成交付渠道迁移与产物命名规则落地。
 
+> 📌 **2026-09-20 追记（发布后资产更新）**：部署包回填 `dist/THIRD_PARTY_LICENSES.md`（第三方依赖许可清单，取自上游 n8n@2.39.8 Release 同名附件，与上游附件 sha256 逐字节一致）；分发链路同步固化——node.js.yml 打包步骤随包分发、Dockerfile COPY 至镜像 `/usr/local/lib/node_modules/n8n/THIRD_PARTY_LICENSES.md`，下版起 CI 自动携带。本地按生产 Dockerfile 实测构建验证：容器内两处落点 sha256 与仓库一致、node 运行用户可读、参数注入 71301 处替换零回滚。SWR 存量 4 tag 按策略不重建（不含该文件），2.40 起自然携带。
+
 ### Added
 
 - **产物命名规则（2026-09-19 定）**：GitHub Releases 部署包统一 `n8n-editor-ui@<版本号>.tar.gz`（Release 标题同名）；中文镜像统一 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>`；`-vN` 发布序号只进 tag 不进产物名。现有 4 个 Release 已按新规则重建（tag 与正文保留）
