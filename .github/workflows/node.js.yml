@@ -89,7 +89,9 @@ jobs:
 
     - name: Translate New Strings
       if: steps.check_tag.outputs.exists == 'false'
-      run: pnpm install && N8N_EN_JSON_URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json" node translate.js
+      # 🔒 评审 D-E4-5：script/ 独立 package.json + lockfile（npm ci 按锁定版本装三件套）
+      #    ——不再向上解析根 package.json，拔掉 n8n-nodes-base@latest（isolated-vm 编译地雷）
+      run: npm ci --no-audit --no-fund && N8N_EN_JSON_URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json" node translate.js
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/script
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

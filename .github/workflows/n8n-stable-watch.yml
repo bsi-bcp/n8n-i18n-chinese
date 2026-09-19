@@ -330,7 +330,7 @@ jobs:
             --body "$(printf '%s' "${{ steps.report.outputs.md }}")
 
           评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          两步闭环——适配后先重评：`gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY`；\n          重评绿灯后**必须手动发版**（重评不会自动发版也不解除状态机跳过）：`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY`"
+          两步闭环——①适配后先重评：`gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY`\n          ②重评绿灯后**必须手动发版**（重评不会自动发版也不解除状态机跳过）：`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY`"
 
       - name: Auto release (阶段 2)
         # 🔴 只信 report 步骤算好的 go_release 标志（shell 字符串比较产物），

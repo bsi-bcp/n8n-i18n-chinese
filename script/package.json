@@ -1,0 +1,10 @@
+{
+  "name": "n8n-i18n-scripts",
+  "private": true,
+  "description": "词典产线脚本依赖（与根 package.json 隔离——根 devDeps 的 n8n-nodes-base 会拖入 isolated-vm 原生编译地雷）",
+  "dependencies": {
+    "dotenv": "16.4.7",
+    "lodash": "4.17.21",
+    "p-limit": "2.3.0"
+  }
+}
