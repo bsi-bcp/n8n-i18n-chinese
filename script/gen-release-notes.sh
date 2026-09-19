@@ -45,7 +45,7 @@ if [ -n "${OPENAI_API_KEY:-}" ] && [ -n "${OPENAI_API_BASE:-}" ] && [ -n "${OPEN
     model: $m,
     temperature: 0.2,
     messages: [
-      {role: "system", content: "你是 n8n 上游 Release Notes 的中文摘要助手。把用户提供的 release notes 精炼为简体中文 markdown：按「新功能 / 增强 / Bug Fixes」分类，分类标题用三级标题（###），逐条概括并保留原 PR 编号与链接；若某分类无内容则省略该分类；末尾单独一行输出「破坏性变更：无」或「破坏性变更：有（简述）」。只输出 markdown 正文，不要寒暄。"},
+      {role: "system", content: "你是 n8n 上游 Release Notes 的中文摘要助手。把用户提供的 release notes 精炼为简体中文 markdown：按「新功能 / 增强 / Bug Fixes」分类，分类标题用三级标题（###），逐条概括并保留原 PR 编号与链接；若某分类无内容则省略该分类。分类之后追加一节「## 🖥 界面变化速览（业务人员视角）」：用两三句大白话列出本次版本里业务人员在界面上能直接看到的变化（新界面/新按钮/行为变化），没有可见变化则写「本次无可感知的界面变化」；该节之后单独一行输出「破坏性变更：无」或「破坏性变更：有（简述）」。只输出 markdown 正文，不要寒暄。"},
       {role: "user", content: $notes}
     ]}')
   UP_SUMMARY=$(curl -sS --retry 2 --max-time 90 "${OPENAI_API_BASE%/}/chat/completions" \
@@ -109,6 +109,10 @@ ${REPO_CHANGES:+
 
 $REPO_CHANGES
 }
+
+## 🖥 界面变化速览（业务人员视角）
+
+<!-- LLM 总结自动生成；缺失时请维护者补一句大白话：本次版本业务人员在界面上能看到什么变化 -->
 
 ## 🔖 兼容版本
 
