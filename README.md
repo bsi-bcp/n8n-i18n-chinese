@@ -14,7 +14,7 @@ n8n 编辑器 UI 简体中文汉化包（社区延续维护 [fork](https://githu
 
 ## 方式一：中文 Docker 镜像（推荐）
 
-> 镜像 = 官方 n8n + 汉化 editor-ui，默认中文界面，开箱即用。首次需 `docker login swr.cn-north-4.myhuaweicloud.com`（凭证向管理员获取）。
+> 镜像 = 官方 n8n + 汉化 editor-ui，默认中文界面，开箱即用。**首次（及凭证过期后）需 `docker login swr.cn-north-4.myhuaweicloud.com`**（只读拉取凭证，向管理员获取；`pull` 报 401 时首查凭证是否过期/被重置）。
 
 ```shell
 docker run -it --rm --name n8ntest \
@@ -51,7 +51,7 @@ n8nio/n8n
 
 # n8n 版本兼容说明
 
-> 选型原则：**editor-ui dist 版本与 n8n 后端版本保持一致**。汉化包只替换前端静态文件，不碰后端、数据库与配置，替换/回滚零风险。
+> 选型原则：**editor-ui dist 版本与 n8n 后端版本保持一致**。汉化包只替换前端静态文件，不碰后端、数据库与配置——patch 级替换/回滚仅改版本号；minor 跨级升级/回滚须按 Release 说明执行数据库迁移/回退（`n8n db:revert`）。
 
 | n8n 后端版本 | 推荐汉化包 | 获取渠道 | 说明 |
 |---|---|---|---|
@@ -68,6 +68,12 @@ n8nio/n8n
 - dist 与后端小版本不一致时，**优先“dist 略新于后端”而不是“dist 旧于后端”**——新 dist 对旧后端只是多几个用不到的文案；旧 dist 对新后端则新界面全是英文
 - n8n 升级后若出现**白屏**，说明 dist 与后端差异过大，请换就近匹配的版本
 - n8n 官方发新版本后，本仓库会跟进构建对应汉化包并发布到 Releases
+
+# 错译反馈
+
+发现界面译文错误（错译/漏译/术语不统一）时：
+1. 到 [Issues](https://github.com/bsi-bcp/n8n-i18n-chinese/issues) 提交，注明：界面位置（截图最佳）+ 当前译文 + 建议译文
+2. 反馈进入翻译评审表登记，随下个版本修复（高频问题可发 hotfix 词典）
 
 # 原理
 > editor-ui是支持i18n的，但是未开放语言包
@@ -87,7 +93,7 @@ N8N_DEFAULT_LOCALE=zh-CN
 # 版权与来源声明
 
 - 本仓库 fork 自 [other-blowsnow/n8n-i18n-chinese](https://github.com/other-blowsnow/n8n-i18n-chinese)（原作者 **imblowsnow**，该项目已于 2026-08-21 归档停更，最终版本 `release/2.33.7`）。
-- 原项目的全部内容（翻译词典、脚本、补丁、文档）版权归原作者所有。原作者 imblowsnow 已于 2026-09-14 在 [issue #67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 中**明确授权本 fork 以 MIT 协议继续修改和分发**继承的翻译词典、脚本与补丁。本仓库据此补充 [LICENSE](LICENSE) 文件，其中完整保留原作者的版权声明。
+- 原项目的全部内容（翻译词典、脚本、补丁、文档）版权归原作者所有。原作者 imblowsnow 已于 2026-09-14 在 [issue #67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 中书面授权「**允许继续修改和分发继承的翻译词典、脚本与补丁**」（原话存档见 docs-inner/imblowsnow-authorization-snapshot.json）；MIT 为本 fork 选定的落地协议，授权人未异议。另致谢原仓库贡献者 tqjason / Sini0r 等（其词典贡献的授权核验与处理见 docs-inner 评审记录 D-E5-2 整改项）。本仓库据此补充 [LICENSE](LICENSE) 文件，其中完整保留原作者的版权声明。
 - 本仓库为社区延续维护 fork：在原项目停止维护后，继续跟进 n8n 新版本的简体中文翻译。通过 GitHub Release、Docker 镜像等渠道分发的构建产物同样适用上述 MIT 授权（n8n 本体除外，见下条）。
 - n8n 本体为 [Sustainable Use License](https://docs.n8n.io/license/)（fair-code），本项目的语言包为其界面文案的社区翻译，n8n 的使用须遵守其自身许可。
 - **修改声明（SUL Notices 条款合规）**：本仓库产物（editor-ui dist / 汉化镜像）为 n8n 的**本地化修改版**，修改仅为注入 zh-CN 语言包与注册语言，未删除或遮盖 n8n 的任何许可与版权声明（含页脚许可链接）。n8n® 为 n8n GmbH 商标，本项目与 n8n 官方无隶属关系、亦非官方背书。
