@@ -26,6 +26,13 @@ NODE_PATH=/tmp/n8n-ts-extract/node_modules node script/extract-node-headers.js <
 # ↑ 从 n8n 源码静态提取节点级描述 + 节点面板操作标题 → script/en-nodes.json（TS 编译器 API 解析 .node.ts，无需编译 n8n）
 #   typescript 隔离安装：mkdir -p /tmp/n8n-ts-extract && cd /tmp/n8n-ts-extract && npm init -y && npm i typescript@5 dotenv lodash p-limit@2
 #   源码用 git worktree pin 到目标 tag：git -C <n8n clone> worktree add /tmp/n8n-<ver>-src "n8n@<ver>" --detach
+
+# ── 节点参数汉化管线（2026-09-19 立项 M1-M3，详见下节）──
+node script/extract-node-parameters.cjs <types/nodes.json> docs-inner/参数汉化-M1/   # 主提取（运行实例 types payload）
+node script/extract-params-from-dist.cjs <nodes-base dist目录> /tmp/params-dist-unique.json  # dist 对账补缺（多版本节点旧版 + credentials）
+node script/translate-params.cjs docs-inner/参数汉化-M1/params-unique.json docs-inner/参数汉化-M1/params-zh-map.json  # 增量翻译（跳过已译、断点续写）
+node script/inject-params.cjs <nodes-base dist目录> <params-zh-map.json>  # 注入（显示属性定向替换 + 语法校验）
+#   dist 测试床免编译获取：npm pack n8n-nodes-base@<ver> && tar -xzf（⚠️ 上游 npm 不发 patch 版，2.39.7/8 无包，发布序列跳号）
 ```
 
 无测试、无 lint。Node ≥18（translate.js 用全局 `fetch`），CI 用 Node 22。
