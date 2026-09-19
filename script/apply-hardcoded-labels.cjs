@@ -19,6 +19,49 @@ if (!root) {
 // 新增修复项时在此登记。替换文本缩进需与查找文本一致。
 const T = (s) => s.replace(/\\t/g, '\t');
 const RULES = [
+  // ── settings/侧栏模块描述符族（2026-09-19 用户报告：设置菜单 AI Assistant/Chat 未翻译）──
+  // module.descriptor.ts 的 name 在应用启动时静态求值（dataTable 同坑），直接换中文字面量最稳
+  // （术语决策 2026-09-19：AI Assistant→AI 助手、Chat→聊天、OpenTelemetry 保留英文）
+  ['packages/frontend/editor-ui/src/features/ai/instanceAi/module.descriptor.ts', [
+    [T("\tid: 'instance-ai',\n\tname: 'AI Assistant',\n\tdescription: 'Chat with your n8n instance.',"),
+     T("\tid: 'instance-ai',\n\tname: 'AI 助手',\n\tdescription: '与您的 n8n 实例对话',"),
+     'AI Assistant 模块名+描述', 1],
+  ], 1],
+  ['packages/frontend/editor-ui/src/features/ai/chatHub/module.descriptor.ts', [
+    [T("\tid: 'chat-hub',\n\tname: 'Chat',\n\tdescription: 'Chat with LLM models or your n8n AI agents.',"),
+     T("\tid: 'chat-hub',\n\tname: '聊天',\n\tdescription: '与 LLM 模型或您的 n8n 智能体对话',"),
+     'Chat 模块名+描述', 1],
+  ], 1],
+  ['packages/frontend/editor-ui/src/features/agents/module.descriptor.ts', [
+    [T("\tid: 'agents',\n\tname: 'Agents',\n\tdescription: 'Build and manage AI agents',"),
+     T("\tid: 'agents',\n\tname: '智能体',\n\tdescription: '构建和管理 AI 智能体',"),
+     'Agents 模块名+描述', 1],
+  ], 1],
+  ['packages/frontend/editor-ui/src/features/core/dataTable/module.descriptor.ts', [
+    [T("\tname: 'Data Table',\n\tdescription: 'Manage and store data efficiently with the Data Table module.',"),
+     T("\tname: '数据表',\n\tdescription: '用数据表模块高效管理与存储数据',"),
+     'Data Table 模块名+描述', 1],
+  ], 1],
+  ['packages/frontend/editor-ui/src/features/execution/insights/module.descriptor.ts', [
+    [T("\tname: 'Insights',\n\tdescription: 'Provides insights and analytics features for projects.',"),
+     T("\tname: '洞察',\n\tdescription: '为项目提供洞察与分析功能',"),
+     'Insights 模块名+描述', 1],
+  ], 1],
+  ['packages/frontend/editor-ui/src/features/workflow-reviews/module.descriptor.ts', [
+    [T("\tname: 'Workflow Reviews',\n\tdescription: 'Cross-project workflow review inbox.',"),
+     T("\tname: '工作流评审',\n\tdescription: '跨项目工作流评审收件箱',"),
+     'Workflow Reviews 模块名+描述', 1],
+  ], 1],
+  ['packages/frontend/editor-ui/src/features/integrations/promotions.ee/module.descriptor.ts', [
+    [T("\tname: 'Promotions',\n\tdescription: 'Promote workflow changes between environments',"),
+     T("\tname: '晋级',\n\tdescription: '在环境间晋级工作流变更',"),
+     'Promotions 模块名+描述', 1],
+  ], 1],
+  ['packages/frontend/editor-ui/src/features/ai/mcpAccess/module.descriptor.ts', [
+    [T("\tname: 'MCP Server',\n\tdescription: 'Access your n8n instance through MCP clients',"),
+     T("\tname: 'MCP 服务器',\n\tdescription: '通过 MCP 客户端访问您的 n8n 实例',"),
+     'MCP Server 模块名+描述', 1],
+  ], 1],
   ['packages/frontend/editor-ui/src/features/core/dataTable/module.descriptor.ts', [
     [T("label: i18n.baseText('dataTable.dataTables'),"),
      T("get label() {\n\t\t\t\t\treturn i18n.baseText('dataTable.dataTables');\n\t\t\t\t},"),

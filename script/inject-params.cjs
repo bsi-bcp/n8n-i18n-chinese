@@ -40,8 +40,10 @@ function injectJson(file) {
     if (Array.isArray(node)) { for (const v of node) walk(v); return; }
     if (!node || typeof node !== 'object') return;
     for (const [k, v] of Object.entries(node)) {
-      if (typeof v === 'string' && (DISPLAY_KEYS.has(k) || k === 'name') && v.length >= 2) {
-        if (k === 'name' && IDENT.test(v)) continue; // 参数键保护
+      if (typeof v === 'string' && (DISPLAY_KEYS.has(k) || k === 'name' || k === 'action') && v.length >= 2) {
+        // name/action 是行为标识符重灾区（参数键/选项值），仅放行自然语言形态——
+        // options[].action 如 'Code in JavaScript' 是面板第三层标题+节点实例名来源（2026-09-19 实证）
+        if ((k === 'name' || k === 'action') && IDENT.test(v)) continue;
         const zh = zhMap[v];
         if (zh !== undefined) { node[k] = zh; hitEn.add(v); }
       } else if (typeof v === 'object') walk(v);
@@ -78,8 +80,9 @@ const DISPLAY_PROPS = ['displayName', 'description', 'placeholder', 'hint', 'lab
 function makeRegex(prop) {
   return new RegExp(`(${prop}: *)("((?:[^"\\\\]|\\\\.)*)"|'((?:[^'\\\\]|\\\\.)*)')`, 'g');
 }
-const propRegexes = DISPLAY_PROPS.map((p) => makeRegex(p));
-const nameRegex = makeRegex('name'); // name 单独：值非标识符形态才替换
+const propRegexes = [...DISPLAY_PROPS, 'action'].map((p) => makeRegex(p));
+// name 单独：值非标识符形态才替换（action 亦然，在 tryReplace 外统一走标识符保护）
+const nameRegex = makeRegex('name');
 
 function replaceInSource(src) {
   let count = 0;
@@ -87,6 +90,7 @@ function replaceInSource(src) {
   let out = src;
   const tryReplace = (lit, propHead, m) => {
     const en = unescapeJs(lit);
+    if (isIdentLike(lit) && !/\s/.test(en)) return m; // 标识符形态保护（name/action 行为值）
     const zh = zhMap[en];
     if (zh === undefined) return m;
     count++;
@@ -97,11 +101,7 @@ function replaceInSource(src) {
     out = out.replace(re, (m, propHead, whole, dq, sq) =>
       tryReplace(dq !== undefined ? dq : sq, propHead, m));
   }
-  out = out.replace(nameRegex, (m, propHead, whole, dq, sq) => {
-    const lit = dq !== undefined ? dq : sq;
-    if (isIdentLike(lit)) return m; // 参数键保护
-    return tryReplace(lit, propHead, m);
-  });
+  out = out.replace(nameRegex, (m, propHead, whole, dq, sq) => tryReplace(dq !== undefined ? dq : sq, propHead, m));
   return [out, count, hitLocal];
 }
 
