@@ -11,6 +11,9 @@ ENV N8N_DEFAULT_LOCALE=zh-CN
 LABEL org.opencontainers.image.licenses="Sustainable Use License (n8n core, see NOTICE-n8n-localization.md in editor-ui dist); MIT (localization dictionary & scripts)"
 LABEL org.opencontainers.image.description="n8n localized build (zh-CN) by bsi-bcp/n8n-i18n-chinese — modified version of n8n, not affiliated with n8n GmbH"
 
+# 📌 第三方依赖许可清单（2026-09-19）：镜像含完整 node_modules，清单为精确口径
+COPY ./THIRD_PARTY_LICENSES.md /usr/local/lib/node_modules/n8n/THIRD_PARTY_LICENSES.md
+
 COPY ./editor-ui-dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 
 # 📌 节点参数汉化（M3，2026-09-19 立项；YTJ1 灰度同日全绿）：参数面板串硬编码于
