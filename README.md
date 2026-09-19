@@ -14,7 +14,7 @@ n8n 编辑器 UI 简体中文汉化包（社区延续维护 [fork](https://githu
 
 ## 方式一：中文 Docker 镜像（推荐）
 
-> 镜像 = 官方 n8n + 汉化 editor-ui，默认中文界面，开箱即用。**首次（及凭证过期后）需 `docker login swr.cn-north-4.myhuaweicloud.com`**（只读拉取凭证，向管理员获取；`pull` 报 401 时首查凭证是否过期/被重置）。
+> 镜像 = 官方 n8n + 汉化 editor-ui，默认中文界面，开箱即用。**仓库为公开拉取属性，无需任何登录**，直接 pull 即用（2026-09-19 实测匿名可拉全部版本）。
 
 ```shell
 docker run -it --rm --name n8ntest \
