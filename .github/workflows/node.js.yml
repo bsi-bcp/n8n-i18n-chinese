@@ -226,6 +226,7 @@ jobs:
       run: |
         # 📌 SUL 积极义务（2026-09-19 评审 D-E5-1）：随附条款 + 显著修改声明随产物分发
         cp /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/NOTICE-n8n-localization.md dist/
+        cp /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/LICENSE dist/LICENSE-MIT.md
         tar -czvf "n8n-editor-ui@${{ steps.ver.outputs.version }}.tar.gz" dist
       working-directory: ${{ steps.editorui_dir.outputs.dir }}
 
