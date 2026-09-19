@@ -236,6 +236,14 @@ jobs:
           else IMGM="⏳ ghcr.io/n8n-io/n8n:$T 基础镜像未发布（自动发版将等待下轮）"; fi
           TITLE="n8n@$T 兼容性评估"
           if [ "$DRILL" = "true" ]; then TITLE="【演练】$TITLE"; DRILLNOTE="（演练，不入状态）"; else DRILLNOTE=""; fi
+          # 🔴 发版判定统一在 shell 字符串比较里算好输出单一标志——Auto release 步骤
+          #    只认 steps.report.outputs.go_release。不再用 inputs.report_only != true
+          #    这类表达式比较（gh CLI -f 传参存在字符串/布尔类型歧义，2026-09-19 隐患关闭）
+          GO=false
+          if [ "$PV" != "red" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ] && [ "$IMG" = "true" ] && [ "$DRILL" != "true" ]; then
+            GO=true
+          fi
+          echo "go_release=$GO" >> "$GITHUB_OUTPUT"
           {
             echo "title=$TITLE" >> "$GITHUB_OUTPUT"
             {
@@ -247,7 +255,7 @@ jobs:
               echo "- **基础镜像**：$IMGM"
               echo "- **自动发版**：AUTO_RELEASE=$AUTO_RELEASE report_only=${REPORT_ONLY:-false}"
               echo "> 🤖 来源：GitHub Actions · n8n Stable Watch · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
-              if [ "$PV" != "red" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ] && [ "$IMG" = "true" ]; then
+              if [ "$GO" = "true" ]; then
                 echo "- **结论**：✅ 将自动发版（翻译 → 完整包构建 → Release → 镜像）"
               elif [ "$PV" = "red" ]; then
                 echo "- **结论**：🛑 需人工适配补丁后重评"
@@ -296,13 +304,11 @@ jobs:
           适配后手动重评：gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY"
 
       - name: Auto release (阶段 2)
+        # 🔴 只信 report 步骤算好的 go_release 标志（shell 字符串比较产物），
+        #    不在表达式层做 inputs 类型比较（2026-09-19 加固，见 report 步骤注释）
         if: >-
           steps.gate.outputs.skip == 'false' &&
-          steps.patch.outputs.verdict != 'red' &&
-          steps.img.outputs.exists == 'true' &&
-          env.AUTO_RELEASE == 'true' &&
-          inputs.report_only != true &&
-          steps.ver.outputs.drill != 'true'
+          steps.report.outputs.go_release == 'true'
         id: rel
         run: |
           set -euo pipefail
