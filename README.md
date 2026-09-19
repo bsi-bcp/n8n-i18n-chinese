@@ -25,6 +25,8 @@ docker run -it --rm --name n8ntest \
 swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8
 ```
 
+> ⚠️ `N8N_SECURE_COOKIE=false` 仅限**本机试玩**（http 访问 localhost 时才需要）。**生产部署必须移除该变量**（走 HTTPS 时 cookie 安全位默认开启），否则存在会话安全风险。
+
 ## 方式二：官方镜像 + 挂载汉化 dist
 
 > 适合已在跑官方镜像、只想加中文的场景；`【替换为下载的编辑器UI目录】` = Releases 部署包解压出的 `dist/` 目录。其他命令参考 n8n 官方文档。
@@ -40,6 +42,25 @@ n8nio/n8n
 ```
 
 > ⚠️ `blowsnow/n8n-chinese` 为原上游作者的镜像，**已停止更新（停在 n8n 2.33.7）**，本仓库不再向该地址发布；老用户请迁移到方式一。
+
+## 升级注意事项（🔴 必读）
+
+- **升级前**：备份 compose 文件与数据卷；对照上方兼容矩阵确认目标版本
+- **minor 跨级**（如 2.39.x → 2.40.x）会执行数据库迁移，官方不支持直接降级——回滚须 `n8n db:revert`（一次回退一步）后再回旧镜像，或建议前滚修复
+- **社区节点**：n8n 2.38.4 起不再向社区节点提供内置模块（`ajv`/`axios`/`glob` 等），升级后社区节点可能报 `Cannot find module`，需在节点包内补装依赖（详见排障指南第 6 条）
+- **中文界面**：升级 n8n 后端的同时，把汉化镜像/部署包一起升级到同版本号即可，无需额外操作
+
+## 离线部署（内网/air-gapped）
+
+内网环境拉不到镜像时，**不要用部署包 tar.gz 冒充镜像**（那是前端文件不是镜像）。正确做法：任选一台有网机器拉取后导出再拷入内网：
+
+```shell
+docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8
+docker save swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8 | gzip > n8n-chinese.tar.gz
+# 拷入内网后：
+docker load < n8n-chinese.tar.gz
+```
+（也可向我们索取现成的镜像离线包。）
 
 ## npx本地启动n8n替换安装
 > 其他本地方式启动的话参考这个即可
@@ -70,7 +91,9 @@ n8nio/n8n
 - n8n 升级后若出现**白屏**，说明 dist 与后端差异过大，请换就近匹配的版本
 - n8n 官方发新版本后，本仓库会跟进构建对应汉化包并发布到 Releases
 
-# 错译反馈
+# 错译反馈与技术支持
+
+常见问题（白屏 / 拉取 401 / 界面部分英文 / Code 节点失败 / 升级数据库报错）先看 **[排障指南](docs/排障指南.md)**。
 
 发现界面译文错误（错译/漏译/术语不统一）时：
 1. 到 [Issues](https://github.com/bsi-bcp/n8n-i18n-chinese/issues) 提交，注明：界面位置（截图最佳）+ 当前译文 + 建议译文
