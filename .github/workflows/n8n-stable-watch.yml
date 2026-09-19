@@ -5,7 +5,7 @@ name: n8n Stable Watch
 #  D1 版本选择：枚举 releases + 正则 + prerelease 过滤，只跟插件当前大版本线
 #  D2 引用：一律用 git tag n8n@X.Y.Z（不用 target_commitish，分支会被上游清理）
 #  D3 翻译缺口：与 translate.js 同口径（新增/源变更/zh 缺失三类都要重翻）
-#  D4 补丁检查：git apply --check 失败时降级 patch --fuzz=3 判黄灯
+#  D4 补丁检查：git apply --check 任一发版补丁硬失败即红灯；fuzz=3 判黄灯（黄灯仅报告不放行，D-E4-3）
 #  D7 阶段开关：AUTO_RELEASE / report_only 显式控制
 
 on:
@@ -137,7 +137,7 @@ jobs:
         working-directory: n8n
         run: |
           VERDICT="green"; DETAILS=""
-          # 门禁只看发版流水线实际应用的 feat__i18n_zhCn.patch；其余 patch 仅报告；*.old.patch 忽略
+          # 🔴 门禁覆盖全部发版补丁（2026-09-19 评审 D-E4-1：任一硬失败即 red）；fuzz 黄灯仅报告不放行（D-E4-3）；*.old.patch 忽略
           for p in ../plugin/patches/*.patch; do
             [ -e "$p" ] || continue
             name=$(basename "$p")
@@ -258,7 +258,7 @@ jobs:
               echo "- **翻译缺口**：$STR"
               # 🟡 2026-09-19 评审 D-E4-2（短期项）：en-nodes 提取版本透明化——
               #    节点描述/操作标题提取在 CI 之外，新 minor 不重提取则面板覆盖不全
-              ENNODES_VER=$(jq -r '."._meta.version" // "unknown"' plugin/script/en-nodes.json 2>/dev/null || echo unknown)
+              ENNODES_VER=$(jq -r '._meta.version // "unknown"' plugin/script/en-nodes.json 2>/dev/null || echo unknown)
               if [ "$ENNODES_VER" != "$T" ]; then
                 echo "- ⚠️ **en-nodes 提取版本**：$ENNODES_VER（目标 $T）——新 minor 的节点面板新文案需人工重提取（extract-node-headers.js），否则面板描述/操作标题覆盖不全"
               fi
@@ -314,7 +314,7 @@ jobs:
             --body "$(printf '%s' "${{ steps.report.outputs.md }}")
 
           评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          适配后手动重评：gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY"
+          两步闭环——适配后先重评：`gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY`；\n          重评绿灯后**必须手动发版**（重评不会自动发版也不解除状态机跳过）：`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY`"
 
       - name: Auto release (阶段 2)
         # 🔴 只信 report 步骤算好的 go_release 标志（shell 字符串比较产物），

@@ -7,7 +7,7 @@ n8n 的任何许可与版权声明（含页脚许可链接）。
 n8n 本体依 [Sustainable Use License](https://github.com/n8n-io/n8n/blob/master/LICENSE.md)（fair-code）
 授权，归 n8n GmbH 所有；使用 n8n 须遵守其自身许可。下方为该许可全文（随附条款副本，以满足
 "anyone who gets a copy also gets a copy of these terms" 及显著修改声明义务）。本仓库新增的翻译
-词典与构建脚本部分以 MIT 授权分发（见上游仓库 LICENSE）。
+词典与构建脚本部分以 MIT 授权分发（许可全文见本仓库 [LICENSE](https://github.com/bsi-bcp/n8n-i18n-chinese/blob/main/LICENSE)；部署包内以 LICENSE-MIT.md 副本随附）。
 
 n8n® 为 n8n GmbH 商标；本产物与 n8n 官方无隶属关系、亦非官方背书。
 

@@ -126,6 +126,13 @@ jobs:
           exit 1
         fi
 
+# D-E3-6：扫描先于词典 push（污染不得先入 main，阻断在此步之前生效）
+    # 词典安全扫描（2026-09-19 评审 D-E3-5）：整本词典独立扫描——堵住人工补译/手改路径
+    # 的注入/悬空引用盲区（translate.js 校验只覆盖机器翻译单条路径）；HIGH 命中阻断发版
+    - name: 词典安全扫描
+      if: steps.check_tag.outputs.exists == 'false'
+      run: node script/scan-zh-dict.js languages/zh-CN.json
+
     - name: Translate Publish Git
       if: steps.check_tag.outputs.exists == 'false'
       run: |
@@ -166,12 +173,6 @@ jobs:
     - run: pnpm install --frozen-lockfile --ignore-scripts
       if: steps.check_tag.outputs.exists == 'false'
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
-
-    # 词典安全扫描（2026-09-19 评审 D-E3-5）：整本词典独立扫描——堵住人工补译/手改路径
-    # 的注入/悬空引用盲区（translate.js 校验只覆盖机器翻译单条路径）；HIGH 命中阻断发版
-    - name: 词典安全扫描
-      if: steps.check_tag.outputs.exists == 'false'
-      run: node script/scan-zh-dict.js languages/zh-CN.json
 
     - name: check n8n editor-ui is old
       id: editorui_dir

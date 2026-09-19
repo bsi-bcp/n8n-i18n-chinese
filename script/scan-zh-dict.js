@@ -16,14 +16,10 @@ if (!file || !fs.existsSync(file)) {
   process.exit(2);
 }
 
-const ALLOWED_URL_HOSTS = new Set([
-  'docs.n8n.io', 'n8n.io', 'community.n8n.io', 'github.com', 'github.io',
-  'githubusercontent.com', 'raw.githubusercontent.com', 'npmjs.com', 'www.npmjs.com',
-  'apple.com', 'support.apple.com', 'microsoft.com', 'support.microsoft.com',
-  'google.com', 'support.google.com', 'accounts.google.com', 'wikipedia.org',
-  'mozilla.org', 'whatismybrowser.com', 'caniuse.com', 'schema.org', 'deepseek.com',
-  'api.deepseek.com', 'supabase.com', 'openai.com', 'platform.openai.com', 'anthropic.com',
-]);
+// D-E3-7：白名单 = 静态最小集 ∪ 英文基线出现过的主机（动态收集，避免预防性过宽）
+const STATIC_HOSTS = ['docs.n8n.io', 'n8n.io', 'community.n8n.io', 'github.com',
+  'githubusercontent.com', 'raw.githubusercontent.com'];
+const ALLOWED_URL_HOSTS = new Set(STATIC_HOSTS);
 
 function flatten(obj, prefix, out) {
   for (const [k, v] of Object.entries(obj)) {
@@ -35,8 +31,16 @@ function flatten(obj, prefix, out) {
 
 const zh = flatten(JSON.parse(fs.readFileSync(file, 'utf8')), '', new Map());
 let en = null, enMissing = false;
-if (fs.existsSync(enFile)) en = flatten(JSON.parse(fs.readFileSync(enFile, 'utf8')), '', new Map());
-else enMissing = true;
+if (fs.existsSync(enFile)) {
+  en = flatten(JSON.parse(fs.readFileSync(enFile, 'utf8')), '', new Map());
+  for (const v of en.values()) {
+    for (const m of v.matchAll(/https?:\/\/[^\s"'<>\])）】]+/gi)) {
+      try { ALLOWED_URL_HOSTS.add(new URL(m[0]).hostname); } catch {}
+    }
+  }
+} else {
+  enMissing = true;
+}
 
 const HIGH_PATTERNS = [
   [/<script[\s>]|<iframe[\s>]|<svg[\s>]|onerror\s*=|onclick\s*=|onload\s*=/i, '脚本/事件注入标签（源文本无）'],
@@ -71,9 +75,11 @@ for (const [key, val] of zh) {
     }
   }
 
-  // linked-message 引用对「en 基座 ∪ zh」联合判定（vue-i18n 回退机制：zh 缺键回退 en）
-  for (const m of val.matchAll(/@:([\w.]+)/g)) {
-    if (!zh.has(m[1]) && !(en && en.has(m[1]))) flag('HIGH', `linked-message 引用在 en/zh 词典均不存在: ${m[1]}`);
+  // linked-message 引用对「en 基座 ∪ zh」联合判定（vue-i18n 回退机制：zh 缺键回退 en）。
+  // D-E3-7：覆盖修饰符形式 @.modifier:key（取 ':' 之后为真实键名）
+  for (const m of val.matchAll(/@[.:]([\w.]+)/g)) {
+    const target = m[1].includes(':') ? m[1].split(':').pop() : m[1];
+    if (!zh.has(target) && !(en && en.has(target))) flag('HIGH', `linked-message 引用在 en/zh 词典均不存在: ${target}`);
   }
 }
 

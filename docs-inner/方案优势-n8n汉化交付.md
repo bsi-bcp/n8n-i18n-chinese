@@ -18,7 +18,7 @@
 
 ### 2. 升级零负担（运维体验）
 
-- **境内直拉稳定**：华为云 SWR（`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese`），YTJ1 实测 11 秒级拉取（2026-09-12，2.38.7 镜像）——告别 GitHub Releases 超时 / DockerHub 限流 reset
+- **境内直拉稳定**：华为云 SWR（`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese`），YTJ1 实测 11 秒级拉取（2026-09-12，实测渠道为前代自建库；SWR 侧同规模镜像表现待补测存档）——告别 GitHub Releases 超时 / DockerHub 限流 reset
 - **升级 = 改一个版本号**：镜像整体交付免挂载、免下载、免替换（`docker compose pull && up -d`）；patch 级回滚 = 改回旧 tag（数据卷零动），minor 跨级按随版预案执行 DB 迁移/回退
 - **版本不会选错**：兼容矩阵精确到版本区间，每版 Release 说明写明兼容边界与就近规则
 - **Queue Mode 齐套**：`n8n-runners:<ver>` 与主镜像同渠道同版本，worker 集群境内拉取不断供
@@ -38,12 +38,13 @@
 
 - **授权链清晰**：MIT（原作者 imblowsnow 2026-09-14 书面授权「允许继续修改和分发继承的翻译词典、脚本与补丁」，MIT 为我方选定落地方式，对方未异议）+ BSI 延续维护，双语版权声明；n8n 本体 Sustainable Use License——NOTICE 随部署包分发（随附条款 + 修改声明），镜像层含许可 LABEL；品牌定制形态**需 n8n 官方品牌授权或企业版许可，默认不提供**
 - **产线安全加固**：版本号白名单校验、第三方 action SHA-pin、权限最小化、CodeQL + 依赖告警监控
+- **翻译语料声明**：语料仅为 n8n 开源界面文案（en.json 字符串），不含任何客户/个人数据；翻译服务为 DeepSeek（数据处理条款以官方为准）
 
 ## 对比参照
 
 | 参照方案 | 对比结论 | 到版延迟 | 断供风险与退出 | 支持方式 |
 |---|---|---|---|---|
-| 官方英文 n8n | 本方案 = 官方完整能力 + 全中文界面，升级路径完全一致 | 中文版滞后上游约 0-2 天（patch 版实测当天） | n8n 官方持续运营，风险低 | n8n 官方文档/社区 |
+| 官方英文 n8n | 本方案 = 官方完整能力 + 全中文界面，升级路径完全一致 | 中文版滞后上游：patch 版实测当天（2.39.8 单样本）；minor 版以 2.40 stable 首发实测为准 | n8n 官方持续运营，风险低 | n8n 官方文档/社区 |
 | 旧上游汉化包（blowsnow，停在 2.33.7） | 本方案持续跟版（当前 2.39.8），词典 8350 → 9522 键，旧包已知缺陷已解决 | 上游停更后无新版可跟 | **已断供实证**（2026-08-21 归档） | 无 |
 | 客户自行维护翻译 | 自动化产线 + 翻译评审流程承接 | 取决于客户自投人力 | 依赖客户自有人员 | 客户自理 |
 | 本 fork（本方案） | 上述能力全集 | patch 版当天、minor 版有预研预案 | **退出方案**：dist 可继续使用、词典 MIT 可接管、产线四层文档可交接 | GitHub Issue + 研发部群 |
@@ -53,7 +54,7 @@
 | 客户场景 | 推荐形态 |
 |---|---|
 | 新部署 / 无界面定制 | SWR 中文镜像整体交付（首选） |
-| 品牌定制（Logo/CSS 烧在 dist） | 部署包 tar.gz + bind mount（定制层保留） |
+| 品牌定制（Logo/CSS 烧在 dist） | 部署包 tar.gz + bind mount（**默认不提供，需 n8n 官方品牌授权——见 §5 合规边界**） |
 | Queue Mode 集群 | `n8n-chinese` 主镜像 + `n8n-runners` 同渠道 |
 | 离线内网（air-gapped） | 部署包 tar.gz 离线拷入（`docker load` 或 bind mount；SWR/Releases 均不可达时） |
 | 多实例集中管理（Portainer GitOps/K8s） | 镜像多副本统一改 tag，配合既有 GitOps 流程 |

@@ -292,7 +292,15 @@ const titles = [...actionTitles.keys()].sort();
 for (const t of titles) {
     flat[`headers.actionTitles.${t}`] = t; // 恒等映射：翻译后 zh 值即中文标题
 }
-fs.writeFileSync(path.join(__dirname, 'en-nodes.json'), JSON.stringify(flat, null, 4) + '\n', 'utf8');
+// 📌 2026-09-19 评审 D-E4-6：输出提取版本元数据（watcher 评估卡据此提示提取过期）。
+//    版本取自 n8n 源码 package.json（worktree/clone 均有）；缺失时 unknown 并在日志提示。
+let n8nVersion = 'unknown';
+try {
+    n8nVersion = JSON.parse(fs.readFileSync(path.join(N8N_ROOT, 'package.json'), 'utf8')).version || 'unknown';
+} catch { console.warn('  ⚠️ 无法读取 n8n 源码 package.json，_meta.version 记为 unknown'); }
+const output = { '_meta': { version: n8nVersion, tool: 'extract-node-headers.js', extractedAt: new Date().toISOString().slice(0, 10) }, ...flat };
+fs.writeFileSync(path.join(__dirname, 'en-nodes.json'), JSON.stringify(output, null, 4) + '\n', 'utf8');
+console.log(`  _meta.version = ${n8nVersion}`);
 
 // ---- 报告 ----
 const deprecated = names.filter((n) => /deprecated/i.test(entries.get(n).description));

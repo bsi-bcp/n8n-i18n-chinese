@@ -119,6 +119,11 @@ $REPO_CHANGES
 - Release 部署包：\`n8n-editor-ui@${V}.tar.gz\`（解包覆盖容器内 \`n8n-editor-ui/dist\`，bind mount 方式）
 - Docker 镜像：\`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:${V}\`（华为云 SWR，国内边端正式交付通道）
 
+## ↩ 回滚
+
+- patch 级（x.y.z → x.y.z-1）：镜像改回旧版本 tag 重启即可，数据卷零改动
+- minor 跨级回退：n8n 官方不支持直接降级，须按官方指南执行 \`n8n db:revert\`（一次回退一步）后再回镜像 tag，或建议前滚修复
+
 ## 🔗 上游
 
 [n8n@${V} Release](https://github.com/n8n-io/n8n/releases/tag/n8n%40${V})
