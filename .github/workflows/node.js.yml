@@ -139,6 +139,10 @@ jobs:
     # 的注入/悬空引用盲区（translate.js 校验只覆盖机器翻译单条路径）；HIGH 命中阻断发版
     - name: 词典安全扫描
       if: steps.check_tag.outputs.exists == 'false'
+      # 🔴 必须带三层 wd——仓库检出在 path: ./n8n-i18n-chinese 嵌套子目录，
+      # 默认 workspace 少一层（2026-09-19 重跑 2.39.8 首跑实锤：该门禁自评审整改
+      # 加入后从未真跑过，首次执行即因路径缺失失败）
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
       run: node script/scan-zh-dict.js languages/zh-CN.json
 
     - name: Translate Publish Git
