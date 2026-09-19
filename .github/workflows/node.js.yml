@@ -15,6 +15,12 @@ on:
         type: string
         default: ""
 
+# 🔴 2026-09-19 评审外置触发射频后必备：每小时外置触发 + 流水线 >1h（minor 大翻译量）时
+#    可能双跑同版本——排队串行化，后启动者启动时 tag 已存在 → 自动干净退出
+concurrency:
+  group: nodejs-release
+  cancel-in-progress: false
+
 permissions:
   contents: write   # 翻译/dist 提交 + release tag + Release 附件
   actions: write    # workflow_dispatch 联动 image.yml（GITHUB_TOKEN 可触发的唯二事件之一）

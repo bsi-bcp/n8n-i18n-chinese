@@ -10,6 +10,11 @@ on:
         type: string
         default: ""
 
+# 🔴 评审 D-E2 教训（3.5h 卡死 run 实证）：无超时的镜像构建曾卡 3.5 小时
+concurrency:
+  group: image-release
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -31,6 +36,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment: test
+    timeout-minutes: 45  # 🔒 含 runners 搬运的单次构建上限（正常 6-25 分钟）
     steps:
       # 🔒 安全修复（2026-09-18 评审 #2/#3）：inputs/tag_name 不再直接内插 shell，
       #    经 env 传入并强制 semver 白名单校验后才使用
