@@ -179,10 +179,11 @@ jobs:
       if: steps.check_tag.outputs.exists == 'false'
       run: echo "resolution-mode=highest" >> /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/.npmrc
 
-    # 🔒 2026-09-19 评审 D-E3-4：--ignore-scripts 阻断上游 lockfile 投毒的 postinstall
-    #    传导（runner 持 OPENAI_API_KEY/BCP_REGISTRY_*）；前端工具链全走平台二进制
-    #    可选依赖，无副作用（CLAUDE.md 本机 runbook 已验证可行）
-    - run: pnpm install --frozen-lockfile --ignore-scripts
+    # ⚠️ 2026-09-19 六跑实锤：--ignore-scripts 会跳过 workspace 物化脚本（turbo 任务
+    #    70→65，nodes-langchain 的 src/v2 类型产物缺失致 TS2345 构建失败）——首发成功
+    #    配置即无此 flag，暂回滚；投毒面由 frozen-lockfile + 上游 tag 锚定兜底，后续以
+    #    「精准放行清单」方式重新加固（勿直接复加此 flag）
+    - run: pnpm install --frozen-lockfile
       if: steps.check_tag.outputs.exists == 'false'
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
 
