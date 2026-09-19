@@ -18,11 +18,12 @@ if (!inFile || !fs.existsSync(inFile) || !outDir) {
 }
 
 const EXCLUDE_FIELDS = new Set(['name', 'value', 'action', 'codewords', 'builderHint', 'type', 'version']);
+// 技术串判据：URL / 纯数字版本号 / 小写开头标识符形态（camelCase/snake/dot.path，如 jsCode、runOnceForAllItems）。
+// 🔴 不可用"无空格"判据——会把单词型 displayName（Mode/Code/Language/JavaScript）全部误杀（首轮实锤缺口）
 const isTechnical = (s) =>
-  !/\s/.test(s) ||
   /^https?:\/\//.test(s) ||
   /^[\d.v\-]+$/.test(s) ||
-  /^[\w.$-]+$/.test(s) && !/[一-鿿]/.test(s) && s.length < 6;
+  (/^[a-z][A-Za-z0-9_.-]*$/.test(s) && !/[一-鿿]/.test(s));
 
 let nodes = [];
 const raw = JSON.parse(fs.readFileSync(inFile, 'utf8'));
