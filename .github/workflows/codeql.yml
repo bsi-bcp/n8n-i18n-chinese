@@ -28,13 +28,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c20e34f438d671fc35777cc9820dd7adf8252874 # v3
+        # SHA 2026-09-19 经 API 机器校验（git/refs/tags/v4.38.1 → 解引用 tag object → commit 可见）。
+        # 旧 pin c20e34f4 为外部不可见的幽灵 commit（Actions 内部缓存可解析，审计断裂）——教训：
+        # SHA-pin 值必须机器校验后入库
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           languages: ${{ matrix.language }}
           # 🔴 必须显式指定：pinned 版本不会自动发现 .github/codeql.yml（2026-09-18 实测
           #    augmented config 为空 {}，paths-ignore 未生效、告警翻倍）
           config-file: ./.github/codeql.yml
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@c20e34f438d671fc35777cc9820dd7adf8252874 # v3
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           category: "/language:${{matrix.language}}"
+
+      - name: Notify Feishu on failure
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          jq -n --arg t "[${{ github.repository }}] 🔴 CodeQL 分析失败" --arg c "red" \
+            --arg m "安全扫描链失败需人工排查（动作版 pin 2026-09-19 换 v4.38.1）
+          日志：$RUN_URL
+          > 🤖 来源：GitHub Actions · CodeQL · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC" \
+            '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
+              elements:[{tag:"markdown",content:$m}]}}' > payload.json
+          curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @payload.json "$WEBHOOK" || true

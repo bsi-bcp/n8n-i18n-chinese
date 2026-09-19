@@ -4053,7 +4053,6 @@
     "settings.usageAndPlan.callOut": "{link}免费（永久）解锁选定的付费功能",
     "settings.usageAndPlan.callOut.link": "解锁",
     "settings.usageAndPlan.edition": "版本",
-    "settings.usageAndPlan.error": "@:_reusableBaseText.error",
     "settings.usageAndPlan.activeWorkflows": "已发布工作流",
     "settings.usageAndPlan.activeWorkflows.unlimited": "@:_reusableBaseText.unlimited",
     "settings.usageAndPlan.activeWorkflows.count": "{count} / {limit}",

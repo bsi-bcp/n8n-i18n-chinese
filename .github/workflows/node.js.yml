@@ -160,9 +160,18 @@ jobs:
       if: steps.check_tag.outputs.exists == 'false'
       run: echo "resolution-mode=highest" >> /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n/.npmrc
 
-    - run: pnpm install --frozen-lockfile
+    # 🔒 2026-09-19 评审 D-E3-4：--ignore-scripts 阻断上游 lockfile 投毒的 postinstall
+    #    传导（runner 持 OPENAI_API_KEY/BCP_REGISTRY_*）；前端工具链全走平台二进制
+    #    可选依赖，无副作用（CLAUDE.md 本机 runbook 已验证可行）
+    - run: pnpm install --frozen-lockfile --ignore-scripts
       if: steps.check_tag.outputs.exists == 'false'
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+
+    # 词典安全扫描（2026-09-19 评审 D-E3-5）：整本词典独立扫描——堵住人工补译/手改路径
+    # 的注入/悬空引用盲区（translate.js 校验只覆盖机器翻译单条路径）；HIGH 命中阻断发版
+    - name: 词典安全扫描
+      if: steps.check_tag.outputs.exists == 'false'
+      run: node script/scan-zh-dict.js languages/zh-CN.json
 
     - name: check n8n editor-ui is old
       id: editorui_dir
@@ -214,6 +223,8 @@ jobs:
     - name: 打包 dist 产物
       if: steps.check_tag.outputs.exists == 'false'
       run: |
+        # 📌 SUL 积极义务（2026-09-19 评审 D-E5-1）：随附条款 + 显著修改声明随产物分发
+        cp /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/NOTICE-n8n-localization.md dist/
         tar -czvf "n8n-editor-ui@${{ steps.ver.outputs.version }}.tar.gz" dist
       working-directory: ${{ steps.editorui_dir.outputs.dir }}
 

@@ -153,7 +153,9 @@ jobs:
               [ "$VERDICT" = "green" ] && VERDICT="yellow"
               DETAILS="$DETAILS- 🟡 $name 需模糊贴合（fuzz≤3 可过）"$'\n'
             else
-              if [ "$name" = "feat__i18n_zhCn.patch" ]; then VERDICT="red"; fi
+              # 🔴 2026-09-19 评审 D-E4-1：任一发版补丁硬失败即红灯——原口径只看
+              #    feat__i18n_zhCn，其余补丁失效会绿灯放行 → node.js.yml 构建失败循环
+              VERDICT="red"
               err=$(git apply --check "$p" 2>&1 | head -2 | tr '\n' ' ' | cut -c1-160)
               DETAILS="$DETAILS- ❌ $name 贴合失败：$err"$'\n'
             fi
@@ -239,8 +241,10 @@ jobs:
           # 🔴 发版判定统一在 shell 字符串比较里算好输出单一标志——Auto release 步骤
           #    只认 steps.report.outputs.go_release。不再用 inputs.report_only != true
           #    这类表达式比较（gh CLI -f 传参存在字符串/布尔类型歧义，2026-09-19 隐患关闭）
+          # 🟡 2026-09-19 评审 D-E4-3：仅绿灯（完整贴合）自动发版——fuzz 黄灯可静默错位，
+          #    降级为「等待确认」，与卡片「建议人工复核」文案恢复一致
           GO=false
-          if [ "$PV" != "red" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ] && [ "$IMG" = "true" ] && [ "$DRILL" != "true" ]; then
+          if [ "$PV" = "green" ] && [ "$AUTO_RELEASE" = "true" ] && [ "${REPORT_ONLY:-false}" != "true" ] && [ "$IMG" = "true" ] && [ "$DRILL" != "true" ]; then
             GO=true
           fi
           echo "go_release=$GO" >> "$GITHUB_OUTPUT"
@@ -252,6 +256,12 @@ jobs:
               echo "- **补丁贴合**：$PVM"
               printf '%b' "${{ steps.patch.outputs.details }}"
               echo "- **翻译缺口**：$STR"
+              # 🟡 2026-09-19 评审 D-E4-2（短期项）：en-nodes 提取版本透明化——
+              #    节点描述/操作标题提取在 CI 之外，新 minor 不重提取则面板覆盖不全
+              ENNODES_VER=$(jq -r '."._meta.version" // "unknown"' plugin/script/en-nodes.json 2>/dev/null || echo unknown)
+              if [ "$ENNODES_VER" != "$T" ]; then
+                echo "- ⚠️ **en-nodes 提取版本**：$ENNODES_VER（目标 $T）——新 minor 的节点面板新文案需人工重提取（extract-node-headers.js），否则面板描述/操作标题覆盖不全"
+              fi
               echo "- **基础镜像**：$IMGM"
               echo "- **自动发版**：AUTO_RELEASE=$AUTO_RELEASE report_only=${REPORT_ONLY:-false}"
               echo "> 🤖 来源：GitHub Actions · n8n Stable Watch · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
@@ -259,6 +269,9 @@ jobs:
                 echo "- **结论**：✅ 将自动发版（翻译 → 完整包构建 → Release → 镜像）"
               elif [ "$PV" = "red" ]; then
                 echo "- **结论**：🛑 需人工适配补丁后重评"
+              elif [ "$PV" = "yellow" ]; then
+                echo "- **结论**：🟡 模糊贴合需人工复核补丁内容，确认后一键发版"
+                echo "- 一键发版：\`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`"
               else
                 echo "- **结论**：👁 具备发版条件，等待确认"
                 echo "- 一键发版：\`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`"
