@@ -100,7 +100,7 @@ n8n 新旧目录布局兼容：新布局 `packages/frontend/editor-ui`（≥2.38
 2. **🔴 raw.githubusercontent Fastly 变体分裂（最大坑）**：en.json 是**半扁平结构**（8350 顶层复合键 + 2 嵌套段），递归 get 在其上查复合键恒 None——**判定内容差异必须用 flat 遍历，勿用递归 get**。Node fetch 默认带压缩头会命中 Fastly 的 gzip/br 变体缓存，与 identity 变体可能内容不同步；cache-bust query 无效（该域 Fastly 丢弃 query）。根治=translate.js 已把 raw URL 自动转 GitHub contents API（base64 直读 git 对象）
 3. **扫描器 linked-message 分级**：上游 en 基线自身可能悬空引用（`settings.usageAndPlan.error=@:_reusableBaseText.error` 而 `_reusableBaseText` 无 error），zh 忠实镜像不构成污染——「en 同值同悬空」降级 WARN，仅「en 完好而 zh 悬空」HIGH
 4. **语义脚本 CI 路径**：working-directory 已是 n8n 根时参数必须传 `.`（传 `./n8n` 双重拼接成不存在路径）
-5. **🔴 `--ignore-scripts` 不可用于构建安装**：跳过 workspace 物化脚本 → turbo 任务 70→65、nodes-langchain 的 src/v2 生成物缺失 → TS2345 构建失败。投毒面暂由 frozen-lockfile + 上游 tag 锚定兜底，后续以「精准放行清单」重新加固
+5. **🔴 勿加 `--ignore-scripts`——上游 allowBuilds 白名单已是精准放行**：上游 pnpm-workspace.yaml 自带 `allowBuilds` 清单（pnpm 11 特性），仅放行 sqlite3/isolated-vm/kafka-javascript/ripgrep 四个合法原生包，其余依赖脚本默认全禁（投毒面已最小化）。加 flag 会**覆盖白名单**把合法构建也禁掉：本地复现实锤 sqlite3 原生模块缺失 → nodes-langchain 的 n8n-generate-metadata require 崩 → turbo 任务 70→65 连锁失败（六跑实锤）。七跑验证白名单机制正常（isolated-vm 构建日志可见）。后续若要强化供应链：审查 allowBuilds 清单本身 + codeql/dependabot 已有，勿动 install flag
 6. **上游可能 force-push 已发 tag**（2.39.8 实证回退过功能键）：重推历史版本时核对 git 对象级内容（gh api contents），勿信缓存与记忆
 7. 全链 bot 提交（`chore: auto translate`）会与本地修复竞争——推修复前先 fetch --rebase；dispatch 前确认 HEAD 已含全部修复
 
