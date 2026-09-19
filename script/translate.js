@@ -246,8 +246,14 @@ async function run(){
     //            且 Node fetch 不消费 http_proxy 环境变量，curl 会走代理而 node 不会）
     // 默认 master（可能领先最新 Release）
     const enSourceUrl = process.env.N8N_EN_JSON_URL || "https://raw.githubusercontent.com/n8n-io/n8n/master/packages/frontend/%40n8n/i18n/src/locales/en.json";
+    // 🔴 Fastly CDN 变体分裂实锤（2026-09-19）：上游 force-push 回退 tag 后，raw 的 gzip/br
+    //    压缩变体缓存未随 purge 刷新（identity 变体已更新）——Node fetch 默认带压缩头拿到
+    //    回退前脏内容，词条数相同但内容不同，极难察觉。加时间戳 query 强制回源。
+    const enFetchUrl = /^https?:\/\//.test(enSourceUrl)
+        ? enSourceUrl + (enSourceUrl.includes("?") ? "&" : "?") + "cb=" + Date.now()
+        : enSourceUrl;
     let newEnLanguages = /^https?:\/\//.test(enSourceUrl)
-        ? await fetch(enSourceUrl).then(res => res.json())
+        ? await fetch(enFetchUrl).then(res => res.json())
         : JSON.parse(fs.readFileSync(enSourceUrl, "utf8"));
 
     for (const targetLanguage of targetLanguages) {
