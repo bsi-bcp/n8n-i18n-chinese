@@ -78,7 +78,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - **接线**：Dockerfile 构建期先 JSON 后 JS 双注入（运行时零开销）；映射表随 main 走，image.yml checkout main 天然取最新，CI 无需额外步骤
 - **验证口径**：测试床 `npm pack n8n-nodes-base@<ver>` tarball（⚠️ 上游 npm 不发 patch 版：2.39.7/8 无包，官方 2.39.8 镜像内 nodes-base 实为 2.39.6）；types 层看 displayName 中文化占比；UI 层开节点参数面板抽查
 - **灰度结论（2026-09-19，YTJ1 bcphub-test 五容器）**：JSON 注入 95% 利用率 → types displayName 中文化 84%（残留多为 ID/URL 类术语保留串）→ Slack「发送消息」面板全中文（资源=消息/操作=发送/发送消息至/消息类型=简单文本消息）；节点标题 "Send a message" 英文属 actionTitles 词典缺口（第三层管线，与参数汉化无关）。回滚锚点：各容器 `dist/types/nodes.json.bak-params-m3`（宿主机另存 /tmp/ytj1-nodesbase-dist-bak.tar.gz）
-- 待办：译串「全量评审 vs 抽样+客户反馈回路」→ **已定：抽样+客户反馈回路（2026-09-19 用户定）**；参数汉化随下版镜像自然携带（2.40 发版时构建链自动带上）
+- 待办：译串「全量评审 vs 抽样+客户反馈回路」→ **已定：抽样+客户反馈回路（2026-09-19 用户定）**；~~参数汉化随下版镜像携带~~ **已实证随 2.39.8 镜像分发（2026-09-20 本机拉 SWR 官方镜像跑通：Slack「发送消息」面板全中文——repush 轮 image.yml checkout main 天然带入注入接线）；后续重点是映射表扩充与抽样评审**
 
 ## 发布流水线（CI 全自动，2026-09-18 实战定型）
 

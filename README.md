@@ -19,14 +19,12 @@ docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8
 >
 > 非 n8n 官方项目；n8n® 为 n8n GmbH 商标，n8n 本体受 [Sustainable Use License](https://docs.n8n.io/license/)（fair-code）约束；汉化包本身 MIT（© imblowsnow + BSI，经原作者授权），详见[版权与来源声明](#版权与来源声明)。
 
-<!-- 📸 强烈建议补一张中文界面截图（首屏转化率最大的单件）：截编辑器主界面（带中文节点面板）存为 docs/images/preview.png，然后取消下面两行注释：
 <img src="docs/images/preview.png" alt="n8n 简体中文界面预览" width="920">
--->
 
 ## ✨ 特性
 
 - 🔄 **全自动跟进上游** — watcher 每小时巡检 n8n 官方稳定版，评估通过后自动完成「增量翻译 → 覆盖率门禁 → 构建 → Release → 镜像推送」，上游发新版通常当天即有对应汉化，不用再苦等停更的汉化包
-- 📖 **不只翻菜单** — 9522 键界面词典全量汉化；节点面板的节点描述（568 节点）与操作标题（456 条）一并汉化；Data tables 等弹窗硬编码英文标签已修复
+- 📖 **不只翻菜单** — 9522 键界面词典全量汉化；节点面板的节点描述（568 节点）与操作标题（456 条）一并汉化；Data tables 等弹窗硬编码英文标签已修复；节点参数面板中文化已随镜像分发（如 Slack「发送消息」面板全中文）
 - 🐳 **镜像即所得** — 官方 n8n + 汉化 editor-ui 合一镜像，amd64 / arm64 双架构，默认中文界面，一条 `docker run` 用起来
 - 🔓 **公开免登录** — 华为云 SWR 公开仓库，匿名 `docker pull`，不注册、不登录、无门槛
 - 🧰 **部署形态齐全** — Docker / Docker Compose / Queue Mode 集群（同版本配套 runners 镜像）/ 官方镜像挂载 dist / npm·npx 本地替换 / 内网离线导入，全有现成步骤
