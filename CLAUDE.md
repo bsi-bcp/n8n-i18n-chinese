@@ -67,16 +67,18 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - `languages/zh-CN.json` 的嵌套结构与 en.json 同构
 - 两者都是自动生成物，CI 以 `chore: auto translate` 提交，不要手工改动结构；手工补译时保持 key 不变即可被下次运行保留
 
-## 节点参数汉化管线（2026-09-19 立项，M2 完成 / M3 已接线待灰度）
+## 节点参数汉化管线（2026-09-19 立项，M2 完成 / M3 已灰度全绿）
 
-参数面板串（displayName/options/description/hint/placeholder）硬编码于 nodes-base 源码、经后端 types payload 直出、**前端渲染不过 i18n 查表**（审计实证），故走「构建期对 dist 定向替换」路线（M0 POC 于 YTJ1 实机验证注入层）。命令见「常用命令」节。产物：`script/params-zh-map.json`（en→zh 映射，**按英文原文锚定、结构无关**——上游重构不影响映射表）。
+参数面板串（displayName/options/description/hint/placeholder）硬编码于 nodes-base 源码、经后端 types payload 直出、**前端渲染不过 i18n 查表**（审计实证），故走「构建期定向替换」路线。命令见「常用命令」节。产物：`script/params-zh-map.json`（en→zh 映射 25855 条，**按英文原文锚定、结构无关**——上游重构不影响映射表）。
 
+- 🔴 **注入主路径=静态缓存**（YTJ1 灰度 2026-09-19 实证）：运行时 `/types/nodes.json` 直接 serve `n8n-nodes-base/dist/types/nodes.json` **预生成 JSON**（1031 节点版本条目），节点 dist JS 不被重新执行——只注入 JS 目录对 types 零效果（首灰度 16% 全是社区节点自带中文的误判）；必须 JSON 注入该文件，JS 扫描仅作动态路径兜底。`dist/known/nodes.json` 无参数内容无需处理
 - **双源提取**：types payload（`extract-node-parameters.cjs`，主源但只含各节点当前版参数）+ dist 对账（`extract-params-from-dist.cjs`，补多版本节点旧版参数与 credentials 描述）。⚠️ types 基线勿从被 POC 污染的实例拉（Code 节点串已中文化，2026-09-19 剔除过 8 条）
 - **翻译器**（`translate-params.cjs`）：DeepSeek 批 15 + 术语表强约束 + 增量跳过已译 + 批级补译 + 每 300 条断点落盘。🔴 batch 元素必须带 `i` 字段且发送/响应查找共用同一份数组——曾因缺 `i` 致 `obj[String(b.i)]` 恒 miss，30 条假性"被安全校验拦截"（实为 bug 误诊）
-- **注入器**（`inject-params.cjs`）：只动显示语境属性（displayName/description/placeholder/hint/label 全量；**name 仅替换非标识符形态**——`^[a-z][A-Za-z0-9_]*$` 视为参数键保护）；反转义后按原文精确匹配；输出统一双引号风格字面量（单/双转义混用会炸语法）；`node --check` 校验失败且原文可过才回滚（🔴 dist 是 ESM，--check 须 `.mjs` 判定，否则原文基线全挂）；替换日志报告命中率，命中率骤降=上游重构信号
-- **接线**：Dockerfile 构建期 `RUN node inject-params.cjs`（运行时零开销）；映射表随 main 走，image.yml checkout main 天然取最新，CI 无需额外步骤
-- **验证**：测试床用 `npm pack n8n-nodes-base@<ver>` tarball（⚠️ 上游 npm 不发 patch 版：2.39.7/8 无包）。2.39.6 终验：68696 处替换 / 0 回滚 / 利用率 95%（余 5% 为跨版本差，随版收敛）
-- 待办：YTJ1 灰度四件套 + 参数面板抽查（M3 出口）；「全量评审 vs 抽样+客户反馈回路」待用户定
+- **注入器**（`inject-params.cjs`，双模式自动分流）：JSON 模式=结构化 walk（displayName/description/placeholder/hint/label 全量；**name 仅替换非标识符形态**——`^[a-z][A-Za-z0-9_]*$` 视为参数键保护），写前 parse 校验；JS 目录模式=反转义精确匹配 + 统一双引号风格输出 + `node --check`（🔴 dist 是 ESM，--check 须 `.mjs` 判定），坏且原文可过才回滚
+- **接线**：Dockerfile 构建期先 JSON 后 JS 双注入（运行时零开销）；映射表随 main 走，image.yml checkout main 天然取最新，CI 无需额外步骤
+- **验证口径**：测试床 `npm pack n8n-nodes-base@<ver>` tarball（⚠️ 上游 npm 不发 patch 版：2.39.7/8 无包，官方 2.39.8 镜像内 nodes-base 实为 2.39.6）；types 层看 displayName 中文化占比；UI 层开节点参数面板抽查
+- **灰度结论（2026-09-19，YTJ1 bcphub-test 五容器）**：JSON 注入 95% 利用率 → types displayName 中文化 84%（残留多为 ID/URL 类术语保留串）→ Slack「发送消息」面板全中文（资源=消息/操作=发送/发送消息至/消息类型=简单文本消息）；节点标题 "Send a message" 英文属 actionTitles 词典缺口（第三层管线，与参数汉化无关）。回滚锚点：各容器 `dist/types/nodes.json.bak-params-m3`（宿主机另存 /tmp/ytj1-nodesbase-dist-bak.tar.gz）
+- 待办：译串「全量评审 vs 抽样+客户反馈回路」→ **已定：抽样+客户反馈回路（2026-09-19 用户定）**；参数汉化随下版镜像自然携带（2.40 发版时构建链自动带上）
 
 ## 发布流水线（CI 全自动，2026-09-18 实战定型）
 
