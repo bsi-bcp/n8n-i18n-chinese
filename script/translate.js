@@ -262,7 +262,8 @@ async function run(){
         }
         const waitTranslateList = []
 
-        newEnLanguages = lodash.merge({}, newEnLanguages, newEnNodesLanguages);
+        // 🔴 评审 D-E4-9：排除 en-nodes 的 _meta 元数据键——否则伪键进入词典并被送 LLM「翻译」
+        newEnLanguages = lodash.merge({}, newEnLanguages, lodash.omit(newEnNodesLanguages, '_meta'));
         collectMessages(oldEnLanguages, newEnLanguages , targetLanguages, "", waitTranslateList)
         await translate(waitTranslateList, targetLanguages, targetLanguage.label);
         // 最后使用 enLanguages的key  排序 targetLanguages key

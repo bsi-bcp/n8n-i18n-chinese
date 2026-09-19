@@ -76,9 +76,9 @@ for (const [key, val] of zh) {
   }
 
   // linked-message 引用对「en 基座 ∪ zh」联合判定（vue-i18n 回退机制：zh 缺键回退 en）。
-  // D-E3-7：覆盖修饰符形式 @.modifier:key（取 ':' 之后为真实键名）
-  for (const m of val.matchAll(/@[.:]([\w.]+)/g)) {
-    const target = m[1].includes(':') ? m[1].split(':').pop() : m[1];
+  // D-E3-7 复核修正：区分裸形式 @:key 与修饰符形式 @.modifier:key（取冒号后真实键名）
+  for (const m of val.matchAll(/@(?::([\w.]+)|[.\w]+:([\w.]+))/g)) {
+    const target = m[1] || m[2];
     if (!zh.has(target) && !(en && en.has(target))) flag('HIGH', `linked-message 引用在 en/zh 词典均不存在: ${target}`);
   }
 }
