@@ -205,7 +205,9 @@ jobs:
       run: |
         BASE=/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/patches
         git apply "$BASE/feat__node_creator_actions_i18n.patch"
-        git apply "$BASE/fix__hardcoded_labels.patch"
+        # 2026-09-19 评审鲁棒化：dataTable/弹窗硬编码修复改语义脚本（git apply 上下文
+        # 匹配被 2.40 defineFrontendModule 重构打爆——2.40.3 实测）；脚本对 2.39/2.40 双结构通吃
+        node "$GITHUB_WORKSPACE/n8n-i18n-chinese/script/apply-hardcoded-labels.cjs" ./n8n
         echo "==== 补丁应用完成 ===="
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
 
