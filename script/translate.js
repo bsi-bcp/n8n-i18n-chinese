@@ -246,15 +246,23 @@ async function run(){
     //            且 Node fetch 不消费 http_proxy 环境变量，curl 会走代理而 node 不会）
     // 默认 master（可能领先最新 Release）
     const enSourceUrl = process.env.N8N_EN_JSON_URL || "https://raw.githubusercontent.com/n8n-io/n8n/master/packages/frontend/%40n8n/i18n/src/locales/en.json";
-    // 🔴 Fastly CDN 变体分裂实锤（2026-09-19）：上游 force-push 回退 tag 后，raw 的 gzip/br
-    //    压缩变体缓存未随 purge 刷新（identity 变体已更新）——Node fetch 默认带压缩头拿到
-    //    回退前脏内容，词条数相同但内容不同，极难察觉。加时间戳 query 强制回源。
-    const enFetchUrl = /^https?:\/\//.test(enSourceUrl)
-        ? enSourceUrl + (enSourceUrl.includes("?") ? "&" : "?") + "cb=" + Date.now()
-        : enSourceUrl;
-    let newEnLanguages = /^https?:\/\//.test(enSourceUrl)
-        ? await fetch(enFetchUrl).then(res => res.json())
-        : JSON.parse(fs.readFileSync(enSourceUrl, "utf8"));
+    // 🔴 Fastly 变体分裂实锤（2026-09-19 三炸复盘）：上游 force-push 回退 tag 后，raw 的
+    //    gzip/br 压缩变体缓存未随 purge 刷新（Node fetch 默认带压缩头），词条数相同而内容
+    //    不同；cache-bust query 亦无效（Fastly 对该域丢弃 query）。根治=raw URL 转 GitHub
+    //    contents API——直读 git 对象（base64），不经 CDN 内容缓存。
+    const rawMatch = enSourceUrl.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
+    let newEnLanguages;
+    if (rawMatch) {
+        const apiUrl = `https://api.github.com/repos/${rawMatch[1]}/${rawMatch[2]}/contents/${rawMatch[4]}?ref=${rawMatch[3]}`;
+        const res = await fetch(apiUrl, { headers: { "User-Agent": "n8n-i18n-translate", "Accept": "application/vnd.github+json" } });
+        if (!res.ok) throw new Error(`GitHub contents API ${res.status}: ${(await res.text()).slice(0, 120)}`);
+        const j = await res.json();
+        newEnLanguages = JSON.parse(Buffer.from(j.content, "base64").toString("utf8"));
+    } else if (/^https?:\/\//.test(enSourceUrl)) {
+        newEnLanguages = await fetch(enSourceUrl).then(res => res.json());
+    } else {
+        newEnLanguages = JSON.parse(fs.readFileSync(enSourceUrl, "utf8"));
+    }
 
     for (const targetLanguage of targetLanguages) {
         let targetLanguages = {};
