@@ -19,6 +19,19 @@ if (!root) {
 // 新增修复项时在此登记。替换文本缩进需与查找文本一致。
 const T = (s) => s.replace(/\\t/g, '\t');
 const RULES = [
+  // ── 便签默认模板 + 底部提示（2026-09-19 用户报告画布新建便签全英文）──
+  // 模板在 StickyNote 节点参数 default（经 types payload 直出）；提示在 design-system
+  // 独立 locale 体系（不走主 @n8n/i18n 词典，管线结构性不可见）
+  ['packages/nodes-base/nodes/StickyNote/StickyNote.node.ts', [
+    [T("\"## I'm a note \\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)\""),
+     T("\"## 我是便签 \\n**双击**编辑我。[指南](https://docs.n8n.io/workflows/components/sticky-notes/)\""),
+     '便签默认模板', 1],
+  ], 1],
+  ['packages/frontend/@n8n/design-system/src/locale/lang/en.ts', [
+    [T("'You can style with <a href=\"https://docs.n8n.io/workflows/components/sticky-notes/\" target=\"_blank\">Markdown</a>'"),
+     T("'可用 <a href=\"https://docs.n8n.io/workflows/components/sticky-notes/\" target=\"_blank\">Markdown</a> 美化便签'"),
+     '便签底部 Markdown 提示', 1],
+  ], 1],
   // ── settings/侧栏模块描述符族（2026-09-19 用户报告：设置菜单 AI Assistant/Chat 未翻译）──
   // module.descriptor.ts 的 name 在应用启动时静态求值（dataTable 同坑），直接换中文字面量最稳
   // （术语决策 2026-09-19：AI Assistant→AI 助手、Chat→聊天、OpenTelemetry 保留英文）
