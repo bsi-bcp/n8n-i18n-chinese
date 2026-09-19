@@ -44,7 +44,6 @@ jobs:
       WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
       AUTO_RELEASE: ${{ vars.AUTO_RELEASE || 'false' }}
       REPORT_ONLY: ${{ inputs.report_only }}
-      LABELS_OVERRIDE: ${{ steps.labels.outputs.verdict_override }}
       FORCE: ${{ inputs.force_version }}
     steps:
       - name: Restore watch state
@@ -233,6 +232,8 @@ jobs:
       - name: Compose evaluation report
         if: steps.gate.outputs.skip == 'false'
         id: report
+        env:
+          LABELS_OVERRIDE: ${{ steps.labels.outputs.verdict_override }}
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
