@@ -43,6 +43,22 @@ n8nio/n8n
 
 > ⚠️ `blowsnow/n8n-chinese` 为原上游作者的镜像，**已停止更新（停在 n8n 2.33.7）**，本仓库不再向该地址发布；老用户请迁移到方式一。
 
+**✅ 验证安装**：打开 `http://localhost:15678`，界面应为简体中文；或 `curl http://localhost:5678/healthz` 返回 200。
+
+**🔀 Queue Mode 集群**：除 main/worker/webhook 外，还需一个 **Task Runners 容器**执行 Code 节点——用同版本配套镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:<版本号>`（公开拉取，同样免登录）。⚠️ runners 与 n8n 后端**版本必须严格一致**，不可混搭。
+
+## 升级操作一览
+
+```shell
+# ① 备份
+cp docker-compose.yml docker-compose.yml.bak && tar czf n8n-data-backup.tgz ~/.n8n
+# ② 改镜像版本号（chinese 与 runners 同步改成同一个新版本号）
+# ③ 拉取并生效
+docker compose pull && docker compose up -d
+# ④ 验证：/healthz 200 + 打开界面看中文 + 关键工作流试运行一条
+```
+（Queue Mode 集群：main/worker/webhook 与 runners 四个服务**一起**改版本号。）
+
 ## 升级注意事项（🔴 必读）
 
 - **升级前**：备份 compose 文件与数据卷；对照上方兼容矩阵确认目标版本
