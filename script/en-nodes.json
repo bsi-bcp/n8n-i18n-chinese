@@ -1,4 +1,9 @@
 {
+    "_meta": {
+        "version": "2.39.8",
+        "tool": "extract-node-headers.js",
+        "extractedAt": "2026-09-19"
+    },
     "headers.@n8n/n8n-nodes-langchain.agent.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.chainLlm.description": "A simple chain to prompt a large language model",
@@ -1146,7 +1151,5 @@
     "headers.actionTitles.Write File to Disk": "Write File to Disk",
     "headers.actionTitles.Write data to a database": "Write data to a database",
     "headers.actionTitles.XML To JSON": "XML To JSON",
-    "headers.actionTitles.update details of a file": "update details of a file",
-    "headers.actionTitles.Code in JavaScript": "Code in JavaScript",
-    "headers.actionTitles.Code in Python": "Code in Python"
+    "headers.actionTitles.update details of a file": "update details of a file"
 }

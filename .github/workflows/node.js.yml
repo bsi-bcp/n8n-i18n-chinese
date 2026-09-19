@@ -82,6 +82,27 @@ jobs:
       run: |
         echo "Tags exist, stopping workflow."
 
+    # 📌 Checkout n8n 前置（2026-09-19 待办⑥落地）：en-nodes 提取与构建共用同一源码树，
+    #    提取必须先于 Translate（translate.js merge en-nodes 须为本版最新）
+    - name: Checkout n8n (git tag，勿用 target_commitish——release 分支会被上游清理)
+      if: steps.check_tag.outputs.exists == 'false'
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        repository: n8n-io/n8n
+        ref: n8n@${{ steps.ver.outputs.version }}
+        path: ./n8n
+
+    # 📌 en-nodes 自动提取（2026-09-19 待办⑥落地）：每版从 n8n 源码重提节点级 headers
+    #    （面板第二层描述 + 第三层操作标题），替代本机手动 worktree 提取；
+    #    产物含 _meta.version，watcher 按 minor 比对的机制不变
+    - name: Extract en-nodes headers
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        npm install --prefix /tmp/ts-extract typescript@5 --silent
+        NODE_PATH=/tmp/ts-extract/node_modules node script/extract-node-headers.js /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n | tail -12
+        jq 'keys | length' script/en-nodes.json
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+
     - name: 记录翻译前键数（供发布说明计算翻译增量）
       if: steps.check_tag.outputs.exists == 'false'
       run: echo "PREV_KEY_COUNT=$(jq '[paths(scalars)] | length' languages/zh-CN.json)" >> "$GITHUB_ENV"
@@ -151,7 +172,7 @@ jobs:
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
 
-        git add languages/* script/en.json || true
+        git add languages/* script/en.json script/en-nodes.json || true
 
         # 如果没有变更就跳过
         if git diff --cached --quiet; then
@@ -161,14 +182,6 @@ jobs:
           git push origin
         fi
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
-
-    - name: Checkout n8n (git tag，勿用 target_commitish——release 分支会被上游清理)
-      if: steps.check_tag.outputs.exists == 'false'
-      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      with:
-        repository: n8n-io/n8n
-        ref: n8n@${{ steps.ver.outputs.version }}
-        path: ./n8n
 
     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       if: steps.check_tag.outputs.exists == 'false'
