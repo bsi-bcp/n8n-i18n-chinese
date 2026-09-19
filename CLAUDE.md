@@ -92,6 +92,18 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 n8n 新旧目录布局兼容：新布局 `packages/frontend/editor-ui`（≥2.38，src 为 `features/` 结构）vs 旧布局 `packages/editor-ui`（≤2.33）。`fix_editor-ui.patch` 与 `fix_editor-ui.old.patch` 内容相同（CredentialConfig.vue 加空值保护），仅目标路径不同，**仅 ≤2.33 手动构建需要**——watcher 已将其与 `.old` 同列忽略（2026-09-18 起，评估卡不再出现误导性 ❌）。
 
+## CI 重跑排障实录（2026-09-19 删 tag 重推 2.39.8 七跑全绿沉淀）
+
+重推同版本流程：`gh release delete release/<ver> --cleanup-tag`（先备份资产）→ dispatch node.js.yml。连炸六关的教训（**新增 CI 步骤/门禁必须真实跑一轮流水线验证，本地/语法审查不算数**）：
+
+1. **词典安全扫描 wd**：仓库检出带 `path: ./n8n-i18n-chinese` 嵌套，步骤漏配三层 working-directory 即「文件不存在」
+2. **🔴 raw.githubusercontent Fastly 变体分裂（最大坑）**：en.json 是**半扁平结构**（8350 顶层复合键 + 2 嵌套段），递归 get 在其上查复合键恒 None——**判定内容差异必须用 flat 遍历，勿用递归 get**。Node fetch 默认带压缩头会命中 Fastly 的 gzip/br 变体缓存，与 identity 变体可能内容不同步；cache-bust query 无效（该域 Fastly 丢弃 query）。根治=translate.js 已把 raw URL 自动转 GitHub contents API（base64 直读 git 对象）
+3. **扫描器 linked-message 分级**：上游 en 基线自身可能悬空引用（`settings.usageAndPlan.error=@:_reusableBaseText.error` 而 `_reusableBaseText` 无 error），zh 忠实镜像不构成污染——「en 同值同悬空」降级 WARN，仅「en 完好而 zh 悬空」HIGH
+4. **语义脚本 CI 路径**：working-directory 已是 n8n 根时参数必须传 `.`（传 `./n8n` 双重拼接成不存在路径）
+5. **🔴 `--ignore-scripts` 不可用于构建安装**：跳过 workspace 物化脚本 → turbo 任务 70→65、nodes-langchain 的 src/v2 生成物缺失 → TS2345 构建失败。投毒面暂由 frozen-lockfile + 上游 tag 锚定兜底，后续以「精准放行清单」重新加固
+6. **上游可能 force-push 已发 tag**（2.39.8 实证回退过功能键）：重推历史版本时核对 git 对象级内容（gh api contents），勿信缓存与记忆
+7. 全链 bot 提交（`chore: auto translate`）会与本地修复竞争——推修复前先 fetch --rebase；dispatch 前确认 HEAD 已含全部修复
+
 ## 手动构建发布 runbook（2.38.7 / 2.39.6 / 2.39.7-v3 三轮实战验证）
 
 正常情况下 CI 全自动承包完整包产线，本 SOP 供 CI 不可用、补丁红灯本地适配、或需要本地验证时使用（CI 发过补丁包/完整包的版本若需重推资产用 `gh release upload release/<ver> <文件> --clobber -R bsi-bcp/n8n-i18n-chinese`）：
