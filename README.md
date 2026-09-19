@@ -5,6 +5,7 @@ n8n 编辑器 UI 简体中文汉化包（社区延续维护 [fork](https://githu
 | 交付物 | 获取方式 |
 |---|---|
 | 🐳 **中文 Docker 镜像**（推荐） | `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本号>`（华为云 SWR，amd64 + arm64，内置中文界面） |
+| 🔧 **Task Runners 镜像**（Queue Mode 用） | `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:<版本号>`（同版本配套，公开拉取） |
 | 📦 **editor-ui 部署包** | 本仓库 [Releases](https://github.com/bsi-bcp/n8n-i18n-chinese/releases) 附件 `n8n-editor-ui@<版本号>.tar.gz`（bind mount 覆盖用） |
 
 - 版本选择见下方「[n8n 版本兼容说明](#n8n-版本兼容说明)」；上游发新版本后本仓库自动跟进
