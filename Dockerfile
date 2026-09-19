@@ -21,6 +21,9 @@ COPY ./editor-ui-dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui
 # JSON 写前 parse 校验 / JS 每文件 --check，回滚>0 即失败退出。映射表按英文原文锚定。
 COPY ./script/params-zh-map.json /opt/i18n-params/params-zh-map.json
 COPY ./script/inject-params.cjs /opt/i18n-params/inject-params.cjs
+# 🔴 官方镜像默认 USER=node，无权写 /usr/local/lib/node_modules（EACCES 实锤）——提权注入后回落
+USER root
 RUN NB=/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist \
     && node /opt/i18n-params/inject-params.cjs "$NB/types/nodes.json" /opt/i18n-params/params-zh-map.json \
     && node /opt/i18n-params/inject-params.cjs "$NB" /opt/i18n-params/params-zh-map.json
+USER node
