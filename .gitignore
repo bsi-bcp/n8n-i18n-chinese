@@ -1,2 +1,6 @@
 # 内部文档，不提交 GitHub
 docs-inner/
+
+# 翻译断点落盘的中间快照，防误提交（评审 Round1 P2-5 / Round2 P2-1）
+languages/*.tmp
+script/*.tmp
