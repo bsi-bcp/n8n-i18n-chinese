@@ -50,8 +50,10 @@ function injectJson(file) {
     for (const [k, v] of Object.entries(node)) {
       if (typeof v === 'string' && (DISPLAY_KEYS.has(k) || k === 'name' || k === 'action') && v.length >= 2) {
         // name/action 是行为标识符重灾区（参数键/选项值），仅放行自然语言形态——
-        // options[].action 如 'Code in JavaScript' 是面板第三层标题+节点实例名来源（2026-09-19 实证）
-        if ((k === 'name' || k === 'action') && IDENT.test(v)) continue;
+        // options[].action 如 'Code in JavaScript' 是面板第三层标题+节点实例名来源（2026-09-19 实证）；
+        // 🔴 含下划线的无空格串（My_Color_Tool 类）按标识符保护（评审 R1-P0：工具名默认值
+        //    中文化会破坏 LLM 函数调用命名校验；旧正则 ^[a-z] 开头不保护大写/下划线形态）
+        if ((k === 'name' || k === 'action') && (IDENT.test(v) || (/^[A-Za-z0-9_]+$/.test(v) && v.includes('_')))) continue;
         const zh = zhMap[v];
         if (zh !== undefined) { node[k] = zh; hitEn.add(v); }
       } else if (k === 'inputNames' && Array.isArray(v)) {
@@ -91,8 +93,9 @@ const unescapeJs = (lit) => lit.replace(/\\(.)/g, (_, c) => ({ n: '\n', t: '\t',
 // 输出统一双引号风格字面量
 const toDqLiteral = (s) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')}"`;
 
-// 标识符形态的字面量不可能含转义序列——含 \ 即自然语言串
-const isIdentLike = (lit) => !lit.includes('\\') && IDENT.test(lit);
+// 标识符形态的字面量不可能含转义序列——含 \ 即自然语言串；
+// 含下划线的无空格串同按标识符保护（My_Color_Tool 类，评审 R1-P0）
+const isIdentLike = (lit) => !lit.includes('\\') && (IDENT.test(lit) || (/^[A-Za-z0-9_]+$/.test(lit) && lit.includes('_')));
 
 const DISPLAY_PROPS = ['displayName', 'description', 'placeholder', 'hint', 'label'];
 // dist 形态实测（2.39.6 tsc 可读产物）: displayName: 'JavaScript' —— 冒号后带空格 + 单引号；
