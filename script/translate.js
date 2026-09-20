@@ -19,16 +19,22 @@ if (!process.env.OPENAI_API_BASE){
 const _max429 = parseInt(process.env.OPENAI_429_MAX_RETRIES || '10', 10);
 const MAX_429_RETRIES = Number.isFinite(_max429) && _max429 >= 0 ? _max429 : 10;
 let consecutive429 = 0;
+// 🔴 熔断三态（/code-review 2026-09-20 发现1）：trip → 冷却 60s 自动续翻（免费档 RPM 窗口
+//    过去即恢复，杜绝误跳闸整轮零产出）；一个预算内二次 trip → 永久锁存（真持续限流秒级终止）
+let circuitUntil = 0;
+let circuitLatched = false;
+let circuitTrips = 0;
+// 🔴 连续超时熔断（/code-review 2026-09-20 发现2）：黑洞端点每批白烧 ~18 分钟重试预算，
+//    连续 2 批超时即锁存终止。任一请求成功即复位（端点活着就不算连续）
+let consecutiveTimeoutBatches = 0;
 
 // 🔴 单请求显式超时（评审 Round1 P1-2）：默认 60s——须覆盖推理模型 + OPENAI_BATCH_SIZE=15 的慢生成，
 //    30s 级硬编码会把健康慢批次误判进二分降级造成请求放大；undici 默认 300s 故障暴露又太慢。OPENAI_TIMEOUT_MS 可调
 const _timeoutMs = parseInt(process.env.OPENAI_TIMEOUT_MS || '60000', 10);
 const FETCH_TIMEOUT_MS = Number.isFinite(_timeoutMs) && _timeoutMs > 0 ? _timeoutMs : 60000;
 
-// 🔴 熔断锁存（评审 Round2 P2-3）：trip 后置位，doTranslate 入口直接抛——后续批次不再
-//    各自重烧完整 429 预算（原实现每批重发 10 次 × 275s 退避），全 run 秒级终止；
-//    key 不写入 → 下轮自动补翻。跨语言循环共享（上游限流对后续语言同样成立）
-let circuitOpen = false;
+// 🔴 熔断错误标记：retry 不再重试、二分降级直接放弃本批（Round1 P2-1）。
+//    跨语言循环共享（上游限流对后续语言同样成立）
 const circuitError = (msg) => {
     const err = new Error(msg);
     err.is429CircuitOpen = true;
@@ -70,7 +76,11 @@ function stripThink(s) {
 // 批量翻译：messages 为 JSON 字符串数组，返回等长译文数组。
 // 批协议用 JSON 数组进出（而非按行编号），无行映射歧义，多行文本也安全。
 async function doTranslate(messages, language) {
-    if (circuitOpen) throw circuitError("429 熔断已触发，本 run 秒级终止（下轮自动补翻）");
+    if (circuitLatched) throw circuitError("429 熔断已锁存，本 run 终止（下轮自动补翻）");
+    if (Date.now() < circuitUntil) {
+        // 冷却期内等待而非放弃（/code-review 发现1a）：限流窗口过去后自动续翻，不牺牲整轮
+        await new Promise(r => setTimeout(r, circuitUntil - Date.now()));
+    }
     // 🔴 非 200（5xx 过载等）也要重试——所以状态检查放进 retry 回调内；
     //    429 单独放行到外层做 5s 退避（retry 的 1s 间隔对限流太激进）
     const response = await retry(() => fetch(process.env.OPENAI_API_BASE + "/chat/completions", {
@@ -113,8 +123,16 @@ async function doTranslate(messages, language) {
         // 持续性 429（配额耗尽/上游故障）必须可终止——计数器为模块级，跨递归累计
         if (++consecutive429 > MAX_429_RETRIES) {
             consecutive429 = 0;
-            circuitOpen = true;
-            throw circuitError(`429 连续达上限（${MAX_429_RETRIES}），放弃重试（可用 OPENAI_429_MAX_RETRIES 调整）`);
+            circuitTrips++;
+            if (circuitTrips >= 2) {
+                // 一个完整预算内二次 trip = 真持续限流，永久锁存终止本 run
+                circuitLatched = true;
+                console.log(`🛑 429 二次熔断（累计 trip#${circuitTrips}）：永久锁存，本 run 终止（下轮自动补翻）`);
+                throw circuitError(`429 二次熔断（累计第 ${circuitTrips} 次 trip），本 run 终止（下轮自动补翻）`);
+            }
+            circuitUntil = Date.now() + 60000;  // 首次 trip：冷却一个限流窗口（60s）后自动续翻
+            console.log(`🛑 429 熔断 trip#${circuitTrips}：冷却 60s（期间批次等待，窗口过后自动续翻）`);
+            throw circuitError(`429 连续达上限（${MAX_429_RETRIES}），熔断冷却 60s`);
         }
         console.log(`翻译请求过多，退避 ${5 * consecutive429}s 后重试（${consecutive429}/${MAX_429_RETRIES}）...`, response.status, response.statusText, body.slice(0, 200));
         // 🔴 setTimeout 回调内必须 try/catch——否则重试再抛错会变成 unhandledRejection 直接崩进程
@@ -125,12 +143,13 @@ async function doTranslate(messages, language) {
                 } catch (e) {
                     reject(e);
                 }
-            }, 5000 * consecutive429);  // 线性递增退避：5s/10s/15s...
+            }, Math.min(5000 * consecutive429, 60000));  // 线性递增退避 5s/10s/15s...，60s 封顶（防极大 MAX_RETRIES 下 setTimeout 32 位溢出坍缩为 1ms 紧循环，/code-review 发现3）
         });
     }
 
-    // 非 429 响应即脱离限流状态
+    // 非 429 响应即脱离限流状态；请求成功也复位连续超时批计数（端点活着就不算连续）
     consecutive429 = 0;
+    consecutiveTimeoutBatches = 0;
 
     if (response.status !== 200){
         throw new Error(`翻译请求失败: ${response.status} ${response.statusText}`);
@@ -192,6 +211,7 @@ function isSuspiciousTranslation(source, output) {
 // 批次翻译 + 二分降级：反复失败（模型输出抖动/格式不服从）时拆半重试直到单条，
 // 单条时「等长校验」天然无歧义；仍失败则放弃并记日志（key 不写入，下次运行自动补翻）
 async function translateBatchWithSplit(items, targetObject, targetLanguage, depth = 0) {
+    let written = 0;  // 实际写入条数（/code-review 发现4：进度只计成功写入，放弃/跳过不计）
     try {
         const results = await retry(
             () => doTranslate(items.map(item => item.message), targetLanguage),
@@ -204,30 +224,39 @@ async function translateBatchWithSplit(items, targetObject, targetLanguage, dept
                 return;
             }
             putObjectValue(targetObject, item.key, out);
+            written++;
             console.log("翻译 key", item.key, "为", targetLanguage, ":", item.message, ' => ', out);
         })
     } catch (e) {
         if (e && (e.is429CircuitOpen || e.name === 'TimeoutError' || e.name === 'AbortError')) {
-            // 🔴 不可恢复错误直接放弃本批（评审 Round2 P2-3/P2-4）：持续 429 熔断与端点挂死
-            //    （TimeoutError/AbortError，重试预算已耗尽）下二分只会白烧请求。
-            //    key 不写入 → 下轮自动补翻；慢生成调大 OPENAI_TIMEOUT_MS；带病包由覆盖率门禁兜底
+            // 🔴 不可恢复错误放弃本批：持续 429 熔断与端点挂死下二分只会白烧请求。
+            //    连续 2 批超时即锁存（/code-review 发现2）：黑洞端点每批白烧 ~18 分钟不可接受；
+            //    任一成功请求已复位计数，能连累到 2 即为真挂死。key 不写入 → 下轮自动补翻
+            if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+                consecutiveTimeoutBatches++;
+                if (consecutiveTimeoutBatches >= 2 && !circuitLatched) {
+                    circuitLatched = true;
+                    console.log("🛑 连续超时熔断，本 run 终止（下轮自动补翻）");
+                }
+            }
             console.log(`🛑 ${e.is429CircuitOpen ? "429 熔断" : "请求超时"}，中止本批（下轮自动补翻）:`, items.map(item => item.key).join(','));
-            return;
+            return 0;
         }
         if (items.length > 1) {
             console.log(`批次翻译失败(${String(e.message).slice(0, 80)})，二分重试: ${items.length} 条 → ${Math.ceil(items.length / 2)} + ${Math.floor(items.length / 2)}`);
             const mid = Math.ceil(items.length / 2);
-            await translateBatchWithSplit(items.slice(0, mid), targetObject, targetLanguage, depth + 1);
-            await translateBatchWithSplit(items.slice(mid), targetObject, targetLanguage, depth + 1);
+            written += await translateBatchWithSplit(items.slice(0, mid), targetObject, targetLanguage, depth + 1);
+            written += await translateBatchWithSplit(items.slice(mid), targetObject, targetLanguage, depth + 1);
         } else {
             console.log("翻译失败放弃", items.map(item => item.key).join(','), ":", e.message);
         }
     }
+    return written;
 }
 
 async function translate(waitTranslateList, targetObject, targetLanguage, onBatchDone) {
     let promises = [];
-    let doNum = 0;
+    let doNum = 0;  // 实际写入条数（/code-review 发现6：与落盘阈值共用同一来源，消除双计数器）
     // 🔴 env 防护（评审 Round2 P2-2）：batchSize 非法（NaN → slice 空数组全程零翻译且基线照推；
     //    0/负数 → i 永不前进无限空批）后果重于熔断失效，非法值回落默认
     const _conc = parseInt(process.env.OPENAI_API_CONCURRENT || '2', 10);
@@ -243,10 +272,10 @@ async function translate(waitTranslateList, targetObject, targetLanguage, onBatc
         const batch = waitTranslateList.slice(i, i + batchSize);
 
         promises.push(limit(async () => {
-            await translateBatchWithSplit(batch, targetObject, targetLanguage);
-            doNum += batch.length;
+            const written = (await translateBatchWithSplit(batch, targetObject, targetLanguage)) || 0;
+            doNum += written;
             if (doNum % 100 < batchSize) console.log("剩余翻译数量", waitTranslateList.length - doNum);
-            if (onBatchDone) onBatchDone(batch.length);  // 按「条」上报，落盘阈值按条计（评审 Round1 P1-1）
+            if (onBatchDone) onBatchDone(written);  // 按「实际写入条数」上报，落盘阈值按条计（评审 Round1 P1-1）
         }))
     }
 
@@ -342,7 +371,8 @@ async function run(){
             sinceFlush += n;
             if (sinceFlush >= FLUSH_EVERY) flushCheckpoint();
         });
-        if (sinceFlush > 0) flushCheckpoint();  // 收尾补齐未满一批的尾部
+        // 收尾不补 flush（/code-review 发现5）：紧随其后的排序版写盘全程覆盖同样内容，
+        // 中间仅隔不会失败的内存排序循环——尾部 flush 属冗余双次全量序列化
 
         // 最后使用 enLanguages的key  排序 targetLanguages key（最终排序版覆盖断点快照）
         const sortedTargetLanguages = {};

@@ -43,6 +43,8 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 - `OPENAI_MODEL` — 模型名
 - `OPENAI_API_CONCURRENT` — 并发数，默认 2
 - `OPENAI_BATCH_SIZE` — 单次 LLM 调用翻译条数，默认 1（上游逐条行为）。免费档 API 有 RPM 限制时设 15+，请求数降一个数量级
+- `OPENAI_429_MAX_RETRIES` — 连续 429 熔断阈值，默认 10：trip → 冷却 60s 自动续翻，二次 trip 永久锁存终止本 run；连续超时 2 批同样锁存
+- `OPENAI_TIMEOUT_MS` — 单请求超时毫秒，默认 60000：覆盖推理模型大批次慢生成；GitHub en.json 拉取同用此超时
 - `N8N_EN_JSON_URL` — 英文源覆盖：http(s) URL（可 pin 到 n8n 版本 tag，`@` 写作 `%40`）或**本地文件路径**。默认 master（可能领先最新 Release）
 
 **国内本机运行注意（2026-09-12 实测）**：
