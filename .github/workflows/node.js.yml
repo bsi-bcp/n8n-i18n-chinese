@@ -250,6 +250,27 @@ jobs:
         fi
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
 
+    - name: 刷新第三方许可清单
+      if: steps.check_tag.outputs.exists == 'false'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # 📌 评审 E5-P2-A（2026-09-20）：THIRD_PARTY 刷新原为纯人工步骤 × 发版全自动 =
+        # 结构性错位（2.40 起必然携带过期清单）。改为发版时自动拉上游对应 Release 附件；
+        # 拉取失败不阻断发版（保留仓库现有副本），打印警告提示人工核对。
+        REPO_DIR=/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+        VER="${{ steps.ver.outputs.version }}"
+        ASSET_URL=$(gh api "repos/n8n-io/n8n/releases/tags/n8n@${VER}" --jq '.assets[] | select(.name=="THIRD_PARTY_LICENSES.md") | .url' 2>/dev/null || true)
+        if [ -n "$ASSET_URL" ]; then
+          if gh api "$ASSET_URL" -H "Accept: application/octet-stream" > "$REPO_DIR/THIRD_PARTY_LICENSES.md" 2>/dev/null; then
+            echo "✅ THIRD_PARTY_LICENSES.md 已刷新自上游 n8n@${VER} Release 附件"
+          else
+            echo "⚠️ 上游附件下载失败，保留仓库现有副本（版本可能滞后，请人工核对）"
+          fi
+        else
+          echo "⚠️ 上游 n8n@${VER} Release 无 THIRD_PARTY_LICENSES.md 附件，保留仓库现有副本（请人工核对）"
+        fi
+
     - name: 打包 dist 产物
       if: steps.check_tag.outputs.exists == 'false'
       run: |
@@ -289,6 +310,8 @@ jobs:
         git config --global user.email "github-actions@github.com"
         git add editor-ui-dist
         git add docker-compose.yml
+        # 刷新后的第三方许可清单随同回写仓根（镜像构建 image.yml checkout main 天然取到）
+        git add THIRD_PARTY_LICENSES.md
         git commit -m "chore: add built editor-ui dist for n8n@${{ steps.ver.outputs.version }}"
         git fetch origin main
         git rebase origin/main

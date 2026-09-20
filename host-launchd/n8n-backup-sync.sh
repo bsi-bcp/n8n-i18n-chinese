@@ -14,10 +14,12 @@ SHA=$(git -C "$SRC" rev-parse --short HEAD 2>/dev/null) || exit 0
 DATE=$(date +%F)
 
 # 同步产线文件（镜像源仓库结构；--delete 保持与源一致）
+# 🔴 docs-inner 纳入备份（2026-09-20 评审 E4-P1）：评审 Excel/封存译文/2.40 预研原为
+# 单机单副本——paul_docs 为私有库，内部文档入此不入公开仓，与 .gitignore 纪律不冲突
 rsync -a --delete \
   --exclude '.git' \
-  "$SRC/.github" "$SRC/script" "$SRC/patches" "$SRC/host-launchd" "$DEST/" 2>/dev/null
-rsync -a "$SRC/Dockerfile" "$SRC/Dockerfile.runners" "$SRC/NOTICE-n8n-localization.md" "$SRC/CLAUDE.md" "$DEST/" 2>/dev/null
+  "$SRC/.github" "$SRC/script" "$SRC/patches" "$SRC/host-launchd" "$SRC/docs-inner" "$DEST/" 2>/dev/null
+rsync -a "$SRC/Dockerfile" "$SRC/Dockerfile.runners" "$SRC/NOTICE-n8n-localization.md" "$SRC/CLAUDE.md" "$SRC/README.md" "$DEST/" 2>/dev/null
 
 # 更新备份说明的基准信息
 python3 - "$DEST/备份说明.md" "$SHA" "$DATE" <<'EOF' 2>/dev/null || true

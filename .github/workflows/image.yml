@@ -158,7 +158,7 @@ jobs:
         run: |
           jq -n --arg t "[$REPO] 🔴 中文镜像构建/推送失败（$IMAGE_TAG）" --arg c "red" \
             --arg m "版本：\`$IMAGE_TAG\`
-          常见原因：BCP_REGISTRY_* 凭证缺失/过期/重置、ghcr.io/n8n-io/n8n:$IMAGE_TAG 基础镜像未发布、Release 资产 editor-ui*.tar.gz 缺失
+          常见原因：BCP_REGISTRY_* 凭证缺失/过期/重置、ghcr.io/n8n-io/n8n:$IMAGE_TAG 基础镜像未发布、Release 资产 editor-ui*.tar.gz 缺失、参数注入路径不存在（@n8n/n8n-nodes-langchain 等包在官方镜像内布局变化，查 Dockerfile RUN 注入段）
           日志：$RUN_URL
           > 🤖 来源：GitHub Actions · $GITHUB_WORKFLOW · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($RUN_URL)" \
             '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},

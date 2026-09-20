@@ -209,7 +209,8 @@ The image defaults to Chinese UI (`N8N_DEFAULT_LOCALE=zh-CN`); set `N8N_DEFAULT_
 - 原项目的全部内容（翻译词典、脚本、补丁、文档）版权归原作者所有。原作者 imblowsnow 已于 2026-09-14 在 [issue #67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 中书面授权「**允许继续修改和分发继承的翻译词典、脚本与补丁**」（授权原话已书面存档）；MIT 为本 fork 选定的落地协议，授权人未异议。另致谢原仓库贡献者 tqjason / Sini0r 等（其词典贡献的授权核验与处理已一并书面存档）。本仓库据此补充 [LICENSE](LICENSE) 文件，其中完整保留原作者的版权声明。
 - 本仓库为社区延续维护 fork：在原项目停止维护后，继续跟进 n8n 新版本的简体中文翻译。通过 GitHub Release、Docker 镜像等渠道分发的构建产物同样适用上述 MIT 授权（n8n 本体除外，见下条）。
 - n8n 本体为 [Sustainable Use License](https://docs.n8n.io/license/)（fair-code），本项目的语言包为其界面文案的社区翻译，n8n 的使用须遵守其自身许可。
-- **修改声明（SUL Notices 条款合规）**：本仓库产物（editor-ui dist / 汉化镜像）为 n8n 的**本地化修改版**，修改仅为注入 zh-CN 语言包与注册语言，未删除或遮盖 n8n 的任何许可与版权声明（含页脚许可链接）。n8n® 为 n8n GmbH 商标，本项目与 n8n 官方无隶属关系、亦非官方背书。
+- **修改声明（SUL Notices 条款合规）**：本仓库产物（editor-ui dist / 节点包 dist / 汉化镜像）为 n8n 的**本地化修改版**，修改范围 = 注入 zh-CN 语言包并注册语言、节点面板文案查表、前端少量硬编码文案源码级替换、n8n-nodes-base 与 @n8n/n8n-nodes-langchain 两包参数面板显示串的构建期中文替换（**不含任何 "\*.ee.\*" 专有文件与 EE 节点内容**，该等内容不适用 SUL、本项目不修改）；未删除或遮盖 n8n 的任何许可与版权声明（含页脚许可链接）。n8n® 为 n8n GmbH 商标，本项目与 n8n 官方无隶属关系、亦非官方背书。
+- **翻译准确性声明**：本项目中文译文（词典与参数面板译串）由机器翻译辅助生成，经抽样评审与社区反馈回路持续修正，仅供界面显示参考；参数含义、功能行为与配置口径请以 n8n 英文原文及[官方文档](https://docs.n8n.io/)为准。错误与日志类消息保留英文原文，便于对照官方文档与社区检索排障。
 - **第三方依赖许可清单**：[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)（取自上游 n8n 对应版本 Release 的同名附件，原文照录）随部署包（dist 内同目录）与中文镜像（`/usr/local/lib/node_modules/n8n/THIRD_PARTY_LICENSES.md`）一并分发；各依赖包的完整 LICENSE 亦随 n8n 发行物的 `node_modules/` 原样分发。
 - 本仓库在 fork 之后新增或修改的内容（构建脚本、文档、翻译增补等）版权归维护方（商软信息 BSI）所有，一并以 MIT 协议授权，见 [LICENSE](LICENSE)。
 
