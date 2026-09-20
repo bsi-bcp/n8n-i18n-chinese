@@ -54,6 +54,15 @@ function injectJson(file) {
         if ((k === 'name' || k === 'action') && IDENT.test(v)) continue;
         const zh = zhMap[v];
         if (zh !== undefined) { node[k] = zh; hitEn.add(v); }
+      } else if (k === 'inputNames' && Array.isArray(v)) {
+        // 画布输入端标签（2026-09-20 评审 E1 实锤：merge 'Input 1/2'、compareDatasets
+        // 'Input A/B'、langchain documentGithubLoader 'Text Splitter' 均以字符串数组
+        // 随 types payload 直出——原 walk 只处理字典键，数组元素被结构性跳过）
+        node[k] = v.map((s) => {
+          const t = typeof s === 'string' ? zhMap[s] : undefined;
+          if (t !== undefined) hitEn.add(s);
+          return t !== undefined ? t : s;
+        });
       } else if (typeof v === 'object') walk(v);
     }
   };

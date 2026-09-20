@@ -68,6 +68,10 @@ function walkParams(props, nodeType, nodeDisplay, base) {
         if (fc && fc.displayName) collect(nodeType, nodeDisplay, `${here}.fixedCollectionValues[${i}].displayName`, KIND_DISPLAY, fc.displayName);
       });
     }
+    // inputNames：画布输入端标签字符串数组（与 inject-params JSON 模式 inputNames 分支对称）
+    if (Array.isArray(p.inputNames)) {
+      p.inputNames.forEach((s, i) => { if (typeof s === 'string') collect(nodeType, nodeDisplay, `${here}.inputNames[${i}]`, KIND_DISPLAY, s); });
+    }
     if (Array.isArray(p.options) === false && Array.isArray(p.properties)) walkParams(p.properties, nodeType, nodeDisplay, here);
   }
 }
@@ -81,6 +85,9 @@ for (const n of nodes) {
   const display = n.displayName || type;
   if (n.subtitle) collect(type, display, 'subtitle', KIND_DISPLAY, n.subtitle);
   if (n.description) collect(type, display, 'description', KIND_DESC, n.description);
+  if (Array.isArray(n.inputNames)) {
+    n.inputNames.forEach((s, i) => { if (typeof s === 'string') collect(type, display, `inputNames[${i}]`, KIND_DISPLAY, s); });
+  }
   if (Array.isArray(n.properties)) walkParams(n.properties, type, display, '');
 }
 
