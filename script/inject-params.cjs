@@ -32,10 +32,18 @@ console.log(`映射表 ${Object.keys(zhMap).length} 条（有效 ${entries.lengt
 
 const IDENT = /^[a-z][A-Za-z0-9_]*$/; // 参数键/行为标识符形态（小写开头无空格）
 const DISPLAY_KEYS = new Set(['displayName', 'description', 'placeholder', 'hint', 'label']);
+// 🔴 EE 专有内容排除（2026-09-20 评审 E5-P1-A 实锤）：上游 LICENSE.md 明文 *.ee.* 文件与
+// EE 节点不适用 SUL、须企业授权——注入器修改它们=无权修改专有代码且随镜像公开分发。
+// 曾实锤 24 条 .ee.js 静态串 + 93 条 types EE 子树串被改写进已发布镜像（已重推清理）。
+const EE_FILE_MARK = '.ee.';
+const EE_NODE_SKIP = new Set(['evaluation', 'evaluationTrigger']);
 const hitEn = new Set(); // 实际生效原文（利用率口径）
 
 // ── JSON 结构化模式（主路径：dist/types/nodes.json 预生成缓存）──
 function injectJson(file) {
+  const raw = fs.readFileSync(file, 'utf8');
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { console.error(`❌ JSON 解析失败: ${file}: ${e.message}`); process.exit(1); }
   const walk = (node) => {
     if (Array.isArray(node)) { for (const v of node) walk(v); return; }
     if (!node || typeof node !== 'object') return;
@@ -49,10 +57,13 @@ function injectJson(file) {
       } else if (typeof v === 'object') walk(v);
     }
   };
-  const raw = fs.readFileSync(file, 'utf8');
-  let data;
-  try { data = JSON.parse(raw); } catch (e) { console.error(`❌ JSON 解析失败: ${file}: ${e.message}`); process.exit(1); }
-  walk(data);
+  if (Array.isArray(data)) {
+    // 节点数组根：EE 专有节点整棵子树跳过
+    for (const entry of data) {
+      if (entry && typeof entry === 'object' && EE_NODE_SKIP.has(String(entry.name))) continue;
+      walk(entry);
+    }
+  } else walk(data);
   const out = JSON.stringify(data);
   try { JSON.parse(out); } catch (e) { console.error(`❌ 序列化校验失败已中止: ${e.message}`); process.exit(1); }
   fs.writeFileSync(file, out);
@@ -105,13 +116,13 @@ function replaceInSource(src) {
   return [out, count, hitLocal];
 }
 
-// 收集 JS 文件
+// 收集 JS 文件（🔴 排除 *.ee.* 专有文件，见文件头 EE 注释）
 const jsFiles = [];
 (function walk(d) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     const p = path.join(d, e.name);
     if (e.isDirectory()) walk(p);
-    else if (e.name.endsWith('.js')) jsFiles.push(p);
+    else if (e.name.endsWith('.js') && !e.name.includes(EE_FILE_MARK)) jsFiles.push(p);
   }
 })(distDir);
 console.log(`扫描 ${jsFiles.length} 个 JS 文件`);

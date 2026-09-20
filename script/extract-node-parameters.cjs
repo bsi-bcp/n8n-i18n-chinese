@@ -72,7 +72,11 @@ function walkParams(props, nodeType, nodeDisplay, base) {
   }
 }
 
+// 🔴 EE 专有节点跳过（上游 LICENSE.md：*.ee.* 与 EE 节点不适用 SUL、须企业授权，不可提取）
+const EE_NODE_SKIP = new Set(['evaluation', 'evaluationTrigger']);
+
 for (const n of nodes) {
+  if (EE_NODE_SKIP.has(String(n.name || ''))) continue;
   const type = n.name || '(unknown)';
   const display = n.displayName || type;
   if (n.subtitle) collect(type, display, 'subtitle', KIND_DISPLAY, n.subtitle);

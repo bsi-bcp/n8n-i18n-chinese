@@ -42,6 +42,8 @@ function add(v, dirTag, kind) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     const p = path.join(d, e.name);
     if (e.isDirectory()) { walk(p); continue; }
+    // 🔴 排除 *.ee.* 专有文件（上游 LICENSE.md：不适用 SUL、须企业授权，不可提取/修改）
+    if (e.name.includes('.ee.')) continue;
     if (!e.name.endsWith('.js')) continue;
     const src = fs.readFileSync(p, 'utf8');
     const rel = path.relative(distDir, p);
