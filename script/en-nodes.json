@@ -1,8 +1,8 @@
 {
     "_meta": {
-        "version": "2.39.8",
+        "version": "2.40.3",
         "tool": "extract-node-headers.js",
-        "extractedAt": "2026-09-19"
+        "extractedAt": "2026-09-20"
     },
     "headers.@n8n/n8n-nodes-langchain.agent.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "Generates an action plan and executes it. Can use external tools.",
@@ -370,6 +370,7 @@
     "headers.messageAnAgent.description": "Send a message to a n8n agent",
     "headers.messageBird.description": "Sends SMS via MessageBird",
     "headers.metabase.description": "Use the Metabase API",
+    "headers.microsoftDataverse.description": "Interact with the Microsoft Dataverse Web API",
     "headers.microsoftDynamicsCrm.description": "Consume Microsoft Dynamics CRM API",
     "headers.microsoftEntra.description": "Interact with Microsoft Entra ID API",
     "headers.microsoftExcel.description": "Consume the Microsoft Excel API for workbooks stored in OneDrive",
