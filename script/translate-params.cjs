@@ -26,8 +26,8 @@ const topN = topNStr ? parseInt(topNStr) : items.length;
 items = items.slice(0, topN).filter(([en]) => !(en in result)).map(([en, meta]) => ({ en, count: meta.count, nodes: meta.nodes }));
 console.log(`待译 ${items.length} 条`);
 
-// 术语表（CHANGELOG 2.39.7 v2 修订口径）
-const TERMS = `agent=智能体; credential=凭据; workflow=工作流; plan(定价)=套餐; you/your=您; previous node=上游节点; redact=脱敏; published=已发布; node=节点; execution=执行; trigger=触发器; expression=表达式; items=数据项`;
+// 术语表（单一事实源 script/terms.cjs，与 translate.js 共用；2026-09-20 评审沉淀）
+const { TERMS } = require('./terms.cjs');
 
 const SYSTEM = `你是 n8n 节点参数界面的简体中文翻译器。把用户给出的英文参数串（界面标签/选项/描述/占位符）翻译成简体中文。
 规则：

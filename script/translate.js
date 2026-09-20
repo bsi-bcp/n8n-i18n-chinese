@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const lodash = require("lodash")
 const pLimit = require('p-limit');
+const { TERMS, BANNED_IN_CONTEXT } = require('./terms.cjs');
 
 if (!process.env.OPENAI_API_KEY){
     console.error("请设置环境变量 OPENAI_API_KEY");
@@ -102,6 +103,8 @@ async function doTranslate(messages, language) {
 - 仅输出 JSON 数组本身，不要输出解释或 markdown 代码块标记
 - 不要处理 {} 里面包裹的变量名称（保持原样）
 - 保留原文中的 HTML 标签、换行符和特殊占位符
+## 术语强制（按语境注记判断）：
+${TERMS}
 `
                 },
                 {
@@ -222,6 +225,13 @@ async function translateBatchWithSplit(items, targetObject, targetLanguage, dept
             if (isSuspiciousTranslation(item.message, out)) {
                 console.log("🚨 译文未通过内容安全校验，跳过:", item.key, "=>", String(out).slice(0, 100));
                 return;
+            }
+            // 术语语境告警（2026-09-20 评审 E3-P2）：命中仅记日志人工复核，不阻断——
+            // 规则均带 EN 词根限定，规避「代理/场次」等合法语境误杀
+            for (const rule of BANNED_IN_CONTEXT) {
+                if (rule.en.test(item.message) && String(out).includes(rule.zh)) {
+                    console.log("⚠️ 术语告警:", item.key, "命中禁用译法「" + rule.zh + "」（" + rule.why + "）=>", String(out).slice(0, 80));
+                }
             }
             putObjectValue(targetObject, item.key, out);
             written++;
