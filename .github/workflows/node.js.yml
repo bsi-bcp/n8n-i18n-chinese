@@ -14,6 +14,10 @@ on:
         description: "n8n 版本号（如 2.39.8）；留空=自动取最新稳定 tag（不推荐）"
         type: string
         default: ""
+      allow_prerelease:
+        description: "显式允许上游 prerelease 发版（演练/补档，人工担责）"
+        type: boolean
+        default: false
 
 # 🔴 2026-09-19 评审外置触发射频后必备：每小时外置触发 + 流水线 >1h（minor 大翻译量）时
 #    可能双跑同版本——排队串行化，后启动者启动时 tag 已存在 → 自动干净退出
@@ -52,6 +56,16 @@ jobs:
         VERSION="${VERSION#v}"
         if ! [[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
           echo "::error::版本号未通过 semver 白名单校验: '$VERSION'"
+          exit 1
+        fi
+        # 🔒 prerelease 守卫（2026-09-20 实锤加固）：上游 prerelease 一律拒绝发版——
+        #    语义 = 本 workflow 只生产对外 Release，任何 dispatch 路径（人/bot/自动化）
+        #    传 prerelease 版本都属越权发版（当日 2.40.3 曾被 dispatch 并污染 main 词典）。
+        #    例外须显式传 allow_prerelease=true（演练/补档场景，人工担责）。
+        UP_PRERELEASE=$(curl -s -m 20 -H "Authorization: Bearer ${{ github.token }}" \
+          "https://api.github.com/repos/n8n-io/n8n/releases/tags/n8n@$VERSION" | jq -r '.prerelease // "absent"')
+        if [ "$UP_PRERELEASE" = "true" ] && [ "${{ inputs.allow_prerelease }}" != "true" ]; then
+          echo "::error::n8n@$VERSION 是上游 prerelease，拒绝发版（allow_prerelease=true 可显式覆盖）"
           exit 1
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
