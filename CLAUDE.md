@@ -133,6 +133,19 @@ n8n 新旧目录布局兼容：新布局 `packages/frontend/editor-ui`（≥2.38
 - **灰度文案抽查注意**：zh 词典在多个 `src-*` chunk 中的**特定一个**（2.39.6 为 `src-Dnwuzjmo.js`，含"部署名称"），别对 `grep -oE 'src-[^"]*\.js' | head -1` 的首个结果做检查；稳妥做法是对比该 chunk 线上 md5 与本机构建
 - 翻译耗时参考：104 条增量 batch=15 ≈ 1 分钟；2.39.6 的 i18n `index.ts` 与 2.38.7 **字节级一致**（patch 免重生成，但每次仍需 `git apply --check --reverse` 验证）
 
+### 2.40 及以后 minor 发版日 checklist（2026-09-20 五方评审沉淀，发版当天逐项勾）
+
+minor 发版 ≠ 被动等待——watcher 自动发版可能快于收尾动作就位，当天按序核对：
+
+1. **watcher 评估卡**：绿/黄/红结论 + 卡面 `AUTO_RELEASE` 显示值（仓库变量不在文件里，卡片是唯一展示面）
+2. **node.js.yml 日志**：语义脚本 --check 全绿（insights 规则路径为 2.40 迁包后最可能红灯点）、THIRD_PARTY 刷新步骤输出（首次实弹，核对文件头版本字样是否 2.40）
+3. **image.yml 日志**：四路注入段无 EACCES/ENOENT（langchain 注入若路径错在此暴露，失败卡已含该原因项）
+4. **Release 说明「↩ 回滚」段实证**：minor 含 db 迁移，核对 db:revert 路径对 2.40 真实可执行——随版回滚承诺首次实弹（评审 D-E2-6 记录 n=0）
+5. **收尾两件（人工）**：README 兼容矩阵加 2.40 行 + CHANGELOG 固化版本段（漏做则客户按旧矩阵选版）
+6. **SWR 保留集合决策**：入阵后 5 版 or 退役 2.38.7；若退役，广播即日发出（≥30 天窗口，起算=入阵日）
+7. **YTJ1 迁移按 minor SOP**：冷备 → db 迁移窗口 → 升级预告发在管客户（乙方排期制下预告是交付动作不是可选项）
+8. **YTJ1 抽查**：AI Agent/Chat Model 面板中文（langchain 注入首验）+ 新拖节点画布默认名 + 对照本版新增译串
+
 ### runbook 实战增补三（2026-09-18 对 2.39.7-v3 第三轮验证）
 
 - **pnpm 11 + Node 24 本机构建**：过滤安装会拉进 isolated-vm（gyp 编不过）——用 `--ignore-scripts` 安装（前端工具链全走平台二进制可选依赖，无副作用）；`package.json` 的 `pnpm.neverBuiltDependencies` **pnpm 11 已不读**（配置迁到 pnpm-workspace.yaml 也无效于本场景），别在这上面浪费时间
