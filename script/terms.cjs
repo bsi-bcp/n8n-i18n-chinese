@@ -23,6 +23,7 @@ const TERMS = [
   'vector store=向量存储',
   'rerank=重排序',
   'reranker=重排序器',
+  'chat model=聊天模型',
   'chunk(名词/文档块)=块；chunking/切分过程=分块',
   'session(AI 对话)=会话；webinar/会议场次=场次',
   'memory(AI 对话记忆节点)=记忆；硬件/RAM/性能语境=内存',
