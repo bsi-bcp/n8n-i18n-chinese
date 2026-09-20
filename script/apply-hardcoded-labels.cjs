@@ -36,9 +36,12 @@ const RULES = [
   // module.descriptor.ts 的 name 在应用启动时静态求值（dataTable 同坑），直接换中文字面量最稳
   // （术语决策 2026-09-19：AI Assistant→AI 助手、Chat→聊天、OpenTelemetry 保留英文）
   ['packages/frontend/editor-ui/src/features/ai/instanceAi/module.descriptor.ts', [
-    [T("\tid: 'instance-ai',\n\tname: 'AI Assistant',\n\tdescription: 'Chat with your n8n instance.',"),
-     T("\tid: 'instance-ai',\n\tname: 'AI 助手',\n\tdescription: '与您的 n8n 实例对话',"),
-     'AI Assistant 模块名+描述', 1],
+    [[[// 2.39 name='AI Assistant' / 2.40.3 起上游改名 'n8n Assistant'——版式变体，任一版本恰命中其一
+      T("\tid: 'instance-ai',\n\tname: 'AI Assistant',\n\tdescription: 'Chat with your n8n instance.',"),
+      T("\tid: 'instance-ai',\n\tname: 'AI 助手',\n\tdescription: '与您的 n8n 实例对话',")],
+     [T("\tid: 'instance-ai',\n\tname: 'n8n Assistant',\n\tdescription: 'Chat with your n8n instance.',"),
+      T("\tid: 'instance-ai',\n\tname: 'AI 助手',\n\tdescription: '与您的 n8n 实例对话',")]],
+     'AI Assistant 模块名+描述（2.39/2.40 双版式）', 1],
     // settingsPages label 启动时求值冻结英文（dataTable 同坑，YTJ1 实测侧栏 'AI Assistant'）——getter 延迟求值
     [T("\t\t\tlabel: i18n.baseText('settings.n8nAgent'),"),
      T("\t\t\tget label() {\n\t\t\t\treturn i18n.baseText('settings.n8nAgent');\n\t\t\t},"),
@@ -63,7 +66,9 @@ const RULES = [
      T("\tname: '数据表',\n\tdescription: '用数据表模块高效管理与存储数据',"),
      'Data Table 模块名+描述', 1],
   ], 1],
-  ['packages/frontend/editor-ui/src/features/execution/insights/module.descriptor.ts', [
+  // 2.40.3 起 insights 迁 packages/modules/insights/frontend/src/insights.module.ts（内容不变只搬家）——路径候选
+  [['packages/frontend/editor-ui/src/features/execution/insights/module.descriptor.ts',
+    'packages/modules/insights/frontend/src/insights.module.ts'], [
     [T("\tname: 'Insights',\n\tdescription: 'Provides insights and analytics features for projects.',"),
      T("\tname: '洞察',\n\tdescription: '为项目提供洞察与分析功能',"),
      'Insights 模块名+描述', 1],
@@ -110,28 +115,36 @@ const RULES = [
 
 let failed = 0;
 const results = [];
-for (const [rel, rules, expectTotal] of RULES) {
-  const abs = path.join(root, rel);
-  if (!fs.existsSync(abs)) {
-    results.push(`❌ ${rel}: 文件不存在`);
+// 路径候选：rel 可为 string 或 string[]（上游搬家场景，如 2.40.3 insights 迁包）——
+// 取第一个存在者；全部不存在才算失败。版式变体：find 可为 [find, sub][]（上游改名场景，
+// 如 2.40.3 'AI Assistant'→'n8n Assistant'）——跨变体合计命中数须等于 expectN。
+for (const [relOrList, rules, expectTotal] of RULES) {
+  const candidates = Array.isArray(relOrList) ? relOrList : [relOrList];
+  const hit = candidates.map((rel) => ({ rel, abs: path.join(root, rel) })).find((c) => fs.existsSync(c.abs));
+  if (!hit) {
+    results.push(`❌ ${candidates.join(' / ')}: 候选路径均不存在`);
     failed++;
     continue;
   }
+  const rel = hit.rel;
   const expectSum = rules.reduce((a, r) => a + (r[3] || 1), 0);
-  let src = check ? null : fs.readFileSync(abs, 'utf8');
-  const original = fs.readFileSync(abs, 'utf8');
+  let src = check ? null : fs.readFileSync(hit.abs, 'utf8');
+  const original = fs.readFileSync(hit.abs, 'utf8');
   let applied = 0;
-  for (const [find, sub, label, expectN = 1] of rules) {
-    const hits = original.split(find).length - 1;
+  for (const rule of rules) {
+    const [findV, sub, label, expectN = 1] = rule;
+    const pairs = Array.isArray(findV) && Array.isArray(findV[0]) ? findV : [[findV, sub]];
+    let hits = 0;
+    for (const [f] of pairs) hits += original.split(f).length - 1;
     if (hits !== expectN) {
       results.push(`❌ ${rel}: 「${label}」命中 ${hits} 处（预期 ${expectN}）——上游结构变化，需人工核对`);
       failed++;
       continue;
     }
-    if (!check) src = src.split(find).join(sub);
+    if (!check) for (const [f, s] of pairs) src = src.split(f).join(s);
     applied += hits;
   }
-  if (!check && applied > 0) fs.writeFileSync(abs, src);
+  if (!check && applied > 0) fs.writeFileSync(hit.abs, src);
   results.push(`${check ? '🔎' : '✅'} ${rel}: ${applied} 处${check ? '可应用' : '已应用'}（预期合计 ${expectSum}）`);
   if (applied !== expectSum) failed++;
   void expectTotal;
