@@ -1,6 +1,6 @@
 {
     "_meta": {
-        "version": "2.39.9",
+        "version": "2.39.10",
         "tool": "extract-node-headers.js",
         "extractedAt": "2026-09-21"
     },
