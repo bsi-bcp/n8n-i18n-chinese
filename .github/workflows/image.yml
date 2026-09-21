@@ -40,7 +40,9 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment: test
-    timeout-minutes: 45  # 🔒 含 runners 搬运的单次构建上限（正常 6-25 分钟）
+    # 90min（2026-09-21 实证：EE 清理重建两连超时——多架构构建+2GB×2 推 SWR 跑满 46min
+    # 被旧 45min 上限取消；「正常 6-25 分钟」经验不可靠，与 watcher 90min 对齐）
+    timeout-minutes: 90
     steps:
       # 🔒 安全修复（2026-09-18 评审 #2/#3）：inputs/tag_name 不再直接内插 shell，
       #    经 env 传入并强制 semver 白名单校验后才使用
