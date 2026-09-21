@@ -9532,7 +9532,5 @@
     "headers.actionTitles.Write File to Disk": "Write File to Disk",
     "headers.actionTitles.Write data to a database": "Write data to a database",
     "headers.actionTitles.XML To JSON": "XML To JSON",
-    "headers.actionTitles.update details of a file": "update details of a file",
-    "headers.actionTitles.Code in JavaScript": "Code in JavaScript",
-    "headers.actionTitles.Code in Python": "Code in Python"
+    "headers.actionTitles.update details of a file": "update details of a file"
 }
