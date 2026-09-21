@@ -27,6 +27,7 @@ COPY ./editor-ui-dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui
 # JSON 写前 parse 校验 / JS 每文件 --check，回滚>0 即失败退出。映射表按英文原文锚定。
 COPY ./script/params-zh-map.json /opt/i18n-params/params-zh-map.json
 COPY ./script/inject-params.cjs /opt/i18n-params/inject-params.cjs
+COPY ./script/check-ee-gate.cjs /opt/i18n-params/check-ee-gate.cjs
 # 🔴 官方镜像默认 USER=node，无权写 /usr/local/lib/node_modules（EACCES 实锤）——提权注入后回落
 USER root
 RUN NB=/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist \
@@ -34,5 +35,11 @@ RUN NB=/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist \
     && node /opt/i18n-params/inject-params.cjs "$NB/types/nodes.json" /opt/i18n-params/params-zh-map.json \
     && node /opt/i18n-params/inject-params.cjs "$NB" /opt/i18n-params/params-zh-map.json \
     && node /opt/i18n-params/inject-params.cjs "$LC/types/nodes.json" /opt/i18n-params/params-zh-map.json \
-    && node /opt/i18n-params/inject-params.cjs "$LC" /opt/i18n-params/params-zh-map.json
+    && node /opt/i18n-params/inject-params.cjs "$LC" /opt/i18n-params/params-zh-map.json \
+# 🔴 EE 合规断言（2026-09-21 评审 P1-3，E5-P1-A 复发防线）：注入恰好发生在镜像构建内，
+#    此处是唯一能拦住 JS 兜底路径改写 EE 专有文件的位置——EE 保护路径出现 CJK 即构建失败
+#    （2026-09-21 取证实证：旧映射表 47 条 EE 残留曾经此路径污染现售 2.39.8 的
+#    Evaluation/Description.node.js 等 3 个文件）
+    && node /opt/i18n-params/check-ee-gate.cjs --dist "$NB" \
+    && node /opt/i18n-params/check-ee-gate.cjs --dist "$LC"
 USER node

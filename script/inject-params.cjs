@@ -37,6 +37,12 @@ const DISPLAY_KEYS = new Set(['displayName', 'description', 'placeholder', 'hint
 // 曾实锤 24 条 .ee.js 静态串 + 93 条 types EE 子树串被改写进已发布镜像（已重推清理）。
 const EE_FILE_MARK = '.ee.';
 const EE_NODE_SKIP = new Set(['evaluation', 'evaluationTrigger']);
+// 🔴 EE 目录段排除（2026-09-21 专家评审补口）：上游 LICENSE 口径含「dirname 含 .ee」；
+// 且 EE 节点 dist 目录名=节点名 PascalCase（nodes/Evaluation/…）——JS 兜底扫描此前只过滤
+// *.ee.* 文件名，无 .ee. 后缀的 EE 节点编译产物（如 Evaluation/Description.node.js）会被
+// 命中改写（映射表 45 条 EE 评估串的激活路径，已从映射表剔除+此处目录级双保险）
+const EE_DIR_SKIP = new Set([...EE_NODE_SKIP].map((n) => n[0].toUpperCase() + n.slice(1)));
+const isEEDir = (name) => EE_DIR_SKIP.has(name) || name.endsWith('.ee') || name.includes(EE_FILE_MARK);
 const hitEn = new Set(); // 实际生效原文（利用率口径）
 
 // ── JSON 结构化模式（主路径：dist/types/nodes.json 预生成缓存）──
@@ -128,15 +134,17 @@ function replaceInSource(src) {
   return [out, count, hitLocal];
 }
 
-// 收集 JS 文件（🔴 排除 *.ee.* 专有文件，见文件头 EE 注释）
+// 收集 JS 文件（🔴 排除 *.ee.* 专有文件与 .ee/Evaluation 目录段，见文件头 EE 注释）
 const jsFiles = [];
+let eeDirsSkipped = 0;
 (function walk(d) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     const p = path.join(d, e.name);
-    if (e.isDirectory()) walk(p);
+    if (e.isDirectory()) { if (isEEDir(e.name)) { eeDirsSkipped++; } else { walk(p); } }
     else if (e.name.endsWith('.js') && !e.name.includes(EE_FILE_MARK)) jsFiles.push(p);
   }
 })(distDir);
+if (eeDirsSkipped) console.log(`EE 目录段跳过 ${eeDirsSkipped} 个（LICENSE dirname 口径 + EE 节点目录）`);
 console.log(`扫描 ${jsFiles.length} 个 JS 文件`);
 
 let totalHits = 0, changedFiles = 0, rolledBack = 0, checked = 0, baselineSkipped = 0;

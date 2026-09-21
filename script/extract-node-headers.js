@@ -45,11 +45,15 @@ const SOURCES = [
 
 function listNodeTsFiles(dir) {
     const out = [];
+    // 🔴 EE 专有源码排除（2026-09-21 专家评审补口）：*.ee.* 文件与 .ee/Evaluation 目录段
+    // 不适用 SUL，其面板描述不得进词典/映射表随版分发——对齐另两个提取器的双端防护；
+    // 当前产物实测无 EE 条目，此守卫防未来上游重构后 EE 节点描述经本提取器回潜
+    const isEEPath = (name) => name.includes('.ee.') || name.endsWith('.ee') || name === 'Evaluation';
     const walk = (d) => {
         for (const e of fs.readdirSync(d, { withFileTypes: true })) {
             const p = path.join(d, e.name);
-            if (e.isDirectory()) walk(p);
-            else if (e.isFile() && e.name.endsWith('.node.ts')) out.push(p);
+            if (e.isDirectory()) { if (!isEEPath(e.name)) walk(p); }
+            else if (e.isFile() && e.name.endsWith('.node.ts') && !isEEPath(e.name)) out.push(p);
         }
     };
     if (fs.existsSync(dir)) walk(dir);

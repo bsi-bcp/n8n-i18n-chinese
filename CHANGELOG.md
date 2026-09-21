@@ -11,6 +11,29 @@
 - **就近兼容** = 搭配相邻后端版本实测可用；旧 dist 配新后端时，新增文案回退英文（功能不受影响）
 - **不兼容** = 跨大版本区间错配可能白屏，请勿使用
 
+## [Unreleased] - 2026-09-21（EE 前端路径合规修复 + 独立回归门禁 + 流水线四席专家评审加固）
+
+### Fixed（合规）
+
+- **EE 专有前端文件修改产物随公开 dist 分发（2026-09-21 四席专家评审实锤，E5-P1-A 同类第二路径）**：`apply-hardcoded-labels.cjs` 规则表曾修改 `promotions.ee/module.descriptor.ts` 与 `sourceControl.ee/components/SourceControl{Pull,Push}Modal.vue` 三个 EE 专有源码文件，中文串（如「在环境间晋级工作流变更」）随 2.39.7-v3 起的 Release tarball 与镜像内 editor-ui dist 公开分发（dist chunk 实证，词典 0 命中排除其他来源）。三组规则已拔除，相关面板标签保持英文原文
+- **params-zh-map.json 剔除 47 条 EE 评估节点参数译文**（Correctness/Helpfulness/Expected Answer 等指标预设与校验消息；对照上游 n8n@2.39.8 Evaluation 节点源码逐一锚定，`Value Input Mode` 等被 SUL 节点共用的通用词保留）。该映射表随镜像分发至 `/opt/i18n-params/`
+- **注入器 JS 兜底模式补 EE 目录段防护**：原仅过滤 `*.ee.*` 文件名，无 `.ee.` 后缀的 EE 节点编译产物（`nodes/Evaluation/…`，含 `Description.node.js`）会被命中改写——**2026-09-20 重推的 2.39.8 镜像取证确认 3 个 EE 文件已被 JS 路径污染**（JSON 主路径因 EE_NODE_SKIP 幸免）；现按 LICENSE 的 dirname 口径补目录段排除 + EE 节点目录跳过
+- `extract-node-headers.js` 文件扫描段补同款 `.ee.`/Evaluation 排除（三提取器对齐，堵潜伏回归面）
+
+### Added
+
+- **`script/check-ee-gate.cjs` EE 合规独立回归门禁**（评审 P1-3 落地，此前排除逻辑只活在各脚本内部无产物级校验）：`--map` 扫映射表（values 复用 scan-zh-dict 危险模式 EN 锚定 + keys 的 EE 特征词黑名单，白名单机制防误报）；`--diff` 断言构建后无任何 `.ee.`/`.ee`/nodes-base `Evaluation` 路径改动；`--dist` 断言 EE 保护路径无 CJK（**唯一能拦住镜像内 JS 兜底注入的位置**）。接线：node.js.yml ×2（映射表 + 补丁后改动路径）、image.yml（构建前映射表复核）、Dockerfile（注入后双包断言，污染即构建失败）
+- 端到端验证：现售 2.39.8 镜像 dist → 门禁准确命中 3 个污染文件；npm 原版 2.39.6 dist + 清洗后映射表 + 修复后注入器 → 69603 处替换 0 回滚、42 个 EE 保护路径全部无 CJK
+
+### Changed（流水线加固，四席评审 P1/P2）
+
+- watcher（n8n-stable-watch.yml）：上游 tag **SHA 锚定**（评估记录 commit SHA 随 dispatch 传递，防上游 force-push 内容漂移）；**双镜像探测**（n8n+runners，守住同版配对红线）；**失败退避**（连续 3 次失败停自动重试转 Issue，消灭小时级告警轰炸）；en.json 改 GitHub contents API（对齐排障实录 #2 口径）；轮询 45→75min/job 超时 60→90min（minor 不再超时误报，超时改蓝卡）；**残缺发版红灯**（tag 在而 Release 缺失→Issue 转人工，不再假绿静默）；待确认版本建跟踪 Issue（单次通知不再静默搁浅）；watcher 自身失败建 Issue（webhook 失效时的带外通道）；全部卡片发送校验补齐
+- node.js.yml：checkout 按 SHA 锚定（未传回退 tag 并告警）；**幂等升级**——「tag 存在」早退改为 Release+tarball 完整性审计（残缺响亮失败，拒绝假绿早退）；EE 门禁 ×2；词典 push 前 rebase（翻译窗口 main 竞争不再中断整链）；setup-node 提前（翻译环节 Node 版本锚定 22）；typescript@5.9.3/pnpm@10.34.5 exact-pin（contents:write job 内浮动依赖投毒面拔除）；Release 说明记录锚定 SHA
+- image.yml：**SWR tag 覆盖防护**（已存在同名 tag 须显式 `allow_overwrite=true`，合规重推显式留痕）；EE 门禁；checkout `persist-credentials: false`
+- Dockerfile：注入后 EE 断言 RUN（防复发）；Dockerfile.runners 补来源/许可 OCI LABEL（未修改再分发的名义性合规标注）
+
+> ⚠️ **待办（重推范围待定，执行前人工确认）**：①现售 2.39.8 镜像与 Release tarball 携带 EE 前端修改串 + Evaluation 子树 3 文件 CJK，需以修复后管线重建（删 tag 重跑或 dispatch image.yml + 重建 dist，因镜像覆盖防护需显式 allow_overwrite）；②2.39.7-v3 的 Release tarball 含 sourceControl.ee 弹窗中文串，重建成本高，可结合版本退役决策处理。
+
 ## [2.39.8] - 2026-09-19（首次全自动无人值守发版 + 交付渠道切华为云 SWR + 产物命名规则）
 
 **兼容**：n8n 2.39.8（精确匹配）；**就近兼容** 2.39.0 ~ 2.39.7（同大版本线）；**不兼容** > 2.39.8 后端。

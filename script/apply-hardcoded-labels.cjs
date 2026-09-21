@@ -78,11 +78,11 @@ const RULES = [
      T("\tname: '工作流评审',\n\tdescription: '跨项目工作流评审收件箱',"),
      'Workflow Reviews 模块名+描述', 1],
   ], 1],
-  ['packages/frontend/editor-ui/src/features/integrations/promotions.ee/module.descriptor.ts', [
-    [T("\tname: 'Promotions',\n\tdescription: 'Promote workflow changes between environments',"),
-     T("\tname: '晋级',\n\tdescription: '在环境间晋级工作流变更',"),
-     'Promotions 模块名+描述', 1],
-  ], 1],
+  // 🔴 EE 专有文件规则已移除（2026-09-21 专家评审实锤）：promotions.ee/sourceControl.ee
+  //    属上游 EE 专有源码（LICENSE.md 明文 *.ee.* 不适用 SUL），修改它们并随公开 dist
+  //    分发构成合规违规（与 E5-P1-A 同类，当时只堵了 params 注入端、漏了本脚本前端端）。
+  //    相关面板标签保持英文原文。防回潜：script/check-ee-gate.cjs --diff 拦截任何
+  //    触碰 .ee. / .ee 目录段的新规则。
   ['packages/frontend/editor-ui/src/features/ai/mcpAccess/module.descriptor.ts', [
     [T("\tname: 'MCP Server',\n\tdescription: 'Access your n8n instance through MCP clients',"),
      T("\tname: 'MCP 服务器',\n\tdescription: '通过 MCP 客户端访问您的 n8n 实例',"),
@@ -101,16 +101,6 @@ const RULES = [
      T("get displayName() {\n\t\t\t\treturn i18n.baseText('settings.mcp.oAuthClients.resource.dataTable');\n\t\t\t},"),
      'resources displayName 懒求值'],
   ], 1],
-  ['packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPullModal.vue', [
-    [T("label: 'Workflows',"), T("label: i18n.baseText('generic.workflows'),"), 'Workflows'],
-    [T("label: 'Credentials',"), T("label: i18n.baseText('generic.credentials'),"), 'Credentials'],
-    [T("label: 'Data Tables',"), T("label: i18n.baseText('workflows.dependencies.type.dataTables'),"), 'Data Tables'],
-  ], 3],
-  ['packages/frontend/editor-ui/src/features/integrations/sourceControl.ee/components/SourceControlPushModal.vue', [
-    [T("label: 'Workflows',"), T("label: i18n.baseText('generic.workflows'),"), 'Workflows'],
-    [T("label: 'Credentials',"), T("label: i18n.baseText('generic.credentials'),"), 'Credentials'],
-    [T("label: 'Data Tables',"), T("label: i18n.baseText('workflows.dependencies.type.dataTables'),"), 'Data Tables'],
-  ], 3],
 ];
 
 let failed = 0;
