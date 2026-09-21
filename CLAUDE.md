@@ -107,6 +107,7 @@ n8n 新旧目录布局兼容：新布局 `packages/frontend/editor-ui`（≥2.38
 4. **语义脚本 CI 路径**：working-directory 已是 n8n 根时参数必须传 `.`（传 `./n8n` 双重拼接成不存在路径）
 5. **🔴 勿加 `--ignore-scripts`——上游 allowBuilds 白名单已是精准放行**：上游 pnpm-workspace.yaml 自带 `allowBuilds` 清单（pnpm 11 特性），仅放行 sqlite3/isolated-vm/kafka-javascript/ripgrep 四个合法原生包，其余依赖脚本默认全禁（投毒面已最小化）。加 flag 会**覆盖白名单**把合法构建也禁掉：本地复现实锤 sqlite3 原生模块缺失 → nodes-langchain 的 n8n-generate-metadata require 崩 → turbo 任务 70→65 连锁失败（六跑实锤）。七跑验证白名单机制正常（isolated-vm 构建日志可见）。后续若要强化供应链：审查 allowBuilds 清单本身 + codeql/dependabot 已有，勿动 install flag
 6. **上游可能 force-push 已发 tag**（2.39.8 实证回退过功能键）：重推历史版本时核对 git 对象级内容（gh api contents），勿信缓存与记忆
+7. **零前端变更补丁版会让 dist 提交空转**（2.39.10 首发实锤：词典零增量+上游无前端 diff → dist 与上一版逐字节一致 → 创建 git tag 步骤 commit 无物退出 1 中断）——已加 `git diff --cached --quiet` 守卫。另：image.yml 并发组对 pending 有**合并取消**特性（新 dispatch 挤掉旧 pending），多版本镜像重建必须等前一个 in_progress 再 dispatch 下一个；镜像构建耗时随晚间跨境链路波动数倍（8min vs 75min），timeout 90min
 7. 全链 bot 提交（`chore: auto translate`）会与本地修复竞争——推修复前先 fetch --rebase；dispatch 前确认 HEAD 已含全部修复
 
 ## 手动构建发布 runbook（2.38.7 / 2.39.6 / 2.39.7-v3 三轮实战验证）
