@@ -3,3 +3,9 @@ ARG VERSION
 # n8n-runners 镜像无 UI、无汉化内容——从官方 ghcr 源整体搬运到 SWR，
 # 供 Queue Mode 客户在境内拉取（与 n8n-chinese 同版本号发布）
 FROM ghcr.io/n8n-io/runners:${VERSION}
+
+# 合规标注（2026-09-21 评审合规席#7）：逐字节未修改的再分发，不触发修改声明义务，
+# 但公开托管+商业交付语境下补足来源与许可归属的名义性标注
+LABEL org.opencontainers.image.source="https://github.com/n8n-io/n8n"
+LABEL org.opencontainers.image.description="Unmodified redistribution of ghcr.io/n8n-io/runners:${VERSION} for China-region delivery by bsi-bcp/n8n-i18n-chinese; not affiliated with n8n GmbH"
+LABEL org.opencontainers.image.licenses="Sustainable Use License (n8n upstream, see included LICENSE from official image)"

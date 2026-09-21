@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       force_version:
-        description: "强制评估该 n8n 版本号（如 2.40.1，可为 beta）；留空=自动探测最新稳定版"
+        description: "强制评估该 n8n 版本号（如 2.40.1；仅接受 x.y.z 稳定格式，prerelease 演练走 node.js.yml 的 allow_prerelease）——与白名单校验口径一致（原描述「可为 beta」与实现矛盾，2026-09-21 评审 N6 对齐）"
         type: string
         default: ""
       report_only:
@@ -34,7 +34,9 @@ permissions:
 jobs:
   watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 90min（2026-09-21 评审 P2-7 加重项）：60min 会在「评估段 5-10min + 子流水线 >50min」
+    # 时连结果卡一起杀掉——第三态完全静默；与轮询预算 75min 匹配
+    timeout-minutes: 90
     permissions:
       contents: read
       issues: write
@@ -100,7 +102,16 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/tags/release/$T")
           if [ "$code" = "200" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "reason=released" >> "$GITHUB_OUTPUT"
+            # 完整性审计（2026-09-21 评审：幂等语义「tag 存在≠发版完成」——首跑在 tag 推送后
+            # 中断会留下 tag 在/Release 无的残缺状态，当「已发版」跳过即假绿永久静默）
+            REL=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/release/$T")
+            if [ "$REL" = "200" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"; echo "reason=released" >> "$GITHUB_OUTPUT"
+            else
+              echo "skip=true" >> "$GITHUB_OUTPUT"; echo "reason=incomplete" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
           if [ "${{ steps.ver.outputs.drill }}" != "true" ] \
@@ -114,7 +125,29 @@ jobs:
         if: steps.gate.outputs.skip == 'true'
         run: |
           echo "- 目标版本 n8n@${{ steps.ver.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- 结果：本仓库已有对应 release（${{ steps.gate.outputs.reason }}），无需动作" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.gate.outputs.reason }}" = "incomplete" ]; then
+            echo "- 结果：🔴 残缺发版状态（tag 在而 Release/资产缺失），转人工处理" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- 结果：本仓库已有对应 release（${{ steps.gate.outputs.reason }}），无需动作" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # 残缺发版红灯（2026-09-21 评审 SRE#1/CI-N1 配套）：响亮告警转人工，不盲目重跑——
+      # 重跑会被 node.js.yml 的完整性审计拒绝，唯一出路是人工补资产或删 tag
+      - name: 残缺发版红灯（Issue 带外兜底）
+        if: steps.gate.outputs.reason == 'incomplete' && steps.ver.outputs.drill != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          T: ${{ steps.ver.outputs.version }}
+        run: |
+          EXISTING=$(gh issue list -R "$GITHUB_REPOSITORY" --state open \
+            --search "n8n@$T 发版残缺 in:title" --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "$EXISTING" -eq 0 ]; then
+            gh issue create -R "$GITHUB_REPOSITORY" \
+              --title "n8n@$T 发版残缺：tag 存在但 Release/资产缺失，需人工处理" \
+              --body "首跑在 tag 推送后中断。处理：①补资产 \`gh release create release/$T --title n8n-editor-ui@$T\` + \`gh release upload release/$T <tarball> --clobber\`；或 ②删 tag 重跑（\`gh release delete\` + \`git push origin :refs/tags/release/$T\`）。评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "已存在残缺发版 Issue，跳过"
+          fi
 
       - name: Checkout n8n source at tag (D2)
         if: steps.gate.outputs.skip == 'false'
@@ -124,12 +157,23 @@ jobs:
           ref: n8n@${{ steps.ver.outputs.version }}
           path: n8n
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Checkout plugin (patches / language snapshots)
         if: steps.gate.outputs.skip == 'false'
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           path: plugin
+          persist-credentials: false
+
+      # SHA 锚定（2026-09-21 评审 P1-1）：评估所见的上游内容以 commit SHA 记录，
+      # dispatch 传给 node.js.yml 按 SHA 检出——上游 force-push tag 不再造成
+      # 「评估的内容」与「构建的内容」漂移
+      - name: Record upstream anchor SHA
+        if: steps.gate.outputs.skip == 'false'
+        id: anchor
+        working-directory: n8n
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Evaluate patches (D4 strict, fuzz fallback)
         if: steps.gate.outputs.skip == 'false'
@@ -187,8 +231,12 @@ jobs:
         run: |
           set -euo pipefail
           V="${{ steps.ver.outputs.version }}"
-          URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40$V/packages/frontend/%40n8n/i18n/src/locales/en.json"
-          code=$(curl -sS -m 30 -o upstream_en.json -w '%{http_code}' "$URL" || echo 000)
+          # 🔒 contents API 直读 git 对象（2026-09-21 评审 P2-5）：raw.githubusercontent 的
+          # Fastly gzip/br 变体缓存可能与 identity 内容不同步（排障实录 #2，translate.js
+          # 已内建同一转换）——watcher 评估口径对齐，不再绕过该防护
+          URL="https://api.github.com/repos/n8n-io/n8n/contents/packages/frontend/%40n8n/i18n/src/locales/en.json?ref=n8n%40$V"
+          code=$(curl -sS -m 30 -o upstream_en.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw" "$URL" || echo 000)
           if [ "$code" != "200" ]; then
             echo "new=NA" >> "$GITHUB_OUTPUT"; echo "changed=NA" >> "$GITHUB_OUTPUT"
             echo "todo=NA" >> "$GITHUB_OUTPUT"; echo "note=1" >> "$GITHUB_OUTPUT"
@@ -213,27 +261,33 @@ jobs:
           echo "note=0" >> "$GITHUB_OUTPUT"
           cat delta.json
 
-      - name: Check docker base image tag
+      - name: Check docker base image tags (n8n + runners 双镜像)
         if: steps.gate.outputs.skip == 'false'
         id: img
         run: |
           set -euo pipefail
           # 探测源 = image.yml 的实际构建源（ghcr；DockerHub 为上游另一双源之一，
           # 偶发不同步会导致评估卡与构建实际可用性错位——2026-09-19 对齐）
-          GT=$(curl -s -m 20 "https://ghcr.io/token?scope=repository:n8n-io/n8n:pull" | jq -r .token)
-          code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
-            -H "Authorization: Bearer $GT" \
-            -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json" \
-            "https://ghcr.io/v2/n8n-io/n8n/manifests/${{ steps.ver.outputs.version }}" || echo 000)
-          if [ "$code" = "200" ]; then echo "exists=true" >> "$GITHUB_OUTPUT"
-          else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
-          echo "ghcr http: $code"
+          # 🔴 双镜像探测（2026-09-21 评审两席共识）：image.yml 同版同批交付 chinese+runners，
+          #    只探 n8n 会放行「runners 缺失/晚发」的半交付，违反同版配对红线
+          GT=$(curl -s -m 20 "https://ghcr.io/token?scope=repository:n8n-io/n8n:pull&scope=repository:n8n-io/runners:pull" | jq -r .token)
+          ALL=true
+          for REPO in n8n-io/n8n n8n-io/runners; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
+              -H "Authorization: Bearer $GT" \
+              -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json" \
+              "https://ghcr.io/v2/${REPO}/manifests/${{ steps.ver.outputs.version }}" || echo 000)
+            echo "ghcr $REPO http: $code"
+            [ "$code" = "200" ] || ALL=false
+          done
+          echo "exists=$ALL" >> "$GITHUB_OUTPUT"
 
       - name: Compose evaluation report
         if: steps.gate.outputs.skip == 'false'
         id: report
         env:
           LABELS_OVERRIDE: ${{ steps.labels.outputs.verdict_override }}
+          PATCH_DETAILS: ${{ steps.patch.outputs.details }}
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
@@ -250,8 +304,8 @@ jobs:
           else
             STR="待翻译 **${{ steps.strings.outputs.todo }}** 条（新增 ${{ steps.strings.outputs.new }} / 源变更 ${{ steps.strings.outputs.changed }} / zh缺失 ${{ steps.strings.outputs.missing_zh }}）"
           fi
-          if [ "$IMG" = "true" ]; then IMGM="✅ ghcr.io/n8n-io/n8n:$T 镜像已发布"
-          else IMGM="⏳ ghcr.io/n8n-io/n8n:$T 基础镜像未发布（自动发版将等待下轮）"; fi
+          if [ "$IMG" = "true" ]; then IMGM="✅ ghcr.io/n8n-io/{n8n,runners}:$T 双基础镜像已发布"
+          else IMGM="⏳ ghcr.io 基础镜像未发布齐（n8n 或 runners，自动发版将等待下轮）"; fi
           TITLE="n8n@$T 兼容性评估"
           if [ "$DRILL" = "true" ]; then TITLE="【演练】$TITLE"; DRILLNOTE="（演练，不入状态）"; else DRILLNOTE=""; fi
           # 🔴 发版判定统一在 shell 字符串比较里算好输出单一标志——Auto release 步骤
@@ -270,7 +324,9 @@ jobs:
               echo "md<<EOFMD"
               echo "- **目标版本**：n8n@$T $DRILLNOTE"
               echo "- **补丁贴合**：$PVM"
-              printf '%b' "${{ steps.patch.outputs.details }}"
+              # 🔒 经 env 传入（2026-09-21 评审 N5）：表达式内插进 shell 的反模式残留拔除；
+              # %b→%s——%b 会解释反斜杠转义，git apply 报错文本可能被改写
+              printf '%s' "$PATCH_DETAILS"
               echo "- **翻译缺口**：$STR"
               # 🟡 2026-09-19 评审 D-E4-2（短期项）：en-nodes 提取版本透明化——
               #    节点描述/操作标题提取在 CI 之外，新 minor 不重提取则面板覆盖不全
@@ -298,12 +354,14 @@ jobs:
 
       - name: Send evaluation card
         if: steps.gate.outputs.skip == 'false'
+        env:
+          REPORT_MD: ${{ steps.report.outputs.md }}
         run: |
           set -euo pipefail
           COLOR="blue"; [ "${{ steps.patch.outputs.verdict }}" = "yellow" ] && COLOR="orange"
           [ "${{ steps.patch.outputs.verdict }}" = "red" ] && COLOR="red"
           jq -n --arg t "${{ steps.report.outputs.title }}" --arg c "$COLOR" \
-            --rawfile md <(printf '%s' "${{ steps.report.outputs.md }}") '
+            --rawfile md <(printf '%s' "$REPORT_MD") '
             {msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
              elements:[{tag:"markdown",content:$md}]}}' > payload.json
           resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @payload.json "$WEBHOOK")
@@ -342,15 +400,27 @@ jobs:
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
+          # 🔴 连续失败退避（2026-09-21 评审 SRE#3）：同版本发版流水线连续失败 ≥3 次后
+          #    停止自动 dispatch——失败时 Update watched 已把版本入态，gate 会跳过；
+          #    此分支兜底覆盖「失败 <3 次仍在重试」窗口内的竞态
+          FAILS=$(jq -r --arg v "$T" '.fails[$v] // 0' state/watched.json 2>/dev/null || echo 0)
+          if [ "${FAILS:-0}" -ge 3 ]; then
+            echo "连续失败 $FAILS 次，停止自动 dispatch（转 Issue 跟踪）"
+            echo "conclusion=backoff-stop" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          if ! gh workflow run node.js.yml -R "$GITHUB_REPOSITORY" -f version="$T"; then
+          # SHA 锚定：把评估所见的上游 commit 传给构建端（防 tag force-push 内容漂移）
+          if ! gh workflow run node.js.yml -R "$GITHUB_REPOSITORY" -f version="$T" -f commit_sha="${{ steps.anchor.outputs.sha }}"; then
             # dispatch 失败（如权限缺失）必须让下个整点重试，且红卡要发得出来
             echo "conclusion=dispatch-failed" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "已触发发版流水线，跟踪中…"
           CONCL=""; RUNID=""
-          for i in $(seq 1 45); do
+          # 轮询 75 次=75min（2026-09-21 评审 P2-7：minor 大翻译量流水线可 >1h，
+          # 原 45min 上限必然超时误报；job timeout 90min 同步放宽）
+          for i in $(seq 1 75); do
             sleep 60
             R=$(gh run list -R "$GITHUB_REPOSITORY" --workflow=node.js.yml \
               --event=workflow_dispatch --created ">$START" --limit 1 \
@@ -370,32 +440,117 @@ jobs:
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
           C="${{ steps.rel.outputs.conclusion }}"
-          if [ "$C" = "success" ]; then COLOR="green"; M="✅ 发版成功：Release 与 tag 已创建（镜像构建由 image.yml 接力）"
-          else COLOR="red"; M="❌ 发版流水线结果：$C，需人工介入"; fi
           RUNURL=""
           [ -n "${{ steps.rel.outputs.runid }}" ] && RUNURL="日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.rel.outputs.runid }}"
+          # timeout≠失败（2026-09-21 评审 P2-7）：watcher 跟踪超时时流水线多半仍在正常跑，
+          # 发红卡=误报「需人工介入」——改蓝卡转述事实，结局由 node.js.yml 失败卡兜底
+          if [ "$C" = "success" ]; then COLOR="green"; M="✅ 发版成功：Release 与 tag 已创建（镜像构建由 image.yml 接力）"
+          elif [ "$C" = "timeout" ]; then COLOR="blue"; M="⏳ watcher 跟踪超时（75min），流水线大概率仍在运行——结果以 node.js.yml 与 image.yml 的后续卡为准"$'\n'"$RUNURL"
+          elif [ "$C" = "backoff-stop" ]; then COLOR="orange"; M="⛔ 连续失败达退避阈值，本轮未 dispatch——已建 Issue 跟踪，人工处理后可 force_version 重评或直接 dispatch node.js.yml"
+          else COLOR="red"; M="❌ 发版流水线结果：$C，需人工介入"$'\n'"$RUNURL"; fi
           SRC="> 🤖 来源：GitHub Actions · n8n Stable Watch · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
           jq -n --arg t "[${{ github.repository }}] n8n@$T 自动发版" --arg c "$COLOR" \
-             --arg m "$M"$'\n'"$RUNURL"$'\n'"$SRC" \
+             --arg m "$M"$'\n'"$SRC" \
             '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
               elements:[{tag:"markdown",content:$m}]}}' > p2.json
           resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @p2.json "$WEBHOOK")
           echo "feishu: $resp"
+          echo "$resp" | grep -Eq '"(code|StatusCode|statusCode)"[ ]*:[ ]*0'
 
       - name: Update watched state
         # 仅当发版链真正成功（rel 未执行＝红光/AUTO 关闭；或 rel 成功收尾）才入状态；
-        # dispatch 失败/流水线失败不入状态 → 下个整点自动重试；
+        # dispatch 失败不入状态 → 下个整点自动重试；
+        # 流水线失败 1-2 次仅计数不终态（保留下个整点自动重试，LLM 瞬时故障自愈），
+        # 连续 ≥3 次入状态停止重试并转 Issue（2026-09-21 评审 SRE#3 退避，消灭小时级轰炸）；
         # 绿灯但基础镜像未发布也不入状态——兑现评估卡「自动发版将等待下轮」的承诺
         if: >-
           steps.gate.outputs.skip == 'false' &&
           steps.ver.outputs.drill != 'true' &&
-          (steps.rel.outcome != 'success' || steps.rel.outputs.conclusion == 'success') &&
+          (steps.rel.outcome != 'success' || steps.rel.outputs.conclusion == 'success' || steps.rel.outputs.conclusion == 'failure' || steps.rel.outputs.conclusion == 'cancelled') &&
           !(env.AUTO_RELEASE == 'true' && steps.patch.outputs.verdict != 'red' && steps.img.outputs.exists == 'false')
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
-          jq -n --slurpfile s state/watched.json --arg v "$T" \
-            '{watched: ((($s[0].watched // []) + [$v]) | unique | .[-200:])}' > state/watched.json.new
+          C="${{ steps.rel.outputs.conclusion }}"
+          SHA="${{ steps.anchor.outputs.sha }}"
+          CUR=$(jq -r --arg v "$T" '.fails[$v] // 0' state/watched.json)
+          NEWF=0; ADD=true
+          if [ "$C" = "failure" ] || [ "$C" = "cancelled" ]; then
+            NEWF=$((CUR + 1))
+            if [ "$NEWF" -lt 3 ]; then ADD=false; fi
+          fi
+          jq -n --slurpfile s state/watched.json --arg v "$T" --argjson f "$NEWF" --arg sha "$SHA" --argjson add "$ADD" \
+            '{watched: (if $add then ((($s[0].watched // []) + [$v]) | unique | .[-200:]) else ($s[0].watched // []) end),
+              fails: ((($s[0].fails // {}) | .[$v] = $f) | with_entries(select(.value > 0))),
+              shas: ((($s[0].shas // {}) | .[$v] = $sha))}' > state/watched.json.new
           mv state/watched.json.new state/watched.json
           cat state/watched.json
-          echo "- 已评估版本入状态：$T" >> "$GITHUB_STEP_SUMMARY"
+          echo "- 已评估版本入状态：$T（fails=$NEWF, anchored=$SHA）" >> "$GITHUB_STEP_SUMMARY"
+
+      # 退避终态 Issue：连续第 3 次失败时版本刚入 watched（不再自动重试），Issue 是
+      # 持久人工待办——GitHub 邮件通知为带外通道，飞书 webhook 失效时仍可达（P1-2）
+      - name: 连续失败转 Issue
+        if: >-
+          steps.gate.outputs.skip == 'false' && steps.ver.outputs.drill != 'true' &&
+          (steps.rel.outputs.conclusion == 'failure' || steps.rel.outputs.conclusion == 'cancelled')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          T: ${{ steps.ver.outputs.version }}
+        run: |
+          FAILS=$(jq -r --arg v "$T" '.fails[$v] // 0' state/watched.json)
+          [ "$FAILS" -ge 3 ] || { echo "失败 $FAILS 次（<3），继续自动重试"; exit 0; }
+          EXISTING=$(gh issue list -R "$GITHUB_REPOSITORY" --state open \
+            --search "n8n@$T 发版流水线连续失败 in:title" --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "$EXISTING" -eq 0 ]; then
+            gh issue create -R "$GITHUB_REPOSITORY" \
+              --title "n8n@$T 发版流水线连续失败 3 次，已停止自动重试" \
+              --label n8n-compat \
+              --body "发版流水线连续失败（详见各轮红卡与 node.js.yml 日志）。人工修复后闭环：\`gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY\` 重评，或直接 \`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`。最近一次运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "已存在连续失败 Issue，跳过"
+          fi
+
+      # 待确认版本持久待办（2026-09-21 评审 P1-4）：AUTO 关闭的绿灯 / 黄灯 / 演练报告
+      # 只发一次评估卡，watched 状态让后续小时全部跳过——卡漏看即静默搁浅。
+      # Issue（GitHub 邮件）作为持久提醒，人工发版后关闭；AUTO 开且镜像未就绪的自愈
+      # 场景不建 Issue（下小时自动重评）
+      - name: 待确认版本建跟踪 Issue
+        if: >-
+          steps.gate.outputs.skip == 'false' && steps.ver.outputs.drill != 'true' &&
+          steps.report.outputs.go_release != 'true' && steps.patch.outputs.verdict != 'red'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          T: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          PV="${{ steps.patch.outputs.verdict }}"
+          if [ "${AUTO_RELEASE:-false}" = "true" ] && [ "$PV" != "yellow" ]; then
+            echo "AUTO_RELEASE 开且非黄灯（等待镜像就绪，下小时自愈），不建 Issue"
+            exit 0
+          fi
+          gh label create n8n-release-pending --color 0E8A16 -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+          EXISTING=$(gh issue list -R "$GITHUB_REPOSITORY" --state open \
+            --search "n8n@$T 具备发版条件 in:title" --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "$EXISTING" -gt 0 ]; then echo "已存在待确认 Issue，跳过"; exit 0; fi
+          gh issue create -R "$GITHUB_REPOSITORY" \
+            --title "n8n@$T 具备发版条件，等待确认" \
+            --label n8n-release-pending \
+            --body "评估结论：$PV（AUTO_RELEASE=${AUTO_RELEASE:-false}）。确认后一键发版：\`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`（发版后关闭本 Issue）。评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # watcher 自身失败自救（2026-09-21 评审 P1-2）：此前 watcher 挂掉零信号——
+      # 全部告警走飞书 webhook，webhook 失效时连「告警失效」这件事都无人知道。
+      # Issue 走 GitHub 邮件，是 webhook 之外的带外通道
+      - name: Watcher 自身失败自救（Issue 带外）
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list -R "$GITHUB_REPOSITORY" --state open \
+            --search "n8n-stable-watch 运行失败 in:title" --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "$EXISTING" -eq 0 ]; then
+            gh issue create -R "$GITHUB_REPOSITORY" \
+              --title "n8n-stable-watch 运行失败（run #$GITHUB_RUN_ID）" \
+              --body "watcher 运行失败——可能是评估步骤异常或飞书 webhook 失效（若卡片通道断了，此 Issue 是唯一信号）。人工排查后关闭。日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "已存在 watcher 失败 Issue（open），跳过重复创建"
+          fi

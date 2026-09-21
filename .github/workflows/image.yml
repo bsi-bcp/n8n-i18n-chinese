@@ -9,6 +9,10 @@ on:
         description: "中文包版本号（release/x.y.z 的数字部分，如 2.39.6；支持发布序号后缀如 2.39.7-v3→镜像 tag 2.39.7）；留空=自动取最新 Release"
         type: string
         default: ""
+      allow_overwrite:
+        description: "显式允许覆盖 SWR 已存在的同名 tag（合规重推场景）；自动链新版本无需传"
+        type: boolean
+        default: false
 
 # 🔴 评审 D-E2 教训（3.5h 卡死 run 实证）：无超时的镜像构建曾卡 3.5 小时
 concurrency:
@@ -73,6 +77,13 @@ jobs:
       # v3：只取 main 的 Dockerfile/构建上下文（dist 来自 Release 资产，见下一步）
       - name: Checkout main (Dockerfile context)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      # EE 合规门禁（2026-09-21 评审 P1-3）：映射表随后被 COPY 进公开镜像（/opt/i18n-params/），
+      # 构建前对 main 最新映射表独立复核——与 node.js.yml 的同名门禁形成双保险
+      - name: EE 合规门禁（映射表）
+        run: node script/check-ee-gate.cjs --map script/params-zh-map.json
 
       # v3：从 Release 资产取 dist（tag 里未必有 editor-ui-dist，资产恒有）
       - name: Download and unpack editor-ui dist
@@ -100,6 +111,23 @@ jobs:
           registry: swr.cn-north-4.myhuaweicloud.com
           username: ${{ secrets.BCP_REGISTRY_USERNAME }}
           password: ${{ secrets.BCP_REGISTRY_PASSWORD }}
+
+      # 🔒 覆盖防护（2026-09-21 评审 CI-N4）：同版本重推会静默覆盖客户已拉取的 SWR tag，
+      #    无 digest 比对/标记可溯源——自动链对新版本此检查恒通过；合规重推显式传
+      #    allow_overwrite=true 并在 CHANGELOG 留痕
+      - name: SWR tag 覆盖防护
+        env:
+          ALLOW_OVERWRITE: ${{ inputs.allow_overwrite }}
+        run: |
+          if docker buildx imagetools inspect "swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG" >/dev/null 2>&1; then
+            if [ "$ALLOW_OVERWRITE" != "true" ]; then
+              echo "::error::SWR 已存在 n8n-chinese:$IMAGE_TAG——覆盖会静默变更客户可拉取内容。合规重推请显式传 allow_overwrite=true"
+              exit 1
+            fi
+            echo "⚠️ allow_overwrite=true：将覆盖已存在的 $IMAGE_TAG（须在 CHANGELOG 留痕）"
+          else
+            echo "✅ 新版本 tag $IMAGE_TAG，无覆盖风险"
+          fi
 
       - name: Build and push multi-arch Docker images
         run: |

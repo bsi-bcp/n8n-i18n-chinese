@@ -14,6 +14,10 @@ on:
         description: "n8n 版本号（如 2.39.8）；留空=自动取最新稳定 tag（不推荐）"
         type: string
         default: ""
+      commit_sha:
+        description: "上游 n8n@<version> tag 的 commit SHA（watcher 评估时记录；防上游 force-push tag 致评估/构建内容漂移）；留空=按 tag 当前指向检出"
+        type: string
+        default: ""
       allow_prerelease:
         description: "显式允许上游 prerelease 发版（演练/补档，人工担责）"
         type: boolean
@@ -72,7 +76,9 @@ jobs:
         echo "n8n tag: n8n@$VERSION / 本仓 tag: release/$VERSION"
 
     - name: Install pnpm
-      run: npm install -g pnpm@10
+      # 🔒 exact-pin（2026-09-21 评审 P3-12）：major 浮动安装于 contents:write job，
+      # npm 包投毒=直接拿写权限 token；锁 10.34.5（安装时 10.x 最新）
+      run: npm install -g pnpm@10.34.5
 
     - name: Checkout local
       uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -91,29 +97,68 @@ jobs:
         fi
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
 
-    - name: Exit if tags exist
+    # 🔴 幂等升级（2026-09-21 评审两席共识）：「tag 存在」≠「发版完成」——首跑若在
+    #    tag 推送后、Release/资产前中断，旧逻辑下重入会假绿早退并永久静默（SRE 席
+    #    新增#1/CI 席 N1）。改为完整性审计：tag+Release+tarball 齐备才干净退出；
+    #    不齐备响亮失败（红卡），把「假绿静默」变「红灯可发现」
+    - name: Release completeness audit (tag 已存在时)
       if: steps.check_tag.outputs.exists == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TAG: release/${{ steps.ver.outputs.version }}
       run: |
-        echo "Tags exist, stopping workflow."
+        MISSING=""
+        gh release view "$TAG" --json assets --jq '[.assets[].name]' > assets.json 2>/dev/null \
+          || MISSING="Release 不存在"
+        if [ -z "$MISSING" ] && ! grep -q "n8n-editor-ui@" assets.json; then
+          MISSING="tarball 资产缺失"
+        fi
+        if [ -n "$MISSING" ]; then
+          echo "::error::版本 $TAG 残缺（$MISSING）——首跑在 tag 推送后中断，需人工补齐（gh release upload --clobber）或删 tag 重跑，拒绝假绿早退"
+          exit 1
+        fi
+        echo "✅ $TAG 完整（Release + tarball 齐备），干净退出"
 
     # 📌 Checkout n8n 前置（2026-09-19 待办⑥落地）：en-nodes 提取与构建共用同一源码树，
     #    提取必须先于 Translate（translate.js merge en-nodes 须为本版最新）
-    - name: Checkout n8n (git tag，勿用 target_commitish——release 分支会被上游清理)
+    # 🔒 SHA 锚定（2026-09-21 评审 P1-1）：上游曾 force-push 已发 tag（2.39.8 实锤回退功能键），
+    #    按 tag 检出会让「评估绿灯的内容」与「实际构建的内容」漂移——watcher 评估时记录
+    #    commit SHA 并经 dispatch 传入，本端按 SHA 检出即锚定同一 git 对象
+    - name: Checkout n8n (SHA 锚定优先，回退 tag；勿用 target_commitish——release 分支会被上游清理)
       if: steps.check_tag.outputs.exists == 'false'
       uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       with:
         repository: n8n-io/n8n
-        ref: n8n@${{ steps.ver.outputs.version }}
+        ref: ${{ inputs.commit_sha || format('n8n@{0}', steps.ver.outputs.version) }}
         path: ./n8n
+        persist-credentials: false
+
+    - name: 记录锚定 SHA
+      if: steps.check_tag.outputs.exists == 'false'
+      working-directory: ./n8n
+      run: |
+        N8N_SHA=$(git rev-parse HEAD)
+        echo "N8N_SHA=$N8N_SHA" >> "$GITHUB_ENV"
+        echo "上游 n8n@${{ steps.ver.outputs.version }} 构建锚定 SHA: $N8N_SHA"
+        if [ -z "${{ inputs.commit_sha }}" ]; then
+          echo "::warning::dispatch 未带 commit_sha（watcher 旧版或手动触发未传）——按 tag 当前指向构建，内容漂移防护未生效"
+        fi
 
     # 📌 en-nodes 自动提取（2026-09-19 待办⑥落地）：每版从 n8n 源码重提节点级 headers
     #    （面板第二层描述 + 第三层操作标题），替代本机手动 worktree 提取；
     #    产物含 _meta.version，watcher 按 minor 比对的机制不变
+    # 🔒 工具链统一 exact-pin（2026-09-21 评审 P3-12/N5）：typescript 纳入 script/ lockfile
+    #    （5.9.3），一次性 npm ci 供提取器与翻译共用——原 typescript@5 浮动安装既不可复现，
+    #    也是 contents:write job 内的投毒面（script/ 三件套已 pin 而此处是孤岛）
+    - name: Install pinned toolchain
+      if: steps.check_tag.outputs.exists == 'false'
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/script
+      run: npm ci --no-audit --no-fund
+
     - name: Extract en-nodes headers
       if: steps.check_tag.outputs.exists == 'false'
       run: |
-        npm install --prefix /tmp/ts-extract typescript@5 --silent
-        NODE_PATH=/tmp/ts-extract/node_modules node script/extract-node-headers.js /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n | tail -12
+        NODE_PATH=/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/script/node_modules node script/extract-node-headers.js /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n | tail -12
         jq 'keys | length' script/en-nodes.json
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
 
@@ -122,11 +167,18 @@ jobs:
       run: echo "PREV_KEY_COUNT=$(jq '[paths(scalars)] | length' languages/zh-CN.json)" >> "$GITHUB_ENV"
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
 
+    # 🔒 Node 版本锚定（2026-09-21 评审 N5）：translate/gate 全部步骤固定 Node 22——
+    #    原 setup-node 位于翻译之后，翻译环节实际跑在 runner 默认 Node 上，版本漂移未锚定
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      if: steps.check_tag.outputs.exists == 'false'
+      with:
+        node-version: 22.x
+
     - name: Translate New Strings
       if: steps.check_tag.outputs.exists == 'false'
-      # 🔒 评审 D-E4-5：script/ 独立 package.json + lockfile（npm ci 按锁定版本装三件套）
-      #    ——不再向上解析根 package.json，拔掉 n8n-nodes-base@latest（isolated-vm 编译地雷）
-      run: npm ci --no-audit --no-fund && N8N_EN_JSON_URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json" node translate.js
+      # 🔒 评审 D-E4-5：依赖由「Install pinned toolchain」按 script/ lockfile 统一安装
+      #    （原步骤内 npm ci 已上移）——不向上解析根 package.json，拔掉 isolated-vm 编译地雷
+      run: N8N_EN_JSON_URL="https://raw.githubusercontent.com/n8n-io/n8n/n8n%40${{ steps.ver.outputs.version }}/packages/frontend/%40n8n/i18n/src/locales/en.json" node translate.js
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/script
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -180,6 +232,13 @@ jobs:
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
       run: node script/scan-zh-dict.js languages/zh-CN.json
 
+    # EE 合规独立门禁（2026-09-21 评审 P1-3 落地）：E5-P1-A 的排除逻辑只活在各脚本内部，
+    # 无产物级校验层——映射表随后 COPY 进公开镜像，value 安全与 key 的 EE 特征在此独立复核
+    - name: EE 合规门禁（映射表）
+      if: steps.check_tag.outputs.exists == 'false'
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
+      run: node script/check-ee-gate.cjs --map script/params-zh-map.json
+
     - name: Translate Publish Git
       if: steps.check_tag.outputs.exists == 'false'
       run: |
@@ -193,14 +252,12 @@ jobs:
           echo "No changes to commit."
         else
           git commit -m "chore: auto translate for n8n@${{ steps.ver.outputs.version }}"
+          # 🔒 push 前对齐远端（2026-09-21 评审 P2-6）：翻译窗口 10-30min 内 main 可能被推进，
+          #    直接 push 会被拒中断整链——复用 tag 步已验证的 rebase 策略
+          git pull --rebase origin main
           git push origin
         fi
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
-
-    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-      if: steps.check_tag.outputs.exists == 'false'
-      with:
-        node-version: 22.x
 
     - name: Set pnpm resolution mode
       if: steps.check_tag.outputs.exists == 'false'
@@ -251,6 +308,14 @@ jobs:
         node "$GITHUB_WORKSPACE/n8n-i18n-chinese/script/apply-hardcoded-labels.cjs" .
         echo "==== 补丁应用完成 ===="
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+
+    # EE 合规门禁（改动路径，2026-09-21 评审 P1-3）：补丁/语义脚本应用后，工作区相对上游
+    # 基线的全部改动不得触碰 .ee. 文件与 .ee/Evaluation 目录段——曾实锤语义脚本修改 3 个
+    # .ee. 前端文件随公开 dist 分发（promotions.ee 中文串在 router chunk 实证）
+    - name: EE 合规门禁（源码改动路径）
+      if: steps.editorui_dir.outputs.flag == 'new' && steps.check_tag.outputs.exists == 'false'
+      working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n
+      run: node "$GITHUB_WORKSPACE/n8n-i18n-chinese/script/check-ee-gate.cjs" --diff .
 
     - name: Pnpm build editor-ui
       if: steps.check_tag.outputs.exists == 'false'
@@ -355,6 +420,9 @@ jobs:
       run: |
         ZH_KEY_COUNT=$(jq '[paths(scalars)] | length' languages/zh-CN.json) \
           bash script/gen-release-notes.sh "${{ steps.ver.outputs.version }}" release-notes.md
+        # SHA 锚定留痕（2026-09-21 评审 P1-1）：Release 说明记录构建所用的上游 commit，
+        # 重建历史版本时可对账「当时构建的是哪份内容」
+        printf '\n上游锚定：n8n@%s @ %s\n' "${{ steps.ver.outputs.version }}" "${N8N_SHA:-unknown}" >> release-notes.md
         echo "---- release-notes.md ----"
         cat release-notes.md
       working-directory: /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese
@@ -382,7 +450,9 @@ jobs:
         GH_REPO: ${{ github.repository }}  # 显式指定仓库：不依赖 cwd 的 git remote 解析
       run: |
         for i in 1 2 3; do
-          gh workflow run image.yml --ref main -f version="${{ steps.ver.outputs.version }}" && { echo "已触发 image.yml"; exit 0; }
+          # allow_overwrite=true：正常新版链 SWR 无同名 tag，该标志无效（覆盖防护仍拦
+          # 无标志的手动重推）；删 Release 重建场景删除本身已是显式动作，镜像需放行覆盖
+          gh workflow run image.yml --ref main -f version="${{ steps.ver.outputs.version }}" -f allow_overwrite=true && { echo "已触发 image.yml"; exit 0; }
           sleep 10
         done
         echo "::error::触发 image.yml 失败（可手动 dispatch 兜底）"
@@ -404,3 +474,5 @@ jobs:
             elements:[{tag:"markdown",content:$m}]}}' > p_fail.json
         resp=$(curl -sS -m 15 -H 'Content-Type: application/json' --data-binary @p_fail.json "$WEBHOOK")
         echo "feishu: $resp"
+        # 发送校验对齐 watch.yml:311 口径（2026-09-21 评审 P1-2：原 4 处发送点仅 1 处校验）
+        echo "$resp" | grep -Eq '"(code|StatusCode|statusCode)"[ ]*:[ ]*0'
