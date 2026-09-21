@@ -40,6 +40,7 @@ sed -e '/<!-- This is an auto-generated description by cubic/,/<!-- End of auto-
 
 # ---------- 2) LLM 中文总结（可选，失败降级用原文） ----------
 UP_SUMMARY=""
+LLM_OK=0
 if [ -n "${OPENAI_API_KEY:-}" ] && [ -n "${OPENAI_API_BASE:-}" ] && [ -n "${OPENAI_MODEL:-}" ] && [ -s "$UPFILE" ]; then
   PAYLOAD=$(jq -n --arg m "$OPENAI_MODEL" --rawfile notes "$UPFILE" '{
     model: $m,
@@ -51,6 +52,7 @@ if [ -n "${OPENAI_API_KEY:-}" ] && [ -n "${OPENAI_API_BASE:-}" ] && [ -n "${OPEN
   UP_SUMMARY=$(curl -sS --retry 2 --max-time 90 "${OPENAI_API_BASE%/}/chat/completions" \
     -H "Content-Type: application/json" -H "Authorization: Bearer $OPENAI_API_KEY" \
     -d "$PAYLOAD" 2>/dev/null | jq -r '.choices[0].message.content // empty' || true)
+  [ -n "$UP_SUMMARY" ] && LLM_OK=1
 fi
 if [ -z "$UP_SUMMARY" ]; then
   if [ -s "$UPFILE" ]; then
@@ -91,6 +93,12 @@ if [ -n "${GH_REPO:-}" ] && [ -n "${GH_TOKEN:-}" ]; then
 fi
 
 # ---------- 4) 组装 markdown ----------
+# 「界面变化速览」节二选一（2026-09-22 修复重复段落）：LLM 摘要成功时该节已含于
+# UP_SUMMARY（提示词要求输出），不再拼占位脚手架；仅 LLM 降级路径保留占位供维护者补写
+UI_BLOCK=""
+if [ "$LLM_OK" != "1" ]; then
+  UI_BLOCK=$'\n## 🖥 界面变化速览（业务人员视角）\n\n<!-- LLM 总结自动生成；缺失时请维护者补一句大白话：本次版本业务人员在界面上能看到什么变化 -->\n'
+fi
 cat > "$OUT" <<EOF
 > 本 Release 由 CI 流水线自动构建发布，对应上游 n8n@${V}。
 
@@ -109,11 +117,7 @@ ${REPO_CHANGES:+
 
 $REPO_CHANGES
 }
-
-## 🖥 界面变化速览（业务人员视角）
-
-<!-- LLM 总结自动生成；缺失时请维护者补一句大白话：本次版本业务人员在界面上能看到什么变化 -->
-
+${UI_BLOCK}
 ## 🔖 兼容版本
 
 **兼容**：n8n ${V}（精确匹配）；${NEAR}；**不兼容** > ${V} 的后端（新增界面文案回退英文，等本仓库跟进发版）。跨大版本区间错配可能白屏，完整矩阵见 README「[n8n 版本兼容说明](https://github.com/bsi-bcp/n8n-i18n-chinese#n8n-版本兼容说明)」。
