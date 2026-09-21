@@ -4,3 +4,7 @@ docs-inner/
 # 翻译断点落盘的中间快照，防误提交（评审 Round1 P2-5 / Round2 P2-1）
 languages/*.tmp
 script/*.tmp
+
+# 依赖目录（2026-09-21：CI 的 pinned toolchain 步 npm ci 产生 script/node_modules——
+# 本地靠全局 gitignore 遮蔽，CI 侧显示为 untracked 噪音）
+node_modules/

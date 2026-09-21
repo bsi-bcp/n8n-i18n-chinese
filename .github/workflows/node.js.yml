@@ -391,7 +391,14 @@ jobs:
         git add docker-compose.yml
         # 刷新后的第三方许可清单随同回写仓根（镜像构建 image.yml checkout main 天然取到）
         git add THIRD_PARTY_LICENSES.md
-        git commit -m "chore: add built editor-ui dist for n8n@${{ steps.ver.outputs.version }}"
+        # 🔴 上游补丁版可能不含前端变更且词典零增量 → dist 与上一版逐字节一致
+        #    （2.39.10 实锤：commit 无物退出 1 中断打 tag）——无变更时跳过提交，
+        #    tag 仍须打（Release/镜像链依赖 tag 存在）
+        if git diff --cached --quiet; then
+          echo "dist 与上一版逐字节一致，跳过 dist 提交（tag 照打）"
+        else
+          git commit -m "chore: add built editor-ui dist for n8n@${{ steps.ver.outputs.version }}"
+        fi
         git fetch origin main
         git rebase origin/main
         git tag $TAG
