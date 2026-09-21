@@ -1,6 +1,6 @@
 {
     "_meta": {
-        "version": "2.39.9",
+        "version": "2.39.8",
         "tool": "extract-node-headers.js",
         "extractedAt": "2026-09-21"
     },
@@ -239,7 +239,6 @@
     "headers.executeWorkflow.description": "Execute another workflow",
     "headers.executeWorkflowTrigger.description": "Helpers for calling other n8n workflows. Used for designing modular, microservice-like workflows.",
     "headers.executionData.description": "Add execution data for search",
-    "headers.expectedAnswer.description": "The expected output defined in your evaluation dataset, used as ground truth",
     "headers.extractFromFile.description": "Convert binary data to JSON",
     "headers.facebookGraphApi.description": "Interacts with Facebook using the Graph API",
     "headers.facebookLeadAdsTrigger.description": "Handle Facebook Lead Ads events via webhooks",
