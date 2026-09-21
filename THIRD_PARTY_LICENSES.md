@@ -1,7 +1,3 @@
-> **📌 附注（bsi-bcp/n8n-i18n-chinese，2026-09-19 收录）**：本清单取自 n8n 官方发行物（对应 n8n@2.39.x 时期），以下原文照录未改动。口径说明：清单覆盖 n8n **全体**依赖（后端 + 前端）；本仓库 editor-ui 部署包仅含前端子集（声明范围从宽不从窄）；中文镜像含完整 node_modules，与本清单精确对应。本仓库的修改声明与 Sustainable Use License 随附条款见 [NOTICE-n8n-localization.md](NOTICE-n8n-localization.md)（部署包内同目录随附）。上游版本升级时随发版流程刷新本文件。
-
----
-
 # Third-Party Licenses
 
 This file lists third-party software components included in n8n and their respective license terms.

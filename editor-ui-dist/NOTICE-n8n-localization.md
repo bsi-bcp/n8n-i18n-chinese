@@ -1,8 +1,14 @@
 # NOTICE — n8n 简体中文汉化版（本地化修改声明）
 
-本产物（editor-ui 构建产物及含其的镜像）是基于 [n8n](https://github.com/n8n-io/n8n) 的**本地化修改版**：
-仅注入 zh-CN 语言包并注册语言、追加节点面板文案查表与少量硬编码标签的词典化替换；未删除或遮盖
-n8n 的任何许可与版权声明（含页脚许可链接）。
+本产物（editor-ui 构建产物、节点包 dist 及含其的镜像）是基于 [n8n](https://github.com/n8n-io/n8n) 的**本地化修改版**。
+修改范围（构建期本地化替换，全部为界面显示文案层）：
+
+1. 向 editor-ui 注入 zh-CN 语言包并注册语言；
+2. 节点面板文案查表（headers.* 节点描述与操作标题）；
+3. 前端少量硬编码文案的源码级词典化替换（便签模板、模块描述符、弹窗标签等）；
+4. n8n-nodes-base 与 @n8n/n8n-nodes-langchain 两包参数面板显示串（displayName/description 等）的构建期中文替换——**不含任何 "*.ee.*" 专有文件与 EE 节点（evaluation/evaluationTrigger）内容**，该等内容依上游 LICENSE.md 不适用 Sustainable Use License，本项目不修改、亦不分发其修改版本。
+
+未删除或遮盖 n8n 的任何许可与版权声明（含页脚许可链接）。
 
 n8n 本体依 [Sustainable Use License](https://github.com/n8n-io/n8n/blob/master/LICENSE.md)（fair-code）
 授权，归 n8n GmbH 所有；使用 n8n 须遵守其自身许可。下方为该许可全文（随附条款副本，以满足
