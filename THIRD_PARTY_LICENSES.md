@@ -78,7 +78,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @aws-sdk/client-sagemaker 3.808.0
 * @aws-sdk/client-secrets-manager 3.808.0
 * @aws-sdk/client-sso 3.808.0
-* @aws-sdk/client-sso-oidc 3.808.0
 * @aws-sdk/core 3.808.0
 * @aws-sdk/credential-provider-cognito-identity 3.808.0
 * @aws-sdk/credential-provider-env 3.808.0
@@ -120,7 +119,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @aws-sdk/util-utf8-browser 3.259.0
 * @aws-sdk/xml-builder 3.804.0
 * @aws/lambda-invoke-store 0.2.1
-* @bazel/runfiles 6.5.0
 * @daytona/analytics-api-client 0.205.1
 * @daytona/api-client 0.205.1
 * @daytona/sdk 0.205.1
@@ -214,7 +212,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @smithy/querystring-parser 4.2.12
 * @smithy/service-error-classification 4.2.5
 * @smithy/shared-ini-file-loader 4.4.7
-* @smithy/signature-v4 5.3.5
+* @smithy/signature-v4 5.7.2
 * @smithy/smithy-client 4.12.7
 * @smithy/types 4.13.1
 * @smithy/url-parser 4.2.12
@@ -274,7 +272,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * remend 1.3.0
 * retry-axios 2.6.0
 * rhea 3.0.4
-* selenium-webdriver 4.39.0
 * semifies 1.0.0
 * snowflake-sdk 2.1.0
 * ssh2-sftp-client 12.1.0
@@ -518,7 +515,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @langchain/langgraph 1.0.2
 * @langchain/langgraph-checkpoint 1.0.0
 * @langchain/langgraph-sdk 1.0.3
-* @langchain/mcp-adapters 1.1.3
 * @langchain/mistralai 1.0.1
 * @langchain/mongodb 1.0.1
 * @langchain/ollama 1.2.6
@@ -534,11 +530,9 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @lezer/lr 1.4.5
 * @linear/sdk 76.0.0
 * @marijn/find-cluster-break 1.0.2
-* @microsoft/agents-a365-notifications 1.0.0
 * @microsoft/agents-a365-observability 1.0.0
 * @microsoft/agents-a365-runtime 1.0.0
 * @microsoft/agents-a365-tooling 1.0.0
-* @microsoft/agents-a365-tooling-extensions-langchain 1.0.0
 * @microsoft/agents-activity 1.6.1
 * @microsoft/agents-hosting 1.6.1
 * @microsoft/agents-telemetry 1.6.1
@@ -682,11 +676,14 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @types/ws 8.18.1
 * @typespec/ts-http-runtime 0.3.6
 * @vladfrangu/async_event_emitter 2.4.7
+* @volar/language-core 2.4.28
+* @volar/source-map 2.4.28
 * @vue/compiler-core 3.5.26
 * @vue/compiler-dom 3.5.26
 * @vue/compiler-sfc 3.5.26
 * @vue/compiler-ssr 3.5.26
 * @vue/devtools-api 6.6.4
+* @vue/language-core 3.3.11
 * @vue/reactivity 3.5.26
 * @vue/runtime-core 3.5.26
 * @vue/runtime-dom 3.5.26
@@ -710,6 +707,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * ajv-draft-04 1.0.0
 * ajv-formats 3.0.1
 * alasql 4.4.0
+* alien-signals 3.2.1
 * amqplib 0.10.6
 * ansi-regex 6.0.1
 * ansi-styles 4.3.0
@@ -1118,6 +1116,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * ms 2.1.3
 * msgpackr 1.11.2
 * mssql 12.7.0
+* muggle-string 0.4.1
 * multer 2.3.0
 * mustache 4.2.0
 * mysql2 3.23.1
@@ -1181,6 +1180,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * parse5-parser-stream 7.1.2
 * parseley 0.12.1
 * parseurl 1.3.3
+* path-browserify 1.0.1
 * path-expression-matcher 1.5.0
 * path-is-absolute 1.0.1
 * path-key 3.1.1
@@ -1419,7 +1419,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * xml2js 0.6.2
 * xmlbuilder 11.0.1
 * xmlchars 2.2.0
-* xmlhttprequest-ssl 3.1.0
+* xmlhttprequest-ssl 2.1.2
 * xmllint-wasm 3.0.1
 * xpath 0.0.34
 * xregexp 2.0.0
