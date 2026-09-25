@@ -75,7 +75,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 ## 目录与文档纪律
 
-- ⚠️ 根 `docker-compose.yml` 的 image 版本号**当前不会自动跟进**（CI 占位符空转 bug，见「CI 重跑排障实录」第 9 条）——用它做本机速验前先手动改成目标版
+- ⚠️ 根 `docker-compose.yml` 的 image 版本号：CI 自动跟进已于 2026-09-25 修复（见「CI 重跑排障实录」第 9 条），**但自下一版发版跑通前仍不生效**——在那之前用它做本机速验，先手动把 image 改成目标版（当前已手动对齐 2.40.7）
 - `docs/` = **对外发布物**（`排障指南.md` 客户端排障入口、CSDN 推广文），随仓库公开
 - `docs-inner/` = **内部过程文档**（评审/预研/立项/封存译文/评审 Excel），**已 gitignore，不入公开仓**；异地备份仅一条路径——本机 launchd `n8n-backup-sync.sh` rsync 到私有库 `00-docs/n8n/n8n-chinese`（WatchPaths + 30s 防抖，有差异才 commit）。⚠️ 其 plist（`com.bsi.n8n-backup-sync.plist`）**未入仓**——换机仅凭仓库无法恢复该备份作业，须手工重建（脚本在 `host-launchd/`）
 - 写新文档先判归属：给客户/公开看的进 `docs/`，过程留痕进 `docs-inner/`
@@ -135,7 +135,7 @@ n8n 新旧目录布局兼容：新布局 `packages/frontend/editor-ui`（≥2.38
 6. **上游可能 force-push 已发 tag**（2.39.8 实证回退过功能键）：重推历史版本时核对 git 对象级内容（gh api contents），勿信缓存与记忆
 7. **零前端变更补丁版会让 dist 提交空转**（2.39.10 首发实锤：词典零增量+上游无前端 diff → dist 与上一版逐字节一致 → 创建 git tag 步骤 commit 无物退出 1 中断）——已加 `git diff --cached --quiet` 守卫。另：image.yml 并发组对 pending 有**合并取消**特性（新 dispatch 挤掉旧 pending），多版本镜像重建必须等前一个 in_progress 再 dispatch 下一个；镜像构建耗时随晚间跨境链路波动数倍（8min vs 75min），timeout 90min
 8. 全链 bot 提交（`chore: auto translate`）会与本地修复竞争——推修复前先 fetch --rebase；dispatch 前确认 HEAD 已含全部修复
-9. 🔴 **`docker-compose.yml` 版本号自 2.39.8 起永久空转**（2026-09-25 实锤）：node.js.yml 的 `Update docker-compose.yml version` 步用 `sed -i "s/{version}/$VERSION/g"` 替换**占位符**，而占位符是**一次性**的——2.39.8 首发把它替换成 `2.39.8` 后文件里再无 `{version}`，此后 5 个版本（2.39.9/10、2.40.5/6/7）该 sed 全部无匹配空转（步骤仍显示 success，`git add` 无物不报错），compose 冻结在 2.39.8。**影响面**：仅本机速验 compose（镜像构建用 Dockerfile，不走 compose），但「起本机实例看中文」这个动作会静默拉到旧版后端 → 误判。**临时口径**：用前手动把 image 版本号改成目标版。**根治**：把 sed 改为按版本号模式替换（如 `s|n8nio/n8n:[0-9.]*|n8nio/n8n:$VERSION|`），改 workflow 后须真实跑一轮验证（本地语法审查不算数——本文件反复强调的铁律）
+9. 🔴 **`docker-compose.yml` 版本号自 2.39.8 起永久空转**（2026-09-25 实锤）：node.js.yml 的 `Update docker-compose.yml version` 步用 `sed -i "s/{version}/$VERSION/g"` 替换**占位符**，而占位符是**一次性**的——2.39.8 首发把它替换成 `2.39.8` 后文件里再无 `{version}`，此后 5 个版本（2.39.9/10、2.40.5/6/7）该 sed 全部无匹配空转（步骤仍显示 success，`git add` 无物不报错），compose 冻结在 2.39.8。**影响面**：仅本机速验 compose（镜像构建用 Dockerfile，不走 compose），但「起本机实例看中文」这个动作会静默拉到旧版后端 → 误判。**临时口径**：用前手动把 image 版本号改成目标版。**已修（2026-09-25）**：改为按 image 行直接改写，并加 **grep 守卫把「未命中」升级为 `exit 1`**——本 bug 的真正教训是**静默**（步骤恒 green 比报错危险得多），守卫让这类静默失败不可能再发生。另把 `sed -i` 换成**重定向 + mv**：BSD 的 `-i` 会把下一个参数当备份后缀吞掉（`sed -i -E` 在 macOS 上按 BRE 解析、报 `\1 not defined`），与 GNU 语义不同——统一写法才能在 macOS 本地做等价验证。**验证状态**：以从 workflow 抽出的真实脚本跑等价用例 6/6 全绿（陈旧值/幂等/非 semver/带 `-vN`/image 名被改须红/真实文件仅 1 行变更）+ YAML 解析通过；**CI 端到端未验**——须下次真实发版跑通才算数（本文件铁律），期间守卫兜底不会静默
 
 ## 手动构建发布 runbook（2.38.7 / 2.39.6 / 2.39.7-v3 三轮实战验证）
 

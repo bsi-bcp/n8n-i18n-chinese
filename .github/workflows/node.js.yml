@@ -374,8 +374,22 @@ jobs:
       if: steps.check_tag.outputs.exists == 'false'
       run: |
         VERSION="${{ steps.ver.outputs.version }}"
-        echo "Replacing {version} with $VERSION in docker-compose.yml"
-        sed -i "s/{version}/$VERSION/g" /home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/docker-compose.yml
+        COMPOSE=/home/runner/work/n8n-i18n-chinese/n8n-i18n-chinese/n8n-i18n-chinese/docker-compose.yml
+        echo "Setting docker-compose.yml image tag → $VERSION"
+        # 🔴 勿改回一次性 {version} 占位符（2026-09-25 实锤）：占位符在 2.39.8 首发被
+        #    替换后即从文件消失，其后 5 个版本（2.39.9/10、2.40.5/6/7）sed 全部无匹配，
+        #    而步骤恒显示 success —— 静默空转比报错危险得多。改为按 image 行直接改写，
+        #    并把「未命中」升级为硬失败（下方 grep 守卫）。
+        #    用重定向+mv 而非 sed -i：BSD 与 GNU 的 -i 语义不同（BSD 会把下一个参数
+        #    当备份后缀），统一写法才能在 macOS 本地做等价验证（CI 为 GNU sed）
+        sed -E "s|^([[:space:]]*image:[[:space:]]*)n8nio/n8n:.*$|\1n8nio/n8n:${VERSION}|" "$COMPOSE" > "$COMPOSE.tmp"
+        if ! grep -qF "n8nio/n8n:${VERSION}" "$COMPOSE.tmp"; then
+          rm -f "$COMPOSE.tmp"
+          echo "::error::docker-compose.yml 未更新为 $VERSION —— image 行模式未命中（上游改了 image 名/文件结构？），核对 sed 模式后重跑"
+          exit 1
+        fi
+        mv "$COMPOSE.tmp" "$COMPOSE"
+        grep -n "image:" "$COMPOSE"
 
     # 🔒 先提交 dist 再 rebase origin/main 后打 tag：构建窗口内 main 的 workflow 提交
     #    不得进入 tag 历史（GITHUB_TOKEN 无 workflows scope 可授，push 携带未入库的
