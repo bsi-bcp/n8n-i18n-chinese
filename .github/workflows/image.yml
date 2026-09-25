@@ -82,7 +82,8 @@ jobs:
 
       # v3：只取 main 的 Dockerfile/构建上下文（dist 来自 Release 资产，见下一步）
       - name: Checkout main (Dockerfile context)
-        if: ${{ !inputs.mirror_only }}
+        # 🔴 不加 mirror_only 守卫：镜像同步步需要仓库里的 script/registry-copy.py
+        #    （2026-09-26 实跑踩中：跳过 checkout → can't open file .../script/registry-copy.py）
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
