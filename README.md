@@ -5,17 +5,17 @@
 **让 n8n 说中文 —— 开箱即用的简体中文界面，CI 全自动跟随官方发版**
 
 [![Latest Release](https://img.shields.io/github/v/release/bsi-bcp/n8n-i18n-chinese?style=flat-square)](https://github.com/bsi-bcp/n8n-i18n-chinese/releases)
-[![n8n](https://img.shields.io/badge/n8n-2.39.10-EA4B71?style=flat-square)](https://github.com/n8n-io/n8n/releases)
+[![n8n](https://img.shields.io/badge/n8n-2.40.7-EA4B71?style=flat-square)](https://github.com/n8n-io/n8n/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/bsi-bcp/n8n-i18n-chinese/node.js.yml?branch=main&label=%E5%8F%91%E7%89%88%20CI&style=flat-square)](https://github.com/bsi-bcp/n8n-i18n-chinese/actions/workflows/node.js.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ```shell
-docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.10
+docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.40.7
 ```
 
 </div>
 
-> 社区延续维护 [fork](https://github.com/other-blowsnow/n8n-i18n-chinese)（原项目已归档停更）：将 zh-CN 语言包编译进 editor-ui，**上游 n8n 发新版后数小时内自动跟进发版**。当前覆盖 **n8n 2.39.10**（词典 9519 键全量汉化）。
+> 社区延续维护 [fork](https://github.com/other-blowsnow/n8n-i18n-chinese)（原项目已归档停更）：将 zh-CN 语言包编译进 editor-ui，**上游 n8n 发新版后数小时内自动跟进发版**。当前覆盖 **n8n 2.40.7**（词典 9723 键全量汉化）。
 >
 > 非 n8n 官方项目；n8n® 为 n8n GmbH 商标，n8n 本体受 [Sustainable Use License](https://docs.n8n.io/license/)（fair-code）约束；汉化包本身 MIT（© imblowsnow + BSI，经原作者授权），详见[版权与来源声明](#版权与来源声明)。
 
@@ -24,7 +24,7 @@ docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.10
 ## ✨ 特性
 
 - 🔄 **全自动跟进上游** — watcher 每小时巡检 n8n 官方稳定版，评估通过后自动完成「增量翻译 → 覆盖率门禁 → 构建 → Release → 镜像推送」，上游发新版通常当天即有对应汉化，不用再苦等停更的汉化包
-- 📖 **不只翻菜单** — 9522 键界面词典全量汉化；节点面板的节点描述（568 节点）与操作标题（456 条）一并汉化；Data tables 等弹窗硬编码英文标签已修复；节点参数面板中文化已随镜像分发（如 Slack「发送消息」面板全中文）
+- 📖 **不只翻菜单** — 9723 键界面词典全量汉化；节点面板的节点描述（568 节点）与操作标题（580 条）一并汉化；Data tables 等弹窗硬编码英文标签已修复；节点参数面板中文化已随镜像分发（如 Slack「发送消息」面板全中文）
 - 🐳 **镜像即所得** — 官方 n8n + 汉化 editor-ui 合一镜像，amd64 / arm64 双架构，默认中文界面，一条 `docker run` 用起来
 - 🔓 **公开免登录** — 华为云 SWR 公开仓库，匿名 `docker pull`，不注册、不登录、无门槛
 - 🧰 **部署形态齐全** — Docker / Docker Compose / Queue Mode 集群（同版本配套 runners 镜像）/ 官方镜像挂载 dist / npm·npx 本地替换 / 内网离线导入，全有现成步骤
@@ -50,7 +50,7 @@ docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.10
 docker run -d --name n8n \
   -p 5678:5678 \
   -v ~/.n8n:/home/node/.n8n \
-  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.10
+  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.40.7
 ```
 
 **或 Docker Compose：**
@@ -58,7 +58,7 @@ docker run -d --name n8n \
 ```yaml
 services:
   n8n:
-    image: swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.10
+    image: swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.40.7
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -135,8 +135,8 @@ docker compose pull && docker compose up -d
 内网环境拉不到镜像时，**不要用部署包 tar.gz 冒充镜像**（那是前端文件不是镜像）。正确做法：任选一台有网机器拉取后导出再拷入内网：
 
 ```shell
-docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.10
-docker save swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.10 | gzip > n8n-chinese.tar.gz
+docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.40.7
+docker save swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.40.7 | gzip > n8n-chinese.tar.gz
 # 拷入内网后：
 docker load < n8n-chinese.tar.gz
 ```
@@ -156,7 +156,11 @@ docker load < n8n-chinese.tar.gz
 | **2.39.8** | **`release/2.39.8`（精确匹配）** | 本仓库 Releases / 镜像 | 9522 键全量汉化（补丁版，词典沿用 v3 + 上游 AI Assistant 预览修复随版带入）；镜像 `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8`。**2026-09-21 以修复后管线重建**（EE 合规清理，重建前后镜像 digest 已变更） |
 | **2.39.9** | **`release/2.39.9`（精确匹配）** | 本仓库 Releases / 镜像 | 9519 键全量汉化；首版构建于 EE 清理前旧管线，**同日以修复后管线重建**（上游锚定 SHA 见 Release 说明） |
 | **2.39.10** | **`release/2.39.10`（精确匹配）** | 本仓库 Releases / 镜像 | 9519 键（上游零前端变更补丁版，dist 与 2.39.9 逐字节一致）；首个完整走修复后管线（EE 四层门禁）的全自动发版 |
-| > 2.39.10 | 就近低版本 dist 搭配 | 本仓库 Releases | 等本仓库跟进发版（CI 自动）；期间新文案回退英文，功能不受影响 |
+| **2.40.0 ~ 2.40.4** | **`release/2.40.5`（就近）** | 本仓库 Releases / 镜像 | 同 minor 旧补丁线，新增文案回退英文；2.40 为 minor 版，跨级升级/回滚须按 Release 说明执行数据库迁移/回退 |
+| **2.40.5** | **`release/2.40.5`（精确匹配）** | 本仓库 Releases / 镜像 | 9723 键全量汉化（较 2.39 线新增 204 条文案 + 上游 2.40 前端全量重建）；2.40 线首个汉化版 |
+| **2.40.6** | **`release/2.40.6`（精确匹配）** | 本仓库 Releases / 镜像 | 9723 键；补丁版（上游实例报告鉴权修复），dist 微调 |
+| **2.40.7** | **`release/2.40.7`（精确匹配，最新）** | 本仓库 Releases / 镜像 | 9723 键；补丁版（上游 OpenTelemetry span 属性修复），词典零增量、dist 与 2.40.6 逐字节一致 |
+| > 2.40.7 | 就近低版本 dist 搭配 | 本仓库 Releases | 等本仓库跟进发版（CI 自动）；期间新文案回退英文，功能不受影响 |
 
 补充规则：
 
@@ -196,11 +200,11 @@ CI 链路：watcher 每小时巡检官方稳定版 → 增量翻译 → 覆盖�
 
 ## 🌍 English
 
-Community-maintained **Simplified Chinese localization** for the n8n editor UI — continuation of the [archived upstream](https://github.com/other-blowsnow/n8n-i18n-chinese) project. CI rebuilds automatically for every n8n stable release (currently covering **n8n 2.39.8**, 9522 translated keys).
+Community-maintained **Simplified Chinese localization** for the n8n editor UI — continuation of the [archived upstream](https://github.com/other-blowsnow/n8n-i18n-chinese) project. CI rebuilds automatically for every n8n stable release (currently covering **n8n 2.40.7**, 9723 translated keys).
 
 ```shell
 docker run -d --name n8n -p 5678:5678 -v ~/.n8n:/home/node/.n8n \
-  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.39.8
+  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.40.7
 ```
 
 The image defaults to Chinese UI (`N8N_DEFAULT_LOCALE=zh-CN`); set `N8N_DEFAULT_LOCALE=en` to switch back to English. Public Docker registry — no login required. Localization is MIT-licensed; n8n itself remains under its own [Sustainable Use License](https://docs.n8n.io/license/).

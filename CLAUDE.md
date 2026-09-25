@@ -16,7 +16,7 @@ n8n 编辑器 UI 简体中文汉化包的**构建与分发流水线**，仓库�
 
 原理：n8n editor-ui 内置 vue-i18n 但上游未发布中文包。把 zh-CN.json 编入 n8n 源码的 `packages/frontend/@n8n/i18n/src/locales/` 并打补丁注册语言后重新编译；用户端设 `N8N_DEFAULT_LOCALE=zh-CN` 生效。
 
-**仓库现状（2026-09-25 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。**CI 全自动已上线（2026-09-18 实战定型，完整包模式）**：watcher 每小时监控 n8n 官方稳定版 → 三项确定性评估（补丁贴合/翻译缺口/基础镜像）→ 飞书研发部群卡片；仓库变量 `AUTO_RELEASE=true`——绿灯即自动「翻译→覆盖率门禁→完整包构建→Release→镜像」全链，红灯自动建 `n8n-compat` Issue 等人工适配（全链唯一人工介入点）。2.39.8 首日实战连爆 3 雷（dispatch 403 假绿 / tag 推送被拒 / workflows scope 非法）均当日修复并沉淀为 workflow 注释与门禁；期间曾短暂收窄为补丁包模式，同日按用户决策恢复完整包自动化。**最新 Release 为 `release/2.39.10`（2026-09-21，watcher 全自动跟进，首个完整走 9-21 修复后管线的发版；9519 键，上游零前端变更→dist 与 2.39.9 逐字节一致，`创建 git tag` 步骤已加无变更守卫）**；`release/2.39.9`（2026-09-21 同日以修复后管线重建，9519 键）；`release/2.39.8`（2026-09-19 首个无人值守发版，9522 键；**2026-09-21 EE 清理重建，镜像终验三连全绿**）；2.39.7 的唯一发布为 `release/2.39.7-v3`（v1/v2 已并入其发布说明，tag 保留）：9374 键 + 节点面板第二/三层汉化 + Data tables 硬编码修复；YTJ1 灰度全绿。前作 `release/2.39.6`/`release/2.38.7`；SWR 现存 chinese+runners 双镜像 × 4 版本（2.39.10/2.39.9/2.39.8/2.39.7，全双架构；2.39.8/9 为 2026-09-21 EE 清理重建）；存量边端仍沿用 2.33.7/2.38.7 dist（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill。正常情况下无需人工动作（CI 承包完整包产线）；下节 runbook 供 CI 不可用/本地验证时使用（已经 2.38.7/2.39.6/2.39.7-v3 三轮实战）。，`CHANGELOG.md` 记录发版史实与兼容区间。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。**第三方依赖许可清单**（2026-09-19 起）：`THIRD_PARTY_LICENSES.md`（取自 n8n 官方发行物、原文照录，根目录与 editor-ui-dist 各一份）随部署包与镜像分发，CI 打包步骤与 Dockerfile 已接线；**2026-09-20 起发版时自动刷新**——node.js.yml 新增步骤拉上游对应 Release 附件回写（失败保留副本告警人工），随 dist 提交回写仓根供镜像侧取用（原纯人工步骤 × 全自动发版=结构性错位，评审 E5-P2-A）。**🔴 .ee 专有内容排除（2026-09-20 评审 E5-P1-A 首锤，2026-09-21 四席评审补第二路径后闭环）**：上游 LICENSE.md 明文 `*.ee.*` 文件与 `.ee` 目录段及 EE 节点（evaluation/evaluationTrigger）不适用 SUL、须企业授权。第一路径（params 注入/提取双端无排除，24+93 条）2026-09-20 修复；**2026-09-21 四席专家评审实锤第二、三路径**：①`apply-hardcoded-labels.cjs` 曾修改 promotions.ee/sourceControl.ee 三个 EE 前端文件（中文串随 2.39.7-v3+ dist 公开分发，现售 2.39.8 镜像 editor-ui chunk 实证）；②JS 兜底注入无目录防护 + 映射表残留 47 条 EE 评估串——**当日重推的「干净」2.39.8 镜像实际仍带 EE**（Evaluation 子树 3 文件 CJK，Docker 取证），「已重推干净」的旧记录系误判已更正。修复=三组 EE 规则拔除 + 映射表 47 条剔除 + JS 模式目录段/EE 节点目录双排除 + **`script/check-ee-gate.cjs` 四层独立回归门禁**（map/diff/dist×Dockerfile 注入后断言，污染即构建失败）；修复管线已端到端模拟验证（原版 2.39.6 dist + 清洗映射表 → 0 污染）。**待办**：~~2.39.8 镜像与 tarball 重建~~ **已完成（2026-09-21，2.39.9/2.39.10 同批干净；2.39.8 新 digest `ead391c0…`，`gate --dist` 扫 22405 文件 22 个 EE 保护路径 0 污染）**；2.39.7-v3 tarball 含 sourceControl 弹窗串（**已拍板不重建，随版本退役消化**）；2.39.6/2.38.7 镜像构建于注入接线前无参数注入，参数面干净。**修改声明（NOTICE/README，2026-09-20 枚举化刷新）**：修改范围=语言包注入+面板查表+前端硬编码替换+两包参数串构建期替换（不含 EE）——原「仅为注入语言包」表述在 M3/langchain 之后已失真，声明过窄比不声明更糟；README 另加翻译准确性限责声明。
+**仓库现状（2026-09-25 核实）**：本仓库 fork 自 `other-blowsnow/n8n-i18n-chinese`，上游**已归档**（2026-08-21 停更，最终 Release 为 `release/2.33.7`）。**CI 全自动已上线（2026-09-18 实战定型，完整包模式）**：watcher 每小时监控 n8n 官方稳定版 → 三项确定性评估（补丁贴合/翻译缺口/基础镜像）→ 飞书研发部群卡片；仓库变量 `AUTO_RELEASE=true`——绿灯即自动「翻译→覆盖率门禁→完整包构建→Release→镜像」全链，红灯自动建 `n8n-compat` Issue 等人工适配（全链唯一人工介入点）。2.39.8 首日实战连爆 3 雷（dispatch 403 假绿 / tag 推送被拒 / workflows scope 非法）均当日修复并沉淀为 workflow 注释与门禁；期间曾短暂收窄为补丁包模式，同日按用户决策恢复完整包自动化。**最新 Release 为 `release/2.40.7`（2026-09-25，watcher 全自动跟进；9723 键，上游后端修复、dist 与 2.40.6 逐字节一致——无变更守卫第二次生效）**；2.40 线首版 `release/2.40.5`（2026-09-22，**minor**：词典 9519→**9723 键**（+204）+ 上游 2.40 前端全量重建 1212 文件）；`release/2.40.6`（2026-09-24，dist 微调 2 文件）；前序 2.39 线：`release/2.39.10`（9519 键，零前端变更首例）/`release/2.39.9`/`release/2.39.8`（三版均 2026-09-21 EE 清理重建）/`release/2.39.7-v3`（9374 键 + 面板二三层汉化，YTJ1 灰度全绿）；更早 `release/2.39.6`/`release/2.38.7`。SWR 现存 chinese+runners 双镜像 × **7 版本**（2.40.7/6/5 + 2.39.10/9/8/7，全双架构；**2026-09-25 决策：全留暂不退役**——2.40 线 3 天内 3 个补丁版，待其稳定后再成对收 2.39.7/8 并发 ≥30 天退役广播）；存量边端仍沿用 2.33.7/2.38.7 dist（bind mount 覆盖，实测兼容 2.38.x 后端），细节见 bcp-deploy-n8n skill。正常情况下无需人工动作（CI 承包完整包产线）；下节 runbook 供 CI 不可用/本地验证时使用（已经 2.38.7/2.39.6/2.39.7-v3 三轮实战）。，`CHANGELOG.md` 记录发版史实与兼容区间。**许可（2026-09-14 落实）**：上游原无 LICENSE，原作者 imblowsnow 已在 [n8n-nodes-feishu-lite#67](https://github.com/other-blowsnow/n8n-nodes-feishu-lite/issues/67) 明确授权本 fork 以 MIT 继续修改分发；本仓库已补 LICENSE（双版权声明：imblowsnow 继承内容 + BSI 新增内容），README「版权与来源声明」同步引用。分发产物不再受"版权保留"限制约束。**第三方依赖许可清单**（2026-09-19 起）：`THIRD_PARTY_LICENSES.md`（取自 n8n 官方发行物、原文照录，根目录与 editor-ui-dist 各一份）随部署包与镜像分发，CI 打包步骤与 Dockerfile 已接线；**2026-09-20 起发版时自动刷新**——node.js.yml 新增步骤拉上游对应 Release 附件回写（失败保留副本告警人工），随 dist 提交回写仓根供镜像侧取用（原纯人工步骤 × 全自动发版=结构性错位，评审 E5-P2-A）。**🔴 .ee 专有内容排除（2026-09-20 评审 E5-P1-A 首锤，2026-09-21 四席评审补第二路径后闭环）**：上游 LICENSE.md 明文 `*.ee.*` 文件与 `.ee` 目录段及 EE 节点（evaluation/evaluationTrigger）不适用 SUL、须企业授权。第一路径（params 注入/提取双端无排除，24+93 条）2026-09-20 修复；**2026-09-21 四席专家评审实锤第二、三路径**：①`apply-hardcoded-labels.cjs` 曾修改 promotions.ee/sourceControl.ee 三个 EE 前端文件（中文串随 2.39.7-v3+ dist 公开分发，现售 2.39.8 镜像 editor-ui chunk 实证）；②JS 兜底注入无目录防护 + 映射表残留 47 条 EE 评估串——**当日重推的「干净」2.39.8 镜像实际仍带 EE**（Evaluation 子树 3 文件 CJK，Docker 取证），「已重推干净」的旧记录系误判已更正。修复=三组 EE 规则拔除 + 映射表 47 条剔除 + JS 模式目录段/EE 节点目录双排除 + **`script/check-ee-gate.cjs` 四层独立回归门禁**（map/diff/dist×Dockerfile 注入后断言，污染即构建失败）；修复管线已端到端模拟验证（原版 2.39.6 dist + 清洗映射表 → 0 污染）。**待办**：~~2.39.8 镜像与 tarball 重建~~ **已完成（2026-09-21，2.39.9/2.39.10 同批干净；2.39.8 新 digest `ead391c0…`，`gate --dist` 扫 22405 文件 22 个 EE 保护路径 0 污染）**；2.39.7-v3 tarball 含 sourceControl 弹窗串（**已拍板不重建，随版本退役消化**）；2.39.6/2.38.7 镜像构建于注入接线前无参数注入，参数面干净。**修改声明（NOTICE/README，2026-09-20 枚举化刷新）**：修改范围=语言包注入+面板查表+前端硬编码替换+两包参数串构建期替换（不含 EE）——原「仅为注入语言包」表述在 M3/langchain 之后已失真，声明过窄比不声明更糟；README 另加翻译准确性限责声明。
 
 ## 常用命令
 
@@ -75,6 +75,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 ## 目录与文档纪律
 
+- ⚠️ 根 `docker-compose.yml` 的 image 版本号**当前不会自动跟进**（CI 占位符空转 bug，见「CI 重跑排障实录」第 9 条）——用它做本机速验前先手动改成目标版
 - `docs/` = **对外发布物**（`排障指南.md` 客户端排障入口、CSDN 推广文），随仓库公开
 - `docs-inner/` = **内部过程文档**（评审/预研/立项/封存译文/评审 Excel），**已 gitignore，不入公开仓**；异地备份仅一条路径——本机 launchd `n8n-backup-sync.sh` rsync 到私有库 `00-docs/n8n/n8n-chinese`（WatchPaths + 30s 防抖，有差异才 commit）。⚠️ 其 plist（`com.bsi.n8n-backup-sync.plist`）**未入仓**——换机仅凭仓库无法恢复该备份作业，须手工重建（脚本在 `host-launchd/`）
 - 写新文档先判归属：给客户/公开看的进 `docs/`，过程留痕进 `docs-inner/`
@@ -83,7 +84,7 @@ translate.js 环境变量（OpenAI 兼容接口，可放 `.env`；dotenv 从**�
 
 ## 翻译流程（script/translate.js）
 
-1. 从 n8n master 拉官方 `en.json`，与本仓库 `script/en-nodes.json`（若存在）lodash.merge 作为完整英文基准。en-nodes.json 由 `extract-node-headers.js` 生成：`headers.<节点短名>.description`（面板第二层节点描述，568 节点）+ `headers.actionTitles.<英文短语>`（面板第三层操作标题，582 条），均与 n8n 版本 tag 对齐提取
+1. 从 n8n master 拉官方 `en.json`，与本仓库 `script/en-nodes.json`（若存在）lodash.merge 作为完整英文基准。en-nodes.json 由 `extract-node-headers.js` 生成：`headers.<节点短名>.description`（面板第二层节点描述，568 节点）+ `headers.actionTitles.<英文短语>`（面板第三层操作标题，2.40.7 实测 580 条），均与 n8n 版本 tag 对齐提取
 2. 三方对比（新 en.json / 旧基准 `script/en.json` / 现有 `languages/zh-CN.json`），只翻译：**新增 key** 或 **英文原文已变化的 key**
 3. 批协议：key 用 `##` 打平仅用于内部回填，实际传给 LLM 的是等长 JSON 字符串数组（仅原文）；LLM 输出剥掉 `<think>` 块（兼容推理模型）与 markdown 代码围栏；429 退避 5s 重试，其余非 200 交给 retry 重试
 4. 产物按新 en.json 的 key 顺序排序写回 `languages/zh-CN.json`，并把新 en.json 存为下次的旧基准
@@ -134,6 +135,7 @@ n8n 新旧目录布局兼容：新布局 `packages/frontend/editor-ui`（≥2.38
 6. **上游可能 force-push 已发 tag**（2.39.8 实证回退过功能键）：重推历史版本时核对 git 对象级内容（gh api contents），勿信缓存与记忆
 7. **零前端变更补丁版会让 dist 提交空转**（2.39.10 首发实锤：词典零增量+上游无前端 diff → dist 与上一版逐字节一致 → 创建 git tag 步骤 commit 无物退出 1 中断）——已加 `git diff --cached --quiet` 守卫。另：image.yml 并发组对 pending 有**合并取消**特性（新 dispatch 挤掉旧 pending），多版本镜像重建必须等前一个 in_progress 再 dispatch 下一个；镜像构建耗时随晚间跨境链路波动数倍（8min vs 75min），timeout 90min
 8. 全链 bot 提交（`chore: auto translate`）会与本地修复竞争——推修复前先 fetch --rebase；dispatch 前确认 HEAD 已含全部修复
+9. 🔴 **`docker-compose.yml` 版本号自 2.39.8 起永久空转**（2026-09-25 实锤）：node.js.yml 的 `Update docker-compose.yml version` 步用 `sed -i "s/{version}/$VERSION/g"` 替换**占位符**，而占位符是**一次性**的——2.39.8 首发把它替换成 `2.39.8` 后文件里再无 `{version}`，此后 5 个版本（2.39.9/10、2.40.5/6/7）该 sed 全部无匹配空转（步骤仍显示 success，`git add` 无物不报错），compose 冻结在 2.39.8。**影响面**：仅本机速验 compose（镜像构建用 Dockerfile，不走 compose），但「起本机实例看中文」这个动作会静默拉到旧版后端 → 误判。**临时口径**：用前手动把 image 版本号改成目标版。**根治**：把 sed 改为按版本号模式替换（如 `s|n8nio/n8n:[0-9.]*|n8nio/n8n:$VERSION|`），改 workflow 后须真实跑一轮验证（本地语法审查不算数——本文件反复强调的铁律）
 
 ## 手动构建发布 runbook（2.38.7 / 2.39.6 / 2.39.7-v3 三轮实战验证）
 
@@ -164,11 +166,11 @@ n8n 新旧目录布局兼容：新布局 `packages/frontend/editor-ui`（≥2.38
 minor 发版 ≠ 被动等待——watcher 自动发版可能快于收尾动作就位，当天按序核对：
 
 1. **watcher 评估卡**：绿/黄/红结论 + 卡面 `AUTO_RELEASE` 显示值（仓库变量不在文件里，卡片是唯一展示面）
-2. **node.js.yml 日志**：语义脚本 --check 全绿（insights 规则路径为 2.40 迁包后最可能红灯点）、THIRD_PARTY 刷新步骤输出（首次实弹，核对文件头版本字样是否 2.40）
-3. **image.yml 日志**：四路注入段无 EACCES/ENOENT（langchain 注入若路径错在此暴露，失败卡已含该原因项）
-4. **Release 说明「↩ 回滚」段实证**：minor 含 db 迁移，核对 db:revert 路径对 2.40 真实可执行——随版回滚承诺首次实弹（评审 D-E2-6 记录 n=0）
-5. **收尾两件（人工）**：README 兼容矩阵加 2.40 行 + CHANGELOG 固化版本段（漏做则客户按旧矩阵选版）
-6. **SWR 保留集合决策**：入阵后 5 版 or 退役 2.38.7；若退役，广播即日发出（≥30 天窗口，起算=入阵日）
+2. **node.js.yml 日志**：语义脚本 --check 全绿（insights 规则路径为 2.40 迁包后最可能红灯点）、THIRD_PARTY 刷新步骤输出。🔴 **正确核对口径 = sha256 比对上游同版 Release 附件**（`gh api repos/n8n-io/n8n/releases/tags/n8n@<ver> --jq '.assets[]|select(.name=="THIRD_PARTY_LICENSES.md")|.digest'`，或下载后 `shasum -a 256`）——该文件头**无版本字样**，原「核对文件头版本字样」提法系误设，2026-09-25 实测已按 sha256 口径验收 2.40.7（`3cf3d783…` 逐字节一致）
+3. **image.yml 日志**：四路注入段无 EACCES/ENOENT（langchain 注入若路径错在此暴露，失败卡已含该原因项）。**判据可简化**：注入与 dist EE 断言都在 Dockerfile 内 RUN，"Build and push" 步骤 success 即蕴含两者通过（2.40.5/6/7 三版实证）
+4. **Release 说明「↩ 回滚」段实证**：minor 含 db 迁移，核对 db:revert 路径对 2.40 真实可执行。**2026-09-25 决策：暂记「未实证」并在 CHANGELOG 显式标注**（评审 D-E2-6 记录 n=0），随下次边端 2.39→2.40 升级在冷备副本实测后回填；不做专门演练
+5. **收尾两件（人工）**：README 兼容矩阵加 2.40 行 + CHANGELOG 固化版本段（漏做则客户按旧矩阵选版）。⚠️ 2.40.5 于 09-22 发出后，这两件直到 **09-25 才补**（落后 3 版 / 3 天）——矩阵滞后期间客户给 2.40 后端选版会落到 2.39.10（minor 跨级无声陷阱），**此项是 checklist 里唯一有真实客户影响的**，建议发版日设提醒
+6. **SWR 保留集合决策**：入阵后保留 or 退役旧版；若退役，广播即日发出（≥30 天窗口，起算=入阵日）。**2026-09-25 决策：全留 7 版暂不退役**（理由见「仓库现状」段）
 7. **YTJ1 迁移按 minor SOP**：冷备 → db 迁移窗口 → 升级预告发在管客户（乙方排期制下预告是交付动作不是可选项）
 8. **YTJ1 抽查**：AI Agent/Chat Model 面板中文（langchain 注入首验）+ 新拖节点画布默认名 + 对照本版新增译串
 
