@@ -170,20 +170,33 @@ jobs:
           password: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
 
       - name: Mirror images to private registry (bcp-hub/)
+        # 🔴 GODEBUG=http2client=0：私有库（registry:2 前置 Caddy）在**大 blob 流式读取**时会回
+        #    HTTP/2 RST_STREAM（实测 `stream error: stream ID 15; INTERNAL_ERROR; received from peer`，
+        #    2026-09-25 首跑即失败于 runners 拷贝，chinese 那份则成功）。强制 HTTP/1.1 规避。
+        env:
+          GODEBUG: http2client=0
         run: |
           set -e
-          for img in n8n-chinese n8n-runners; do
+          mirror_one() {
+            local img="$1" SRC DST sp dp
             SRC="swr.cn-north-4.myhuaweicloud.com/bcphub/${img}:$IMAGE_TAG"
             DST="registry.bcpcloud.cn/bcp-hub/${img}:$IMAGE_TAG"
-            docker buildx imagetools create --tag "$DST" "$SRC"
+            for attempt in 1 2 3; do
+              if docker buildx imagetools create --tag "$DST" "$SRC"; then break; fi
+              echo "::warning::第 $attempt 次拷贝失败（$img），10s 后重试"
+              [ "$attempt" = 3 ] && { echo "::error::$img 三次拷贝均失败"; return 1; }
+              sleep 10
+            done
             sp=$(docker buildx imagetools inspect "$SRC" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
             dp=$(docker buildx imagetools inspect "$DST" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
             if [ "$sp" != "$dp" ]; then
               echo "::error::平台集合不一致 $img — 源[$sp] 目标[$dp]（镜像已丢架构，不得视为成功）"
-              exit 1
+              return 1
             fi
             echo "✅ $DST  平台 [$dp]"
-          done
+          }
+          mirror_one n8n-chinese
+          mirror_one n8n-runners
 
       # 部署成功通知（2026-09-18）：镜像推送完成 → 研发部群卡片（交付物就绪提醒）
       - name: Notify Feishu on success
