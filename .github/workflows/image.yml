@@ -13,6 +13,10 @@ on:
         description: "显式允许覆盖 SWR 已存在的同名 tag（合规重推场景）；自动链新版本无需传"
         type: boolean
         default: false
+      mirror_only:
+        description: "只跑「同步到私有库」这一步（跳过构建，约 1 分钟）——用于验证镜像步本身，不产生新镜像"
+        type: boolean
+        default: false
 
 # 🔴 评审 D-E2 教训（3.5h 卡死 run 实证）：无超时的镜像构建曾卡 3.5 小时
 concurrency:
@@ -78,6 +82,7 @@ jobs:
 
       # v3：只取 main 的 Dockerfile/构建上下文（dist 来自 Release 资产，见下一步）
       - name: Checkout main (Dockerfile context)
+        if: ${{ !inputs.mirror_only }}
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
@@ -85,10 +90,12 @@ jobs:
       # EE 合规门禁（2026-09-21 评审 P1-3）：映射表随后被 COPY 进公开镜像（/opt/i18n-params/），
       # 构建前对 main 最新映射表独立复核——与 node.js.yml 的同名门禁形成双保险
       - name: EE 合规门禁（映射表）
+        if: ${{ !inputs.mirror_only }}
         run: node script/check-ee-gate.cjs --map script/params-zh-map.json
 
       # v3：从 Release 资产取 dist（tag 里未必有 editor-ui-dist，资产恒有）
       - name: Download and unpack editor-ui dist
+        if: ${{ !inputs.mirror_only }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -105,9 +112,11 @@ jobs:
           echo "dist files: $(find editor-ui-dist -type f | wc -l)"
 
       - name: Set up Docker Buildx
+        if: ${{ !inputs.mirror_only }}
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to Huawei Cloud SWR
+        if: ${{ !inputs.mirror_only }}
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: swr.cn-north-4.myhuaweicloud.com
@@ -118,6 +127,7 @@ jobs:
       #    无 digest 比对/标记可溯源——自动链对新版本此检查恒通过；合规重推显式传
       #    allow_overwrite=true 并在 CHANGELOG 留痕
       - name: SWR tag 覆盖防护
+        if: ${{ !inputs.mirror_only }}
         env:
           ALLOW_OVERWRITE: ${{ inputs.allow_overwrite }}
         run: |
@@ -132,6 +142,7 @@ jobs:
           fi
 
       - name: Build and push multi-arch Docker images
+        if: ${{ !inputs.mirror_only }}
         run: |
           # 构建并直接推送 multi-arch 镜像（amd64 + arm64）到华为云 SWR
           # --provenance=false --sbom=false：不带 attestation 附件 manifest
@@ -170,33 +181,34 @@ jobs:
           password: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
 
       - name: Mirror images to private registry (bcp-hub/)
-        # 🔴 GODEBUG=http2client=0：私有库（registry:2 前置 Caddy）在**大 blob 流式读取**时会回
-        #    HTTP/2 RST_STREAM（实测 `stream error: stream ID 15; INTERNAL_ERROR; received from peer`，
-        #    2026-09-25 首跑即失败于 runners 拷贝，chinese 那份则成功）。强制 HTTP/1.1 规避。
+        # 🔴 2026-09-26 换实现：`docker buildx imagetools create`（Go/HTTP/2）→ 仓库内 script/registry-copy.py
+        #    （Python urllib，HTTP/1.1 直连 Registry v2 API）。原因（两次实跑实测）：
+        #      ① 私有库（registry:2 前置 Caddy）对大 blob 的 HTTP/2 流回 RST_STREAM
+        #         → `stream error: stream ID 15; INTERNAL_ERROR; received from peer`
+        #      ② 加 GODEBUG=http2client=0 + 重试后**退化为无进展挂起**：43 分钟零进展 → 撞 90min 作业超时
+        #    脚本方法 2026-09-25 已用于修复受损镜像（外部逐层拉取验证通过），且本地实测两条路径：
+        #      幂等（目标已有）2.1s；真实搬运（busybox 小镜像）2.9s —— 均 digest 一致。
+        #    脚本自带 digest 校验（内容寻址 ⇒ 等价于"平台集合不丢"），下方平台断言作第二道独立闸。
         env:
-          GODEBUG: http2client=0
+          SWR_USER: ${{ secrets.BCP_REGISTRY_USERNAME }}
+          SWR_PASS: ${{ secrets.BCP_REGISTRY_PASSWORD }}
+          REG_USER: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
+          REG_PASS: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
         run: |
           set -e
-          mirror_one() {
-            local img="$1" SRC DST sp dp
+          for img in n8n-chinese n8n-runners; do
             SRC="swr.cn-north-4.myhuaweicloud.com/bcphub/${img}:$IMAGE_TAG"
             DST="registry.bcpcloud.cn/bcp-hub/${img}:$IMAGE_TAG"
-            for attempt in 1 2 3; do
-              if docker buildx imagetools create --tag "$DST" "$SRC"; then break; fi
-              echo "::warning::第 $attempt 次拷贝失败（$img），10s 后重试"
-              [ "$attempt" = 3 ] && { echo "::error::$img 三次拷贝均失败"; return 1; }
-              sleep 10
-            done
+            echo "──── $img ────"
+            python3 script/registry-copy.py --from "$SRC" --to "$DST"
             sp=$(docker buildx imagetools inspect "$SRC" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
             dp=$(docker buildx imagetools inspect "$DST" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
             if [ "$sp" != "$dp" ]; then
               echo "::error::平台集合不一致 $img — 源[$sp] 目标[$dp]（镜像已丢架构，不得视为成功）"
-              return 1
+              exit 1
             fi
             echo "✅ $DST  平台 [$dp]"
-          }
-          mirror_one n8n-chinese
-          mirror_one n8n-runners
+          done
 
       # 部署成功通知（2026-09-18）：镜像推送完成 → 研发部群卡片（交付物就绪提醒）
       - name: Notify Feishu on success
