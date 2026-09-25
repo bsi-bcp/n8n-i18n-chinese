@@ -39,6 +39,11 @@ jobs:
         env:
           KEY: ${{ secrets.DRILL_SSH_KEY }}
         run: |
+          # 未配置演练密钥时优雅跳过：①② 的可达性/时延数据已能回答「命门」问题
+          if [ -z "${KEY:-}" ]; then
+            echo "⏭ 未配置 DRILL_SSH_KEY —— 跳过真实 push（仅完成 ①② 可达性探测）"
+            exit 0
+          fi
           mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           mkdir -p /tmp/drill && cd /tmp/drill
           git init -q -b main
