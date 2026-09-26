@@ -48,7 +48,11 @@ ACCEPT = ", ".join([
 
 
 def load_creds():
-    """host → Authorization 头值。优先环境变量，其次 CREDS_FILE（KEY=VALUE）。"""
+    """host → Authorization 头值。优先环境变量，其次 CREDS_FILE（KEY=VALUE）。
+
+    ⚠️ 表里没有的 host 一律按**匿名**处理（返回 None ⇒ 调用方不再报"缺凭证"）：
+    ghcr.io 等公共库正是靠匿名 token 挑战流读取，不需要也不该配凭证。
+    """
     env = {}
     try:
         with open(CREDS_FILE, encoding="utf-8") as f:
@@ -68,6 +72,10 @@ def load_creds():
     return {
         "swr.cn-north-4.myhuaweicloud.com": b64(env.get("SWR_USER", ""), env.get("SWR_PASS", "")),
         "registry.bcpcloud.cn": b64(env.get("REG_USER", ""), env.get("REG_PASS", "")),
+        # 公共库：匿名（走 token 挑战流）。显式列出以免被当成"缺凭证"。
+        "ghcr.io": None,
+        "docker.io": None,
+        "registry-1.docker.io": None,
     }
 
 
@@ -250,10 +258,16 @@ def main():
     if not (shost and srepo and stag and thost and trepo and ttag):
         print("🔴 镜像引用解析失败：--from %s / --to %s（都需 <host>/<repo>:<tag>）" % (a.src, a.dst))
         return 1
-    auth_s, auth_t = creds.get(shost), creds.get(thost)
-    if not auth_s or not auth_t:
-        print("🔴 缺少 %s 或 %s 的凭证（环境变量 SWR_*/REG_* 或 %s）"
+    # 源/目标任一不在凭证表里 ⇒ 匿名（ghcr/docker.io 等公共库走 token 挑战流）；
+    # 私有库仍需凭证，故此处只对"表里没有的 host"放行，不再直接判失败。
+    auth_s = creds.get(shost)
+    auth_t = creds.get(thost)
+    if shost not in creds or thost not in creds:
+        print("🔴 host 未登记：--from %s / --to %s 的 host 不在凭证表（%s）"
               % (shost, thost, CREDS_FILE))
+        return 1
+    if thost == "registry.bcpcloud.cn" and not auth_t:
+        print("🔴 目标私有库缺凭证（环境变量 REG_USER/REG_PASS 或 %s）" % CREDS_FILE)
         return 1
 
     log = lambda x: print(x, flush=True)         # noqa: E731

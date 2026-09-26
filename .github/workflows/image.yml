@@ -211,6 +211,33 @@ jobs:
             echo "✅ $DST  平台 [$dp]"
           done
 
+      - name: Mirror sandbox images to private registry (ghcr → bcp-hub)
+        # 沙箱服务（AI Assistant 用）来自上游公共库 ghcr.io —— 边端直拉 ghcr 不稳，
+        # 故一并镜像进私有库，让边端只依赖 registry.bcpcloud.cn。
+        # 🔴 2026-09-26：此前 bcp-hub 里那两个 tag 与上游 digest 不一致（`d115bbc6…` vs `23d7fbc0…`），
+        #    疑为早期用 docker pull+push 搬的——**会丢多架构**。本步用 registry-copy.py 重搬并校验 digest，
+        #    顺带把已有失真副本覆盖为保真副本。
+        # ⚠️ SANDBOX_TAG 必须与 deploy-* 分支 compose 里的 ghcr.io/n8n-io/n8n-sandbox-service-*:tag 一致；
+        #    n8n 升级 bump 沙箱版本时同步改这里（忘了改 → 边端拉不到，会回退到公共库或失败）。
+        env:
+          SANDBOX_TAG: "1.2.0"
+          SWR_USER: ${{ secrets.BCP_REGISTRY_USERNAME }}
+          SWR_PASS: ${{ secrets.BCP_REGISTRY_PASSWORD }}
+          REG_USER: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
+          REG_PASS: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
+        run: |
+          set -e
+          for img in n8n-sandbox-service-api n8n-sandbox-service-runner-dind; do
+            SRC="ghcr.io/n8n-io/${img}:${SANDBOX_TAG}"
+            DST="registry.bcpcloud.cn/bcp-hub/${img}:${SANDBOX_TAG}"
+            echo "──── $img ────"
+            python3 script/registry-copy.py --from "$SRC" --to "$DST"
+            sp=$(docker buildx imagetools inspect "$SRC" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
+            dp=$(docker buildx imagetools inspect "$DST" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
+            [ "$sp" = "$dp" ] || { echo "::error::平台集合不一致 $img — 源[$sp] 目标[$dp]"; exit 1; }
+            echo "✅ $DST  平台 [$dp]"
+          done
+
       # 部署成功通知（2026-09-18）：镜像推送完成 → 研发部群卡片（交付物就绪提醒）
       - name: Notify Feishu on success
         if: success()
