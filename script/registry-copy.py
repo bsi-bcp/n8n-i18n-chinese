@@ -101,7 +101,10 @@ def _token_for(host, repo, basic):
         return _TOKEN[key]
     challenge = None
     try:
-        with req("GET", "https://%s/v2/" % host, basic or "anon", timeout=30):
+        # 🔴 匿名库（ghcr 等）**不能**带 Authorization 去探测：带 `anon` 会返回 **403 且无挑战头**
+        #    （2026-09-26 实测 ghcr：不带 → 401+`WWW-Authenticate: Bearer realm=…`；带 anon → 403+无头）
+        #    → basic 为空时必须彻底不发这个头，否则拿不到挑战、换不到 token。
+        with req("GET", "https://%s/v2/" % host, basic or None, timeout=30):
             _TOKEN[key] = None
             return None
     except urllib.error.HTTPError as e:
@@ -127,13 +130,15 @@ def _token_for(host, repo, basic):
 
 
 def auth_for(host, repo, basic):
-    """该 host/repo 实际可用的 Authorization 头值（优先 Bearer，退回 Basic）。"""
+    """该 host/repo 实际可用的 Authorization 头值（优先 Bearer，退回 Basic；匿名则返回 None）。"""
     tok = _token_for(host, repo, basic)
-    return "Bearer " + tok if tok else basic
+    return "Bearer " + tok if tok else (basic or None)
 
 
 def req(method, url, auth, accept=None, data=None, timeout=TIMEOUT, ctype=None):
-    hdr = {"Authorization": auth}
+    hdr = {}
+    if auth:                       # 匿名库（ghcr 等）auth 为空 ⇒ 不发送 Authorization 头
+        hdr["Authorization"] = auth
     if accept:
         hdr["Accept"] = accept
     if ctype:
