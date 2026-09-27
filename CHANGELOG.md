@@ -11,6 +11,13 @@
 - **就近兼容** = 搭配相邻后端版本实测可用；旧 dist 配新后端时，新增文案回退英文（功能不受影响）
 - **不兼容** = 跨大版本区间错配可能白屏，请勿使用
 
+## [私有库旧路径退役] - 2026-09-27
+
+- **删除 `registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese`**（2.39.6 时代的历史交付渠道，2026-09-19 起冻结）：3 个 tags（2.38.7/2.39.6/2.39.7）删除前逐一与 `bcp-hub/n8n-chinese` 同名 tag **digest 比对一致**（零内容损失），删除后端到端验证旧路径 404、目标仓 4 tags 无损。预检确认 `bcp-deploy` 全分支无引用、`image.yml` 已只推 SWR + `bcp-hub/`。删除执行按 `00-docs/portainer/CLAUDE.md` 私有库铁律（先子 manifest 后 index，逐 tag 真拉验证）；catalog 空壳条目与 blob 物理回收交由周一 retention GC。
+- **删除 `registry.bcpcloud.cn/bcp/n8n-chinese`**（更早的历史路径，仅存 1 tag `2.38.7`，与 `bcp-hub` 同 digest）：同 SOP 执行。本次新增第四道预检——**实测 Portainer 全平台 16 栈锚定**（全部 `deploy-*` 根 compose），确认引用旧路径的 `11-yuxing/` 旧模板与 `deploy-yuxing` 注释均为死引用后方可删除。
+- **删除 `registry.bcpcloud.cn/bcp/n8n`、`bcp/n8n-runners`**：实测均为 **0 tags 空仓**（与 `bcp/nginx`/`bcp/redis` 同状态），无内容损失；catalog 空壳条目留待 retention GC。
+- **删除 `registry.bcpcloud.cn/bcp/n8n-sandbox-service-api`、`bcp/n8n-sandbox-service-runner-dind`**（各 1 tag `1.2.0`，OCI 单架构 manifest）：乐扬栈（#95 `bcphub-lydx`）原字面消费这两仓，删除**前置切源已完成**——`deploy-leyang` 分支 4 处镜像源改 `bcp-hub/`（commit `e7fd140`，含 `SANDBOX_RUNNER_DOCKER_SANDBOX_IMAGE` env），Gitea 同步断言通过。⚠️ `bcp-hub` 侧同名 tag 为**多架构 OCI index，与旧仓单架构 manifest digest 不同**（非等价物）——切源即升到新构建。**redeploy 已于同日完成并验证**：全栈 18 容器收敛（无一异常态）、sandbox 三容器切 `bcp-hub/` 新镜像、`sandbox-api` healthcheck healthy、旧路径容器零残留。插曲：redeploy 首次 500 暴露 **GitOps Source #1 凭证第三次失效**（修复+复发记录见 `00-docs/portainer/gitops-source-凭证缺失-复发-2026-09-25.md` 2026-09-27 节）；乐扬栈 `AutoUpdate` 实测为 null（漏配），同日已补开 30m 轮询。
+
 ## [2.40.7] - 2026-09-25（上游后端修复补丁版）
 
 **兼容**：n8n 2.40.7（精确匹配）；**就近兼容** 2.40.0 ~ 2.40.6（同 minor 旧补丁线，新增文案回退英文）；**不兼容** > 2.40.7 的后端。
