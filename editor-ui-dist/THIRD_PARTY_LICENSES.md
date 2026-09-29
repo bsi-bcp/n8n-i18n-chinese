@@ -70,6 +70,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @aws-crypto/sha256-js 5.2.0
 * @aws-crypto/supports-web-crypto 5.2.0
 * @aws-crypto/util 5.2.0
+* @aws-sdk/checksums 3.1000.28
 * @aws-sdk/client-bedrock-agent-runtime 3.808.0
 * @aws-sdk/client-bedrock-runtime 3.938.0
 * @aws-sdk/client-cognito-identity 3.808.0
@@ -78,6 +79,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @aws-sdk/client-sagemaker 3.808.0
 * @aws-sdk/client-secrets-manager 3.808.0
 * @aws-sdk/client-sso 3.808.0
+* @aws-sdk/client-sts 3.1131.0
 * @aws-sdk/core 3.808.0
 * @aws-sdk/credential-provider-cognito-identity 3.808.0
 * @aws-sdk/credential-provider-env 3.808.0
@@ -89,6 +91,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @aws-sdk/credential-provider-sso 3.808.0
 * @aws-sdk/credential-provider-web-identity 3.808.0
 * @aws-sdk/credential-providers 3.808.0
+* @aws-sdk/ec2-metadata-service 3.1131.0
 * @aws-sdk/eventstream-handler-node 3.936.0
 * @aws-sdk/lib-storage 3.808.0
 * @aws-sdk/middleware-bucket-endpoint 3.808.0
@@ -132,12 +135,8 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @e965/xlsx 0.20.3
 * @getzep/zep-cloud 1.0.6
 * @getzep/zep-js 0.9.0
-* @google-cloud/paginator 5.0.2
-* @google-cloud/projectify 4.0.0
-* @google-cloud/promisify 4.0.0
 * @google-cloud/resource-manager 5.3.0
 * @google-cloud/secret-manager 5.6.0
-* @google-cloud/storage 7.12.1
 * @google/genai 1.19.0
 * @google/generative-ai 0.24.0
 * @grpc/grpc-js 1.14.4
@@ -241,7 +240,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * agent-browser 0.26.0
 * ai 7.0.74
 * axios-retry 4.5.0
-* browser-request 0.3.3
 * bson 6.10.4
 * chromadb 3.2.0
 * cluster-key-slot 1.1.2
@@ -273,7 +271,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * retry-axios 2.6.0
 * rhea 3.0.4
 * semifies 1.0.0
-* snowflake-sdk 2.1.0
+* snowflake-sdk 3.3.0
 * ssh2-sftp-client 12.1.0
 * swagger-ui-dist 5.11.0
 * teeny-request 9.0.0
@@ -348,7 +346,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * protobufjs 7.6.5
 * qs 6.15.2
 * replacestream 4.0.3
-* rfc2047 4.0.1
 * rrule 2.8.1
 * rw 1.3.3
 * shelljs 0.8.5
@@ -552,6 +549,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @paralleldrive/cuid2 2.2.2
 * @parcel/watcher 2.5.1
 * @petamoriken/float16 3.9.2
+* @pinojs/redact 0.4.0
 * @posthog/core 1.48.8
 * @posthog/types 1.405.1
 * @qdrant/openapi-typescript-fetch 1.2.6
@@ -718,7 +716,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * aria-hidden 1.2.6
 * array-parallel 0.1.3
 * array-series 0.1.5
-* arrify 2.0.1
 * asap 2.0.6
 * asn1 0.2.6
 * asn1.js 5.4.1
@@ -731,9 +728,9 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * astring 1.9.0
 * async 3.2.4
 * async-mutex 0.5.0
-* async-retry 1.3.3
 * async-validator 4.2.5
 * asynckit 0.4.0
+* atomic-sleep 1.0.0
 * available-typed-arrays 1.0.7
 * avsc 5.7.9
 * aws-ssl-profiles 1.1.2
@@ -747,7 +744,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * bcryptjs 2.4.3
 * bignumber.js 9.1.2
 * binary-extensions 2.2.0
-* binascii 0.0.2
 * bindings 1.5.0
 * bintrees 1.0.2
 * bl 6.0.12
@@ -807,6 +803,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * crelt 1.0.6
 * cron 4.4.0
 * cron-parser 5.6.1
+* cronstrue 3.27.0
 * cross-fetch 4.1.0
 * cross-spawn 7.0.6
 * crypto-js 4.2.0
@@ -934,7 +931,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * homedir-polyfill 1.0.3
 * hono 4.12.34
 * html-encoding-sniffer 4.0.0
-* html-entities 2.5.2
 * html-escaper 3.0.3
 * html-to-text 9.0.5
 * htmlparser2 10.1.0
@@ -947,7 +943,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * iceberg-js 0.8.1
 * iconv-lite 0.6.3
 * ignore 5.3.2
-* imap 0.8.19
+* imapflow 1.7.1
 * immediate 3.0.6
 * interpret 1.4.0
 * ioredis 5.3.2
@@ -996,7 +992,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * json-diff 1.0.6
 * json-schema-to-ts 3.1.1
 * json-schema-traverse 1.0.0
-* json5 2.2.3
 * jsonpointer 5.0.1
 * jsonschema 1.4.1
 * jsonwebtoken 9.0.3
@@ -1011,7 +1006,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * ldapts 8.1.7
 * leac 0.6.0
 * libbase64 1.3.0
-* libmime 5.3.7
+* libmime 5.4.2
 * libqp 2.1.1
 * lie 3.3.0
 * limiter 1.1.5
@@ -1036,7 +1031,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * lodash.once 4.1.1
 * lodash.snakecase 4.1.1
 * logform 2.6.1
-* loglevel 1.9.2
 * longest-streak 3.1.0
 * lossless-json 1.0.5
 * lru-memoizer 3.0.0
@@ -1100,7 +1094,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * micromark-util-symbol 2.0.1
 * micromark-util-types 2.0.2
 * micromatch 4.0.8
-* mime 3.0.0
 * mime-db 1.54.0
 * mime-types 3.0.2
 * mimic-response 3.1.0
@@ -1155,6 +1148,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * object.assign 4.1.7
 * ohash 2.0.11
 * ollama 0.6.3
+* on-exit-leak-free 2.1.2
 * on-finished 2.4.1
 * on-headers 1.1.0
 * one-time 1.0.0
@@ -1197,6 +1191,9 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * pg-types 2.2.0
 * pgpass 1.0.5
 * picomatch 2.3.2
+* pino 10.3.1
+* pino-abstract-transport 3.0.0
+* pino-std-serializers 7.1.0
 * pirates 4.0.7
 * pkce-challenge 5.0.0
 * possible-typed-array-names 1.1.0
@@ -1210,6 +1207,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * pretty-bytes 5.6.0
 * process 0.11.10
 * process-nextick-args 2.0.1
+* process-warning 5.1.0
 * promise-ftp 1.3.5
 * promise-ftp-common 1.1.5
 * property-expr 2.0.5
@@ -1232,17 +1230,17 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * pump 3.0.0
 * punycode 2.3.1
 * punycode.js 2.3.1
-* python-struct 1.1.3
 * querystringify 2.2.0
 * queue-microtask 1.2.3
+* quick-format-unescaped 4.0.4
 * quickjs-emscripten 0.32.0
 * quickjs-emscripten-core 0.32.0
-* quoted-printable 1.0.1
 * random-bytes 1.0.0
 * range-parser 1.2.1
 * raw-body 3.0.0
 * readable-stream 2.3.8
 * readdirp 4.1.2
+* real-require 0.2.0
 * recast 0.22.0
 * rechoir 0.6.2
 * redis 4.6.14
@@ -1298,8 +1296,11 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * simple-lru-cache 0.0.2
 * simple-swizzle 0.2.2
 * slugify 1.6.6
+* smart-buffer 4.2.0
 * socket.io-client 4.8.3
 * socket.io-parser 4.2.7
+* socks 2.8.9
+* sonic-boom 4.2.1
 * source-map-support 0.5.21
 * sparse-bitfield 3.0.3
 * spex 3.3.0
@@ -1337,6 +1338,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * text-hex 1.0.0
 * thenify 3.3.1
 * thenify-all 1.6.0
+* thread-stream 4.2.0
 * title-case 3.0.3
 * tlds 1.261.0
 * tmp 0.2.7
@@ -1367,7 +1369,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * uid-safe 2.1.5
 * uint8array-extras 1.5.0
 * underscore 1.13.8
-* undici 7.29.0
+* undici 7.29.1
 * undici-types 6.21.0
 * unified 11.0.5
 * unist-util-is 6.0.1
@@ -1378,8 +1380,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * unpipe 1.0.0
 * url-join 4.0.1
 * url-parse 1.5.10
-* utf7 1.0.2
-* utf8 3.0.0
 * util 0.12.5
 * util-deprecate 1.0.2
 * uuid 11.1.1
@@ -1387,7 +1387,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * vary 1.1.2
 * vfile 6.0.3
 * vfile-message 4.0.3
-* vm2 3.11.6
+* vm2 3.12.2
 * vue 3.5.26
 * vue-boring-avatars 1.3.0
 * vue-demi 0.14.10
@@ -1403,7 +1403,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * which-typed-array 1.1.19
 * winston 3.14.2
 * winston-transport 4.8.0
-* wiremock-rest-client 1.11.0
 * wordwrap 1.0.0
 * worker-timers 7.1.8
 * worker-timers-broker 6.1.8
