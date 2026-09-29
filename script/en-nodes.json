@@ -1,8 +1,8 @@
 {
     "_meta": {
-        "version": "2.40.7",
+        "version": "2.41.3",
         "tool": "extract-node-headers.js",
-        "extractedAt": "2026-09-25"
+        "extractedAt": "2026-09-29"
     },
     "headers.@n8n/n8n-nodes-langchain.agent.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "Generates an action plan and executes it. Can use external tools.",
@@ -27,6 +27,7 @@
     "headers.@n8n/n8n-nodes-langchain.embeddingsAwsBedrock.description": "Use Embeddings AWS Bedrock",
     "headers.@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi.description": "Use Embeddings Azure OpenAI",
     "headers.@n8n/n8n-nodes-langchain.embeddingsCohere.description": "Use Cohere Embeddings",
+    "headers.@n8n/n8n-nodes-langchain.embeddingsDatabricks.description": "Use Databricks Embeddings",
     "headers.@n8n/n8n-nodes-langchain.embeddingsGoogleGemini.description": "Use Google Gemini Embeddings",
     "headers.@n8n/n8n-nodes-langchain.embeddingsGoogleVertex.description": "Use Google Vertex Embeddings",
     "headers.@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference.description": "Use HuggingFace Inference Embeddings",
@@ -208,6 +209,7 @@
     "headers.customerIoTrigger.description": "Starts the workflow on a Customer.io update (Beta)",
     "headers.dataTable.description": "Permanently save data across workflow executions in a table",
     "headers.databricks.description": "Interact with Databricks API",
+    "headers.databricksTrigger.description": "Starts the workflow when Databricks job runs or pipeline updates change state",
     "headers.dateTime.description": "Allows you to manipulate date and time values",
     "headers.debugHelper.description": "Causes problems intentionally and generates useful data for debugging",
     "headers.deepL.description": "Translate data using DeepL",
