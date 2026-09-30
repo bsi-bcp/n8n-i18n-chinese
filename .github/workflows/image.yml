@@ -48,7 +48,8 @@ permissions:
 #    逐字节搬运不做媒体类型转换。
 # 2. registry-copy.py 双路分发：n8n-chinese **仅 amd64**（2026-09-30 用户定稿：
 #    arm64 暂不支持汉化镜像，SWR 与 bcp-hub 同此；顺带免去 QEMU arm64 冷构建大头）；
-#    n8n-runners（无汉化内容）SWR 保持多架构、bcp-hub 仅 amd64（边端全 x86）。
+#    n8n-runners 双库均 amd64（2026-10-01 追加定稿：arm64 变体无任何消费者，
+#    砍多架构构建——冷构建时长再省一半，SWR/私有库口径完全一致）。
 #    🔴 arm64 实例的汉化支持通道 = Release 附件补丁包 n8n-editor-ui@<ver>.tar.gz
 #    （上游 arm64 镜像 + 解包覆盖 dist + 品牌重放），由 Release 管线照常产出，与本镜像链路解耦。
 # 3. timeout 90→300 + buildx gha 层缓存（镜像内门禁层冷构建 ~39min 跨次复用，
@@ -185,25 +186,14 @@ jobs:
             --output "type=registry,name=ghcr.io/$OWNER_LC/n8n-chinese:$IMAGE_TAG,push=true,oci-mediatypes=false,compression=gzip" \
             .
 
-          # ② n8n-runners 多架构 → 供 SWR（官方镜像整体搬运，无汉化内容）
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --provenance=false \
-            --sbom=false \
-            --build-arg VERSION=$IMAGE_TAG \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            --output "type=registry,name=ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG,push=true,oci-mediatypes=false,compression=gzip" \
-            -f Dockerfile.runners \
-            .
-
-          # ③ n8n-runners 仅 amd64 → 供 bcp-hub（amd64 层与②共享 buildkit 缓存，近乎零成本）
+          # ② n8n-runners 仅 amd64（2026-10-01 追加定稿：arm64 变体无消费者，砍多架构构建）
           docker buildx build \
             --platform linux/amd64 \
             --provenance=false \
             --sbom=false \
             --build-arg VERSION=$IMAGE_TAG \
             --cache-from type=gha \
+            --cache-to type=gha,mode=max \
             --output "type=registry,name=ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG-amd64,push=true,oci-mediatypes=false,compression=gzip" \
             -f Dockerfile.runners \
             .
@@ -244,7 +234,7 @@ jobs:
             echo "✅ $DST（amd64 单架构）"
           done
 
-      - name: Mirror n8n-runners → SWR (多架构) + bcp-hub (仅 amd64)
+      - name: Mirror n8n-runners amd64 → SWR + bcp-hub
         env:
           GHCR_USER: ${{ github.actor }}
           GHCR_PASS: ${{ secrets.GITHUB_TOKEN }}
@@ -255,30 +245,18 @@ jobs:
         run: |
           set -e
           OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
-
-          # SWR：多架构
-          SRC="ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG"
-          DST="swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG"
-          echo "──── $SRC → $DST ────"
-          python3 script/registry-copy.py --from "$SRC" --to "$DST"
-          sp=$(docker buildx imagetools inspect "$SRC" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
-          dp=$(docker buildx imagetools inspect "$DST" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
-          if [ "$sp" != "$dp" ]; then
-            echo "::error::平台集合不一致 runners→SWR — 源[$sp] 目标[$dp]"
-            exit 1
-          fi
-          echo "✅ $DST  平台 [$dp]"
-
-          # bcp-hub：仅 amd64
           SRC="ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG-amd64"
-          DST="registry.bcpcloud.cn/bcp-hub/n8n-runners:$IMAGE_TAG"
-          echo "──── $SRC → $DST ────"
-          python3 script/registry-copy.py --from "$SRC" --to "$DST"
-          if docker buildx imagetools inspect "$DST" --raw | jq -e '.manifests' >/dev/null 2>&1; then
-            echo "::error::$DST 应为 amd64 单架构 manifest，实为多架构 index"
-            exit 1
-          fi
-          echo "✅ $DST（amd64 单架构）"
+          for DST in "swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG" \
+                     "registry.bcpcloud.cn/bcp-hub/n8n-runners:$IMAGE_TAG"; do
+            echo "──── $SRC → $DST ────"
+            python3 script/registry-copy.py --from "$SRC" --to "$DST"
+            # 单架构断言：raw manifest 不得是 index（arm64 已砍，防回归）
+            if docker buildx imagetools inspect "$DST" --raw | jq -e '.manifests' >/dev/null 2>&1; then
+              echo "::error::$DST 应为 amd64 单架构 manifest，实为多架构 index"
+              exit 1
+            fi
+            echo "✅ $DST（amd64 单架构）"
+          done
 
       - name: Mirror sandbox images to private registry (ghcr → bcp-hub)
         # 沙箱服务（AI Assistant 用）来自上游公共库 ghcr.io —— 边端直拉 ghcr 不稳，
