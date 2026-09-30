@@ -207,7 +207,9 @@ def copy_blob(shost, srepo, thost, trepo, digest, auth_s, auth_t, log):
             pass
 
 
-def copy_tree(shost, srepo, thost, trepo, tag, auth_s, auth_t, log, dry):
+def copy_tree(shost, srepo, thost, trepo, tag, auth_s, auth_t, log, dry, ttag=None):
+    """ttag：目标 tag（默认 None=沿用源 tag）。跨 tag 复制（如 2.41.4-amd64 → 2.41.4）
+    时最终 manifest 必须挂 ttag，否则落错名字、目标 tag 校验 404（2026-10-01 实证）。"""
     """把源 tag 完整复制到目标；返回顶层 manifest 的 digest。"""
     auth_s = auth_for(shost, srepo, auth_s)      # 解析 token 挑战（SWR 等）
     auth_t = auth_for(thost, trepo, auth_t)
@@ -243,7 +245,7 @@ def copy_tree(shost, srepo, thost, trepo, tag, auth_s, auth_t, log, dry):
         transfer(blobs_of(m))
 
     if not dry:
-        with req("PUT", "https://%s/v2/%s/manifests/%s" % (thost, trepo, tag), auth_t,
+        with req("PUT", "https://%s/v2/%s/manifests/%s" % (thost, trepo, ttag or tag), auth_t,
                  data=body, timeout=180, ctype=ctype) as r:
             if r.status not in (201, 202):
                 raise RuntimeError("manifest PUT 返回 %s" % r.status)
@@ -281,7 +283,7 @@ def main():
     same = (shost == thost)
     log("  %s → %s  [%s]" % (a.src, a.dst, "同库 manifest 直拷" if same else "跨库 blob 复制"))
     try:
-        digest = copy_tree(shost, srepo, thost, trepo, stag, auth_s, auth_t, log, a.dry_run)
+        digest = copy_tree(shost, srepo, thost, trepo, stag, auth_s, auth_t, log, a.dry_run, ttag)
         if a.dry_run:
             log("    （dry-run：未写入）")
             return 0
