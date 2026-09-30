@@ -24,7 +24,7 @@ docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.41.4
 |---|---|---|
 | 🐳 中文镜像 | `swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:<版本>`（公开源，免登录） | **仅 amd64** |
 | 🐳 中文镜像（BSI 内部） | `registry.bcpcloud.cn/bcp-hub/n8n-chinese:<版本>`（边端统一交付源） | **仅 amd64** |
-| 🔧 Task Runners 镜像 | 两库同名 `n8n-runners:<版本>`（SWR 多架构 / 私有库 amd64；Queue Mode 用，**与 n8n 后端版本严格一致**） | 见左 |
+| 🔧 Task Runners 镜像 | 两库同名 `n8n-runners:<版本>`（均 amd64；Queue Mode 用，**与 n8n 后端版本严格一致**） | 仅 amd64 |
 | 📦 汉化补丁包 | [Releases](https://github.com/bsi-bcp/n8n-i18n-chinese/releases) 附件 `n8n-editor-ui@<版本>.tar.gz` | 架构无关 |
 
 > 🔴 **arm64 暂不支持汉化镜像**。arm64 实例的汉化方式：拉官方 `n8nio/n8n` 镜像，用补丁包解包覆盖 `…/n8n-editor-ui/dist` 并设 `N8N_DEFAULT_LOCALE=zh-CN`（即下方「官方镜像 + 挂载 dist」）。

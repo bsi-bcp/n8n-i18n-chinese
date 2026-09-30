@@ -119,7 +119,10 @@ def _token_for(host, repo, basic):
     if not m_realm:
         _TOKEN[key] = None
         return None
-    url = "%s?service=%s&scope=repository:%s:pull" % (m_realm.group(1), m_svc.group(1) if m_svc else "", repo)
+    # 🔴 scope 按凭证决定：带 Basic（要写目标库）须 pull,push——只写 pull 时推 SWR 必 401
+    #    DENIED（2026-10-01 实证）；匿名（纯读公共库）保持 pull。
+    scope = "repository:%s:%s" % (repo, "pull,push" if basic and basic != "anon" else "pull")
+    url = "%s?service=%s&scope=%s" % (m_realm.group(1), m_svc.group(1) if m_svc else "", scope)
     hdr = {"Authorization": basic} if basic and basic != "anon" else {}
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=40, context=CTX) as r:
@@ -287,7 +290,9 @@ def main():
         if a.dry_run:
             log("    （dry-run：未写入）")
             return 0
-        _, _, got = get_manifest(thost, trepo, ttag, auth_t)
+        _, _, got = get_manifest(thost, trepo, ttag, auth_for(thost, trepo, auth_t))
+        # 🔴 校验必须用解析后的 Bearer——main 的 auth_t 是原始 Basic，SWR 对 Basic 一律 401，
+        #    曾致「推送成功、校验假阴性报失败」（2026-10-01 实证，飞书红卡误报）
         if got == digest:
             log("    ✅ 校验通过（digest 一致 %s…，多架构保真）" % digest[7:19])
             return 0
