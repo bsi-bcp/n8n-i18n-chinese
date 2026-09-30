@@ -62,7 +62,7 @@ def load_creds():
                     env[k] = v
     except FileNotFoundError:
         pass
-    for k in ("SWR_USER", "SWR_PASS", "REG_USER", "REG_PASS"):
+    for k in ("SWR_USER", "SWR_PASS", "REG_USER", "REG_PASS", "GHCR_USER", "GHCR_PASS"):
         if os.environ.get(k):
             env[k] = os.environ[k]
 
@@ -72,8 +72,10 @@ def load_creds():
     return {
         "swr.cn-north-4.myhuaweicloud.com": b64(env.get("SWR_USER", ""), env.get("SWR_PASS", "")),
         "registry.bcpcloud.cn": b64(env.get("REG_USER", ""), env.get("REG_PASS", "")),
+        # ghcr.io：默认匿名（公共库走 token 挑战流）；配了 GHCR_PASS（读私有包场景，
+        # workflow 里传 GITHUB_TOKEN）才带 Basic——空凭证发 Basic 会踩上面的 403-无挑战头坑
+        "ghcr.io": b64(env["GHCR_USER"], env["GHCR_PASS"]) if env.get("GHCR_PASS") else None,
         # 公共库：匿名（走 token 挑战流）。显式列出以免被当成"缺凭证"。
-        "ghcr.io": None,
         "docker.io": None,
         "registry-1.docker.io": None,
     }

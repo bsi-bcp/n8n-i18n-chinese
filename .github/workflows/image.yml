@@ -14,7 +14,7 @@ on:
         type: boolean
         default: false
       mirror_only:
-        description: "只跑「同步到私有库」这一步（跳过构建，约 1 分钟）——用于验证镜像步本身，不产生新镜像"
+        description: "只跑「双路分发」（跳过构建，要求 GHCR 已有本次镜像 tag）——用于分发重放/验证，不产生新构建"
         type: boolean
         default: false
 
@@ -25,6 +25,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: write   # v4：构建产物推 ghcr.io 中转站
 
 # 🔴 启用本 workflow 前需在 repo secrets 配置 BCP_REGISTRY_USERNAME / BCP_REGISTRY_PASSWORD
 #    （华为云 SWR 登录凭证：username=cn-north-4@AK，password=登录指令中 -p 的密钥，
@@ -40,13 +41,27 @@ permissions:
 #    provenance/attestation 附件 manifest（"Invalid image, fail to parse 'manifest.json'"
 #    实锤，layer 推送正常、manifest 被拒）。
 
+# v4（2026-09-30）设计变更（SWR 直推四连败复盘，详见当日 run 36679779714）：
+# 1. 中转站 SWR → GHCR：GitHub runner 跨境直推 SWR 在全新层场景（2GB×2 架构）HTTP/2
+#    单流静默挂死（50min 零进度实证）；GHCR 同区秒级稳定。SWR 兼容形态
+#    （oci-mediatypes=false,compression=gzip）在入 GHCR 时即定型——registry-copy
+#    逐字节搬运不做媒体类型转换。
+# 2. registry-copy.py 双路分发：n8n-chinese **仅 amd64**（2026-09-30 用户定稿：
+#    arm64 暂不支持汉化镜像，SWR 与 bcp-hub 同此；顺带免去 QEMU arm64 冷构建大头）；
+#    n8n-runners（无汉化内容）SWR 保持多架构、bcp-hub 仅 amd64（边端全 x86）。
+#    🔴 arm64 实例的汉化支持通道 = Release 附件补丁包 n8n-editor-ui@<ver>.tar.gz
+#    （上游 arm64 镜像 + 解包覆盖 dist + 品牌重放），由 Release 管线照常产出，与本镜像链路解耦。
+# 3. timeout 90→300 + buildx gha 层缓存（镜像内门禁层冷构建 ~39min 跨次复用，
+#    否则「冷构建+全量分发」在任何上限下都是赌博）。
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment: test
-    # 90min（2026-09-21 实证：EE 清理重建两连超时——多架构构建+2GB×2 推 SWR 跑满 46min
-    # 被旧 45min 上限取消；「正常 6-25 分钟」经验不可靠，与 watcher 90min 对齐）
-    timeout-minutes: 90
+    # 300min（2026-09-30 定稿）：冷构建 ~40min（全新层；层缓存命中则 4-5min）
+    #   + GHCR 推送 + registry-copy 跨境逐 blob 双库分发（2-4GB）。
+    #   旧 90min 四连败实证（09-29/30），「正常 6-25 分钟」仅适用于缓存命中场景。
+    timeout-minutes: 300
     steps:
       # 🔒 安全修复（2026-09-18 评审 #2/#3）：inputs/tag_name 不再直接内插 shell，
       #    经 env 传入并强制 semver 白名单校验后才使用
@@ -116,6 +131,14 @@ jobs:
         if: ${{ !inputs.mirror_only }}
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
+      - name: Log in to ghcr.io (v4 中转站)
+        if: ${{ !inputs.mirror_only }}
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Log in to Huawei Cloud SWR
         if: ${{ !inputs.mirror_only }}
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -142,38 +165,54 @@ jobs:
             echo "✅ 新版本 tag $IMAGE_TAG，无覆盖风险"
           fi
 
-      - name: Build and push multi-arch Docker images
+      - name: Build and push to ghcr.io (v4 中转站)
         if: ${{ !inputs.mirror_only }}
         run: |
-          # 构建并直接推送 multi-arch 镜像（amd64 + arm64）到华为云 SWR
-          # --provenance=false --sbom=false：不带 attestation 附件 manifest
-          # --output oci-mediatypes=false,compression=gzip：buildx 0.13+ 默认 OCI
-          #   媒体类型 + zstd 层，SWR 解析器不认（"Invalid image, fail to parse
-          #   'manifest.json'" 三连实锤；v2 API 实证 docker list 本身 SWR 是收的）
+          # v4：构建推 GHCR 中转站，不再直推 SWR（跨境 HTTP/2 静默挂死，见头注 v4-1）。
+          # SWR 兼容形态（oci-mediatypes=false,compression=gzip）在入 GHCR 时即定型。
+          # cache-from/to gha：镜像内门禁层跨次复用。
+          OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
+
+          # ① n8n-chinese：仅 amd64（2026-09-30 定稿：arm64 暂不支持汉化镜像；
+          #    单架构同时免去 QEMU arm64 的冷构建大头）
           docker buildx build \
-            --platform linux/amd64,linux/arm64 \
+            --platform linux/amd64 \
             --provenance=false \
             --sbom=false \
             --build-arg VERSION=$IMAGE_TAG \
-            --output "type=registry,name=swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG,push=true,oci-mediatypes=false,compression=gzip" \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --output "type=registry,name=ghcr.io/$OWNER_LC/n8n-chinese:$IMAGE_TAG,push=true,oci-mediatypes=false,compression=gzip" \
             .
 
-          # 顺带交付 Queue Mode 用的 runners 镜像（官方镜像整体搬运，无汉化内容）
+          # ② n8n-runners 多架构 → 供 SWR（官方镜像整体搬运，无汉化内容）
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --provenance=false \
             --sbom=false \
             --build-arg VERSION=$IMAGE_TAG \
-            --output "type=registry,name=swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG,push=true,oci-mediatypes=false,compression=gzip" \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --output "type=registry,name=ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG,push=true,oci-mediatypes=false,compression=gzip" \
             -f Dockerfile.runners \
             .
 
-      # ── 私有库 bcp-hub/ 同步（2026-09-25 用户定：镜像源统一从 registry.bcpcloud.cn 取）──
-      # 🔴 为什么放在 runner 上做拷贝、而不是在 TX-43 本地搬：
-      #    2026-09-25 实测，TX-43 上 `docker pull` 只取宿主架构（amd64），`docker buildx imagetools
-      #    create` 跨库拷贝会卡死（同库复制也卡）；而 GitHub runner 网络干净，imagetools 的
-      #    registry→registry 拷贝（保多架构、不落地层）可正常工作。
-      # 🔴 平台一致性校验必不可少：丢架构的失败是**静默的**（只有一行 INFO），必须断言集合相等。
+          # ③ n8n-runners 仅 amd64 → 供 bcp-hub（amd64 层与②共享 buildkit 缓存，近乎零成本）
+          docker buildx build \
+            --platform linux/amd64 \
+            --provenance=false \
+            --sbom=false \
+            --build-arg VERSION=$IMAGE_TAG \
+            --cache-from type=gha \
+            --output "type=registry,name=ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG-amd64,push=true,oci-mediatypes=false,compression=gzip" \
+            -f Dockerfile.runners \
+            .
+
+      # ── v4 双路分发（2026-09-30）：源从 SWR 改 GHCR（跨境读慢），registry-copy.py
+      #    HTTP/1.1 逐 blob + 重试。bcp-hub（业务消费端）先跑，SWR（源头镜像）后跑。
+      #    n8n-chinese 仅 amd64（arm64 暂不支持汉化镜像）；runners 双路按位分发。
+      #    🔴 私有库 docker login 不可省：分发走脚本 env 凭证，但下方平台断言的
+      #       imagetools inspect 需要它（registry.bcpcloud.cn 匿名 401 实证）──
       - name: Log in to private registry (registry.bcpcloud.cn)
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
@@ -181,35 +220,65 @@ jobs:
           username: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
           password: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
 
-      - name: Mirror images to private registry (bcp-hub/)
-        # 🔴 2026-09-26 换实现：`docker buildx imagetools create`（Go/HTTP/2）→ 仓库内 script/registry-copy.py
-        #    （Python urllib，HTTP/1.1 直连 Registry v2 API）。原因（两次实跑实测）：
-        #      ① 私有库（registry:2 前置 Caddy）对大 blob 的 HTTP/2 流回 RST_STREAM
-        #         → `stream error: stream ID 15; INTERNAL_ERROR; received from peer`
-        #      ② 加 GODEBUG=http2client=0 + 重试后**退化为无进展挂起**：43 分钟零进展 → 撞 90min 作业超时
-        #    脚本方法 2026-09-25 已用于修复受损镜像（外部逐层拉取验证通过），且本地实测两条路径：
-        #      幂等（目标已有）2.1s；真实搬运（busybox 小镜像）2.9s —— 均 digest 一致。
-        #    脚本自带 digest 校验（内容寻址 ⇒ 等价于"平台集合不丢"），下方平台断言作第二道独立闸。
+      - name: Mirror n8n-chinese amd64 → SWR + bcp-hub
         env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_PASS: ${{ secrets.GITHUB_TOKEN }}
           SWR_USER: ${{ secrets.BCP_REGISTRY_USERNAME }}
           SWR_PASS: ${{ secrets.BCP_REGISTRY_PASSWORD }}
           REG_USER: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
           REG_PASS: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
         run: |
           set -e
-          for img in n8n-chinese n8n-runners; do
-            SRC="swr.cn-north-4.myhuaweicloud.com/bcphub/${img}:$IMAGE_TAG"
-            DST="registry.bcpcloud.cn/bcp-hub/${img}:$IMAGE_TAG"
-            echo "──── $img ────"
+          OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
+          SRC="ghcr.io/$OWNER_LC/n8n-chinese:$IMAGE_TAG"
+          for DST in "swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG" \
+                     "registry.bcpcloud.cn/bcp-hub/n8n-chinese:$IMAGE_TAG"; do
+            echo "──── $SRC → $DST ────"
             python3 script/registry-copy.py --from "$SRC" --to "$DST"
-            sp=$(docker buildx imagetools inspect "$SRC" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
-            dp=$(docker buildx imagetools inspect "$DST" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
-            if [ "$sp" != "$dp" ]; then
-              echo "::error::平台集合不一致 $img — 源[$sp] 目标[$dp]（镜像已丢架构，不得视为成功）"
+            # 单架构断言：raw manifest 不得是 index（arm64 暂不支持汉化镜像，防回归）
+            if docker buildx imagetools inspect "$DST" --raw | jq -e '.manifests' >/dev/null 2>&1; then
+              echo "::error::$DST 应为 amd64 单架构 manifest，实为多架构 index"
               exit 1
             fi
-            echo "✅ $DST  平台 [$dp]"
+            echo "✅ $DST（amd64 单架构）"
           done
+
+      - name: Mirror n8n-runners → SWR (多架构) + bcp-hub (仅 amd64)
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_PASS: ${{ secrets.GITHUB_TOKEN }}
+          SWR_USER: ${{ secrets.BCP_REGISTRY_USERNAME }}
+          SWR_PASS: ${{ secrets.BCP_REGISTRY_PASSWORD }}
+          REG_USER: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
+          REG_PASS: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
+        run: |
+          set -e
+          OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
+
+          # SWR：多架构
+          SRC="ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG"
+          DST="swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG"
+          echo "──── $SRC → $DST ────"
+          python3 script/registry-copy.py --from "$SRC" --to "$DST"
+          sp=$(docker buildx imagetools inspect "$SRC" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
+          dp=$(docker buildx imagetools inspect "$DST" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
+          if [ "$sp" != "$dp" ]; then
+            echo "::error::平台集合不一致 runners→SWR — 源[$sp] 目标[$dp]"
+            exit 1
+          fi
+          echo "✅ $DST  平台 [$dp]"
+
+          # bcp-hub：仅 amd64
+          SRC="ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG-amd64"
+          DST="registry.bcpcloud.cn/bcp-hub/n8n-runners:$IMAGE_TAG"
+          echo "──── $SRC → $DST ────"
+          python3 script/registry-copy.py --from "$SRC" --to "$DST"
+          if docker buildx imagetools inspect "$DST" --raw | jq -e '.manifests' >/dev/null 2>&1; then
+            echo "::error::$DST 应为 amd64 单架构 manifest，实为多架构 index"
+            exit 1
+          fi
+          echo "✅ $DST（amd64 单架构）"
 
       - name: Mirror sandbox images to private registry (ghcr → bcp-hub)
         # 沙箱服务（AI Assistant 用）来自上游公共库 ghcr.io —— 边端直拉 ghcr 不稳，
@@ -249,8 +318,11 @@ jobs:
         run: |
           jq -n --arg t "[$REPO] 🟢 中文镜像已发布（$IMAGE_TAG）" --arg c "green" \
             --arg m "版本：\`$IMAGE_TAG\`
-          镜像：\`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG\`（amd64 + arm64）
-          Runners：\`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG\`（Queue Mode 用）
+          镜像（仅 amd64，arm64 暂不支持汉化）：
+          SWR \`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG\`
+          私有库 \`registry.bcpcloud.cn/bcp-hub/n8n-chinese:$IMAGE_TAG\`
+          Runners（SWR 多架构 / 私有库仅 amd64）：\`…/n8n-runners:$IMAGE_TAG\`（两库同名 tag）
+          arm64 实例：不支持汉化镜像——用 Release 附件补丁包 \`n8n-editor-ui@$IMAGE_TAG.tar.gz\` 解包覆盖 dist + 品牌重放
           客户实例升级：.env 镜像整体交付直接改版本号；bind mount 实例从 Release 附件解包覆盖后重放品牌补丁
           Release：$REL_URL
           > 🤖 来源：GitHub Actions · $GITHUB_WORKFLOW · $GITHUB_EVENT_NAME · $(date -u '+%F %T') UTC · [运行 #$GITHUB_RUN_ID]($RUN_URL)" \
