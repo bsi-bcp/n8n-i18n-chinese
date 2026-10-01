@@ -11,6 +11,26 @@
 - **就近兼容** = 搭配相邻后端版本实测可用；旧 dist 配新后端时，新增文案回退英文（功能不受影响）
 - **不兼容** = 跨大版本区间错配可能白屏，请勿使用
 
+## [2.41.4] - 2026-09-30（上游功能与修复补丁版；v4 镜像链路首版）
+
+**兼容**：n8n 2.41.4（精确匹配）；**就近兼容** 2.41.0 ~ 2.41.3（同 minor 旧补丁线，新增文案回退英文）；**不兼容** > 2.41.4 的后端。
+
+上游 2.41.4 含 2 新功能（Cloud 新注册用户 Assistant 引导会话，[#39771](https://github.com/n8n-io/n8n/issues/39771)；UBB 账户 Assistant 额度 CTA 跳转充值页，[#39854](https://github.com/n8n-io/n8n/issues/39854)）+ 4 修复（API：执行存储追踪上下文不完整时仍返回执行记录 [#39827](https://github.com/n8n-io/n8n/issues/39827)；core：db ping 在事件循环延迟期间回复亦计成功 [#39757](https://github.com/n8n-io/n8n/issues/39757)；core：执行存储队列任务结果仅本进程入队 [#39725](https://github.com/n8n-io/n8n/issues/39725)；编辑器：UBB Assistant 横幅显示剩余额度 [#39912](https://github.com/n8n-io/n8n/issues/39912)），无破坏性变更。两处界面可感知变化均属 **Cloud/UBB 场景，自托管边端无感**。**汉化侧**：翻译增量 2 条，词典 9948 → **9950 键**；dist 417 文件变更。第三方许可清单自动刷新，sha256 `6d0b2225…` 与上游 n8n@2.41.4 Release 附件逐字节一致。
+
+**流水线里程碑**：`docker-compose.yml` 版本号自跟进修复（2026-09-25 加 grep 守卫 + 重定向写法）在本版真实发版中**首次端到端验证**——dist 提交内含 compose 版本行变更（文件已自动对齐 `2.41.4`），「sed 占位符一次性替换」静默空转 bug 正式闭环。
+
+**镜像交付（v4 链路首战）**：2.41.4 的自动镜像 run 亦卡死被取消（SWR 直推四连败的第 4 败）。当日落地 **v4 镜像链路**：GitHub 构建 → **GHCR 中转**（SWR 兼容形态 `oci-mediatypes=false` / `gzip` 在入 GHCR 时定型）→ `registry-copy.py` 逐 blob 双路分发（bcp-hub 业务消费端先、SWR 源头镜像后）；chinese 与 runners 均转 **amd64 单架构口径**（runners 砍 arm64 多架构、冷构建减半；arm64 客户端走补丁包通道）。v4 首跑 GHCR 推送成功、registry-copy 分发失败——暴露三处缺陷（跨 tag 挂载、SWR token scope 缺 push、校验未走 Bearer），连夜修复并本地实证后完成双库分发：SWR 与 bcp-hub 双库 2.41.4 就位且 digest 一致（chinese `0b071059…`、runners `ef9aa5f4…`）。
+
+## [2.41.3] - 2026-09-29（n8n 2.41 minor 线首个汉化版；镜像产线事故版）
+
+**兼容**：n8n 2.41.3（精确匹配）；**就近兼容** 2.41.0 ~ 2.41.2（同 minor 旧补丁线，新增文案回退英文）；**不兼容** > 2.41.3 的后端。⚠️ 2.41 为 **minor 版**，跨 minor 升级/回滚涉及数据库迁移——须按 Release 说明执行（`n8n db:revert`）。
+
+上游 2.41 线自 09-23 起仅发 prerelease（2.41.1/2.41.2），watcher 只跟稳定版，故 2.41 线汉化首版直接为 2.41.3（上游 09-25 稳定发布，与 2.40.7 同日）。2.41.3 自身含 1 修复（core：项目级 span 属性传递至节点 span，[#39456](https://github.com/n8n-io/n8n/issues/39456)，与 2.40.7 的 [#39457](https://github.com/n8n-io/n8n/issues/39457) 为同题修复的双线回移），无破坏性变更、无业务可感知界面变化。**汉化侧**：翻译增量 **225 条**，词典 9723 → **9948 键**全量汉化（对应 2.41 线前端文案累计新增）；dist 按 2.41 上游前端**全量重建**（766 文件变更）。翻译/覆盖率门禁/词典安全扫描/EE 门禁×2 全链无人值守通过，第三方许可清单自动刷新并随 dist 提交回写。
+
+> 🔴 **镜像产线事故（[Issue #2](https://github.com/bsi-bcp/n8n-i18n-chinese/issues/2)）**：image.yml 三连卡死于 `exporting to image`（GitHub runner → SWR cn-north-4 跨境直推 HTTP/2 单流静默挂死；历史同管线成功仅需 2-4.5 分钟），**SWR 双仓 2.41.3 缺位、GHCR 未入站**。降级路线当日闭环：本机 buildx amd64 构建直推私有库 `bcp-hub/n8n-chinese:2.41.3` / `n8n-runners:2.41.3`（双机 digest 对账一致 `540370aa` / `b0957981`，EE 门禁 PASS，节点参数汉化注入实测 55 万 CJK），**bcphub-bsi（YTJ1）当日以该镜像完成升级（全绿闭环）**。四连败复盘直接催生 v4 镜像链路（见 [2.41.4] 条目）；SWR 侧 2.41.3 欠账在 v4 后仍未补齐（GHCR 无 2.41.3 源，须重跑 image.yml 或跨库复制），跟踪见 Issue #2。
+
+> ⚠️ **回滚未实证**：minor 跨级回滚路径（`n8n db:revert`）对 2.40/2.41 两线均尚未实测（评审记录 n=0），当前属转述 n8n 官方机制。
+
 ## [私有库旧路径退役] - 2026-09-27
 
 - **删除 `registry.bcpcloud.cn/bcp/bcphub-n8n/n8n-chinese`**（2.39.6 时代的历史交付渠道，2026-09-19 起冻结）：3 个 tags（2.38.7/2.39.6/2.39.7）删除前逐一与 `bcp-hub/n8n-chinese` 同名 tag **digest 比对一致**（零内容损失），删除后端到端验证旧路径 404、目标仓 4 tags 无损。预检确认 `bcp-deploy` 全分支无引用、`image.yml` 已只推 SWR + `bcp-hub/`。删除执行按 `00-docs/portainer/CLAUDE.md` 私有库铁律（先子 manifest 后 index，逐 tag 真拉验证）；catalog 空壳条目与 blob 物理回收交由周一 retention GC。
