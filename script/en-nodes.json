@@ -1,8 +1,8 @@
 {
     "_meta": {
-        "version": "2.41.6",
+        "version": "2.41.7",
         "tool": "extract-node-headers.js",
-        "extractedAt": "2026-10-02"
+        "extractedAt": "2026-10-05"
     },
     "headers.@n8n/n8n-nodes-langchain.agent.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "Generates an action plan and executes it. Can use external tools.",
