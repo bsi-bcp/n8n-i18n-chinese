@@ -5,16 +5,16 @@
 **让 n8n 说中文 —— CI 全自动跟随官方发版**
 
 [![Latest Release](https://img.shields.io/github/v/release/bsi-bcp/n8n-i18n-chinese?style=flat-square)](https://github.com/bsi-bcp/n8n-i18n-chinese/releases)
-[![n8n](https://img.shields.io/badge/n8n-2.41.6-EA4B71?style=flat-square)](https://github.com/n8n-io/n8n/releases)
+[![n8n](https://img.shields.io/badge/n8n-2.42.4-EA4B71?style=flat-square)](https://github.com/n8n-io/n8n/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ```shell
-docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.41.6
+docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.42.4
 ```
 
 </div>
 
-> 社区延续维护 [fork](https://github.com/other-blowsnow/n8n-i18n-chinese)（原项目已归档停更）：watcher 每小时巡检 n8n 官方稳定版，评估通过后自动完成「增量翻译 → 门禁 → 构建 → Release → 镜像双库分发」。当前覆盖 n8n 2.41.6。
+> 社区延续维护 [fork](https://github.com/other-blowsnow/n8n-i18n-chinese)（原项目已归档停更）：watcher 每小时巡检 n8n 官方稳定版，评估通过后自动完成「增量翻译 → 门禁 → 构建 → Release → 镜像双库分发」。当前覆盖 n8n 2.42.4。
 >
 > 非 n8n 官方项目；汉化包 MIT 许可（详见文末[版权声明](#版权与来源声明)），n8n 本体受 [Sustainable Use License](https://docs.n8n.io/license/) 约束。
 
@@ -33,7 +33,7 @@ docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.41.6
 
 ```shell
 docker run -d --name n8n -p 5678:5678 -v ~/.n8n:/home/node/.n8n \
-  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.41.6
+  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.42.4
 ```
 
 打开 `http://localhost:5678` 即中文界面；`curl localhost:5678/healthz` 返回 200 即健康。
@@ -60,7 +60,7 @@ main / worker / webhook 之外，加一个 Task Runners 容器（同版本 `n8n-
 3. `docker compose pull && docker compose up -d`
 4. 验证：`/healthz` 200 + 界面中文 + 关键工作流试跑一条
 
-> ⚠️ 跨 minor 升级（如 2.40.x → 2.41.x）有数据库迁移，官方不支持直接降级——回滚须先 `n8n db:revert`。
+> ⚠️ 跨 minor 升级（如 2.41.x → 2.42.x）有数据库迁移，官方不支持直接降级——回滚须先 `n8n db:revert`。
 
 ## 📖 n8n 版本兼容说明
 
@@ -68,13 +68,14 @@ main / worker / webhook 之外，加一个 Task Runners 容器（同版本 `n8n-
 
 | n8n minor 线 | 汉化最新版（精确匹配） | 就近兼容后端区间 |
 |---|---|---|
-| 2.41 | **2.41.6** | 2.41.0 ~ 2.41.6 |
+| 2.42 | **2.42.4** | 2.42.0 ~ 2.42.4 |
+| 2.41 | 2.41.7 | 2.41.0 ~ 2.41.7 |
 | 2.40 | 2.40.7 | 2.40.0 ~ 2.40.7 |
 | 2.39 | 2.39.10 | 2.39.0 ~ 2.39.10 |
 | 2.38 | 2.38.7 | 2.38.7 |
 
 - 后端比汉化包新（同 minor 线内）：新增文案回退英文，功能不受影响，等本仓跟进发版即可
-- 跨 minor 错配（如 2.39 汉化包配 2.41 后端）：可能白屏，禁止使用
+- 跨 minor 错配（如 2.41 汉化包配 2.42 后端）：可能白屏，禁止使用
 - 历史版本镜像在 SWR / bcp-hub 双库永久保留；SWR 匿名可拉，bcp-hub 需部署侧凭证
 
 ## 🔒 安全与合规
@@ -93,11 +94,11 @@ n8n editor-ui 内置 vue-i18n 但官方无中文包：将 `zh-CN.json` 注入语
 
 ## 🌍 English
 
-Community-maintained **Simplified Chinese localization** for n8n — CI rebuilds for every n8n stable release (currently 2.41.6). Docker image (amd64; arm64 via the Release-attached `n8n-editor-ui@<ver>.tar.gz` dist overlay):
+Community-maintained **Simplified Chinese localization** for n8n — CI rebuilds for every n8n stable release (currently 2.42.4). Docker image (amd64; arm64 via the Release-attached `n8n-editor-ui@<ver>.tar.gz` dist overlay):
 
 ```shell
 docker run -d --name n8n -p 5678:5678 -v ~/.n8n:/home/node/.n8n \
-  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.41.6
+  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.42.4
 ```
 
 Defaults to Chinese UI; set `N8N_DEFAULT_LOCALE=en` for English. MIT-licensed; n8n itself remains under its own [Sustainable Use License](https://docs.n8n.io/license/).

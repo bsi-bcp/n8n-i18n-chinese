@@ -9138,6 +9138,7 @@
     "agents.channels.teams.settings.descriptionDefault": "与 {name} 聊天，这是一个由 n8n 提供支持的智能体。",
     "agents.channels.teams.setup.createCredential.claimed": "{agent} 已将此凭据用于 Teams。Microsoft 允许每个应用注册一个机器人，因此请选择其他凭据，或在 Entra 中注册另一个应用。",
     "agents.channels.teams.setup.createBot.needsFreeCredential": "部署前请选择一个没有其他智能体使用的凭据。",
+    "agents.channels.teams.setup.install.failed.cloud": "Teams 通道仅支持微软全球版云。请将该凭证的 Microsoft Graph API 基础 URL 改回 https://graph.microsoft.com。",
     "headers.@n8n/n8n-nodes-langchain.agent.description": "生成行动计划并执行它。可以使用外部工具。",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "生成行动计划并执行它。可以使用外部工具。",
     "headers.@n8n/n8n-nodes-langchain.chainLlm.description": "一个用于提示大语言模型的简单链",
