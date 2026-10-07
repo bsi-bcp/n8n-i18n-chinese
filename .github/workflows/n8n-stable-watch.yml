@@ -341,6 +341,12 @@ jobs:
                 echo "- **结论**：✅ 将自动发版（翻译 → 完整包构建 → Release → 镜像）"
               elif [ "$PV" = "red" ]; then
                 echo "- **结论**：🛑 需人工适配补丁后重评"
+              elif [ "${LABELS_OVERRIDE:-green}" = "red" ]; then
+                # 🔴 2026-10-07 修复（2.42.4 首证实）：语义门禁拦截此前落进 else 分支被
+                #    误标为「👁 具备发版条件」——实际此时 dispatch 也会在 node.js.yml
+                #    构建端同门禁红灯，一键发版不可用
+                echo "- **结论**：🔴 语义脚本 --check 失败（硬编码标签修复不可应用），自动发版已拦截"
+                echo "- 需人工适配 script/apply-hardcoded-labels.cjs；适配后重评或直接 dispatch node.js.yml"
               elif [ "$PV" = "yellow" ]; then
                 echo "- **结论**：🟡 模糊贴合需人工复核补丁内容，确认后一键发版"
                 echo "- 一键发版：\`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`"
@@ -360,6 +366,8 @@ jobs:
           set -euo pipefail
           COLOR="blue"; [ "${{ steps.patch.outputs.verdict }}" = "yellow" ] && COLOR="orange"
           [ "${{ steps.patch.outputs.verdict }}" = "red" ] && COLOR="red"
+          # 语义门禁拦截（PV=green + LABELS_OVERRIDE=red）同样真红——需人工介入，勿用蓝卡伪装「仅告知」
+          [ "${{ steps.labels.outputs.verdict_override }}" = "red" ] && COLOR="red"
           jq -n --arg t "${{ steps.report.outputs.title }}" --arg c "$COLOR" \
             --rawfile md <(printf '%s' "$REPORT_MD") '
             {msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:$c},
@@ -524,8 +532,26 @@ jobs:
         run: |
           set -euo pipefail
           PV="${{ steps.patch.outputs.verdict }}"
-          if [ "${AUTO_RELEASE:-false}" = "true" ] && [ "$PV" != "yellow" ]; then
-            echo "AUTO_RELEASE 开且非黄灯（等待镜像就绪，下小时自愈），不建 Issue"
+          LR="${{ steps.labels.outputs.verdict_override }}"
+          # 🔴 2026-10-07 修复（2.42.4 首证实）：语义门禁拦截路径（PV=green + LR=red）此前被
+          #    本守卫误吞——「绿+AUTO=等下小时自愈」假设不成立，该路径版本已入 watched 永不再评，
+          #    只剩飞书蓝卡一条通道且卡文案还是误导性的「具备发版条件」。语义红灯建 n8n-compat
+          #    Issue 带外兜底（与补丁红灯的「File issue if patch incompatible」对齐）
+          if [ "${AUTO_RELEASE:-false}" = "true" ] && [ "$PV" != "yellow" ] && [ "$LR" != "red" ]; then
+            echo "AUTO_RELEASE 开且非黄灯且语义门禁未拦（等待镜像就绪，下小时自愈），不建 Issue"
+            exit 0
+          fi
+          if [ "$LR" = "red" ]; then
+            gh label create n8n-compat --color D93F0B -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+            EXISTING=$(gh issue list -R "$GITHUB_REPOSITORY" --state open \
+              --search "n8n@$T 语义脚本需适配 in:title" --json number --jq 'length' 2>/dev/null || echo 0)
+            if [ "$EXISTING" -gt 0 ]; then echo "已存在语义脚本 Issue，跳过"; exit 0; fi
+            gh issue create -R "$GITHUB_REPOSITORY" \
+              --title "n8n@$T 语义脚本需适配：--check 失败，自动发版已拦截" \
+              --label n8n-compat \
+              --body "$(printf '%s' "${{ steps.report.outputs.md }}")
+
+          apply-hardcoded-labels.cjs --check 在该版本源码上未全部命中（上游结构变化），直接 dispatch node.js.yml 也会在构建端同门禁红灯。人工适配 script/apply-hardcoded-labels.cjs 规则后闭环：\`gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY\` 重评，或直接 \`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`（发版后关闭本 Issue）。评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             exit 0
           fi
           gh label create n8n-release-pending --color 0E8A16 -R "$GITHUB_REPOSITORY" 2>/dev/null || true
