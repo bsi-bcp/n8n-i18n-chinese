@@ -87,9 +87,15 @@ const RULES = [
     [T("\tname: 'MCP Server',\n\tdescription: 'Access your n8n instance through MCP clients',"),
      T("\tname: 'MCP 服务器',\n\tdescription: '通过 MCP 客户端访问您的 n8n 实例',"),
      'MCP Server 模块名+描述', 1],
-    [T("\t\t\tlabel: i18n.baseText('settings.mcp'),"),
-     T("\t\t\tget label() {\n\t\t\t\treturn i18n.baseText('settings.mcp');\n\t\t\t},"),
-     'MCP settingsPages label 懒求值', 1],
+    [[[// ≤2.41：急切求值 → 改写 getter（模块级 const i18n 存在）
+       T("\t\t\tlabel: i18n.baseText('settings.mcp'),"),
+       T("\t\t\tget label() {\n\t\t\t\treturn i18n.baseText('settings.mcp');\n\t\t\t},")],
+      [// 2.42 起上游自行懒求值化（内联 useI18n()，模块级 i18n 常量已删，2026-10-07 对
+       // n8n@2.42.4 实测）——不变量已满足，find==sub 保形识别（no-op）；不得改写为
+       // i18n.xxx（模块级常量不存在，会引入未定义引用）
+       T("\t\t\tget label() {\n\t\t\t\treturn useI18n().baseText('settings.mcp');\n\t\t\t},"),
+       T("\t\t\tget label() {\n\t\t\t\treturn useI18n().baseText('settings.mcp');\n\t\t\t},")]],
+     null, 'MCP settingsPages label 懒求值（≤2.41 改写 / 2.42+ 上游已自改 no-op）', 1],
   ], 2],
   ['packages/frontend/editor-ui/src/features/core/dataTable/module.descriptor.ts', [
     [T("label: i18n.baseText('dataTable.dataTables'),"),
