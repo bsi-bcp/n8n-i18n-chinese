@@ -4046,7 +4046,7 @@
     "settings.users.table.row.2fa.disabled": "已禁用",
     "settings.roles": "角色",
     "settings.api": "API",
-    "settings.n8napi": "n8n API",
+    "settings.n8napi": "API Key",
     "settings.log-streaming": "日志流",
     "settings.log-streaming.heading": "日志流",
     "settings.log-streaming.add": "添加新目标",
