@@ -144,7 +144,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @ibm-cloud/watsonx-ai 1.1.2
 * @internationalized/date 3.9.0
 * @internationalized/number 3.6.2
-* @mistralai/mistralai 1.10.0
+* @mistralai/mistralai 2.7.0
 * @mozilla/readability 0.6.0
 * @openrouter/ai-sdk-provider 3.0.0
 * @opentelemetry/api 1.9.1
@@ -456,6 +456,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @chat-adapter/shared 4.37.0
 * @chat-adapter/slack 4.37.0
 * @chat-adapter/state-memory 4.37.0
+* @chat-adapter/teams 4.37.0
 * @chat-adapter/telegram 4.37.0
 * @codemirror/autocomplete 6.20.0
 * @codemirror/language 6.12.1
@@ -512,7 +513,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @langchain/langgraph 1.0.2
 * @langchain/langgraph-checkpoint 1.0.0
 * @langchain/langgraph-sdk 1.0.3
-* @langchain/mistralai 1.0.1
+* @langchain/mistralai 1.1.0
 * @langchain/mongodb 1.0.1
 * @langchain/ollama 1.2.6
 * @langchain/openai 1.4.4
@@ -533,6 +534,12 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @microsoft/agents-activity 1.6.1
 * @microsoft/agents-hosting 1.6.1
 * @microsoft/agents-telemetry 1.6.1
+* @microsoft/teams.api 2.0.16
+* @microsoft/teams.apps 2.0.16
+* @microsoft/teams.cards 2.0.16
+* @microsoft/teams.common 2.0.16
+* @microsoft/teams.graph 2.0.16
+* @microsoft/teams.graph-endpoints 2.0.16
 * @modelcontextprotocol/core 2.0.0
 * @modelcontextprotocol/ext-apps 1.3.2
 * @modelcontextprotocol/node 2.0.0
@@ -819,6 +826,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * data-urls 5.0.0
 * date-fns 2.30.0
 * date-fns-tz 2.0.0
+* dateformat 3.0.3
 * dayjs 1.11.10
 * debug 4.4.3
 * decimal.js 10.4.3
@@ -998,6 +1006,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * jwa 2.0.1
 * jwks-rsa 4.0.1
 * jws 4.0.1
+* jwt-decode 4.0.0
 * kafkajs 2.2.4
 * kuler 2.0.0
 * langchain 1.2.30
@@ -1033,7 +1042,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * logform 2.6.1
 * longest-streak 3.1.0
 * lossless-json 1.0.5
-* lru-memoizer 3.0.0
+* lru-memoizer 2.3.0
 * lru.min 1.1.4
 * luxon 3.7.2
 * magic-bytes.js 1.13.1
@@ -1339,6 +1348,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * thenify 3.3.1
 * thenify-all 1.6.0
 * thread-stream 4.2.0
+* timeago.js 4.0.2
 * title-case 3.0.3
 * tlds 1.261.0
 * tmp 0.2.7
