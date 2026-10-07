@@ -1,8 +1,8 @@
 {
     "_meta": {
-        "version": "2.41.7",
+        "version": "2.42.4",
         "tool": "extract-node-headers.js",
-        "extractedAt": "2026-10-05"
+        "extractedAt": "2026-10-07"
     },
     "headers.@n8n/n8n-nodes-langchain.agent.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "Generates an action plan and executes it. Can use external tools.",
@@ -18,6 +18,7 @@
     "headers.@n8n/n8n-nodes-langchain.clearIndex.description": "Whether to delete and recreate the index before inserting new data. Warning: This will reset any custom index configuration (semantic ranking, analyzers, etc.) to defaults.",
     "headers.@n8n/n8n-nodes-langchain.clearStore.description": "Whether to clear the store before inserting new data",
     "headers.@n8n/n8n-nodes-langchain.code.description": "LangChain Code Node",
+    "headers.@n8n/n8n-nodes-langchain.contentColumn.description": "Column that becomes the document text. Leave empty on a managed-embedding index to use its embedding source column. Choose from the list, or specify an ID using an <a href=\"https://docs.n8n.io/code/expressions/\">expression</a>.",
     "headers.@n8n/n8n-nodes-langchain.contentPayloadKey.description": "The key to use for the content payload in Qdrant. Default is \"content\".",
     "headers.@n8n/n8n-nodes-langchain.documentBinaryInputLoader.description": "Use binary data from a previous step in the workflow",
     "headers.@n8n/n8n-nodes-langchain.documentDefaultDataLoader.description": "Load data from previous step in the workflow",
