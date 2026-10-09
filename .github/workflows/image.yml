@@ -59,10 +59,14 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment: test
-    # 300min（2026-09-30 定稿）：冷构建 ~40min（全新层；层缓存命中则 4-5min）
+    # 360min（2026-10-10 上调，原 300）：冷构建 ~40min（全新层；层缓存命中则 4-5min）
     #   + GHCR 推送 + registry-copy 跨境逐 blob 双库分发（2-4GB）。
     #   旧 90min 四连败实证（09-29/30），「正常 6-25 分钟」仅适用于缓存命中场景。
-    timeout-minutes: 300
+    #   🔴 300min 亦被实锤不足（2026-10-08，2.42.5 run 37745229150）：chinese 腿跨境
+    #   单腿耗 4h+，runners 腿 bcp-hub 复制中途被击杀缺位。现两个 Mirror 步各自带
+    #   「单次限时 45min × 3 轮」重试（断点续传），本 job timeout 仅作最终兜底——
+    #   最坏预算：构建 40 + 双 Mirror 步各 ~137min ≈ 314min < 360min。
+    timeout-minutes: 360
     steps:
       # 🔒 安全修复（2026-09-18 评审 #2/#3）：inputs/tag_name 不再直接内插 shell，
       #    经 env 传入并强制 semver 白名单校验后才使用
@@ -222,16 +226,41 @@ jobs:
           set -e
           OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
           SRC="ghcr.io/$OWNER_LC/n8n-chinese:$IMAGE_TAG"
+          # 🔴 步级独立限时+重试（2026-10-10）：GHA step 不支持 timeout-minutes，
+          #    用 coreutils timeout 实现单次限时。registry-copy 对已存在 blob 走
+          #    HEAD 检查跳过——重试天然断点续传，「短限时多轮」优于「一次给足」：
+          #    单轮挂死/极慢可止损，已推 blob 下轮不重传。全轮耗尽必须响亮失败，
+          #    严禁静默绿（本仓铁律：步骤恒 green 比报错危险）。
+          ATTEMPTS=3
+          ATTEMPT_MINS=45
           for DST in "swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG" \
                      "registry.bcpcloud.cn/bcp-hub/n8n-chinese:$IMAGE_TAG"; do
             echo "──── $SRC → $DST ────"
-            python3 script/registry-copy.py --from "$SRC" --to "$DST"
+            ok=0
+            for attempt in $(seq 1 "$ATTEMPTS"); do
+              echo "── [$attempt/$ATTEMPTS] 单次限时 ${ATTEMPT_MINS}min ──"
+              # rc 显式捕获：POSIX 规定 if 条件失败且 then/else 无命令执行时语句整体返回 0，$? 会失真
+              rc=0
+              timeout "${ATTEMPT_MINS}m" python3 script/registry-copy.py --from "$SRC" --to "$DST" || rc=$?
+              if [ "$rc" -eq 0 ]; then
+                ok=1
+                break
+              fi
+              # 🔴 ${rc} 必须带花括号：$rc 后紧跟多字节字符（；）时 bash 把其首字节并入变量名——
+              #    展开为空 + 输出半截非法字节（2026-10-10 本地等价验证抓到，测试桩三场景回归）
+              echo "::warning::$DST 第 $attempt/$ATTEMPTS 次分发未完成（exit=${rc}；124=单次限时击杀，已推 blob 下轮续传）"
+              if [ "$attempt" -lt "$ATTEMPTS" ]; then sleep 60; fi
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::error::$DST 连续 $ATTEMPTS 次分发失败（单次限时 ${ATTEMPT_MINS}min），终态失败不静默"
+              exit 1
+            fi
             # 单架构断言：raw manifest 不得是 index（arm64 暂不支持汉化镜像，防回归）
             if docker buildx imagetools inspect "$DST" --raw | jq -e '.manifests' >/dev/null 2>&1; then
               echo "::error::$DST 应为 amd64 单架构 manifest，实为多架构 index"
               exit 1
             fi
-            echo "✅ $DST（amd64 单架构）"
+            echo "✅ ${DST}（amd64 单架构）"
           done
 
       - name: Mirror n8n-runners amd64 → SWR + bcp-hub
@@ -246,16 +275,38 @@ jobs:
           set -e
           OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
           SRC="ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG-amd64"
+          # 🔴 步级独立限时+重试（2026-10-10）：与 chinese 步同款，注释见彼处——
+          #    本步即 2.42.5 超时事故被击杀的步骤，重试+续传为针对性修复。
+          ATTEMPTS=3
+          ATTEMPT_MINS=45
           for DST in "swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG" \
                      "registry.bcpcloud.cn/bcp-hub/n8n-runners:$IMAGE_TAG"; do
             echo "──── $SRC → $DST ────"
-            python3 script/registry-copy.py --from "$SRC" --to "$DST"
+            ok=0
+            for attempt in $(seq 1 "$ATTEMPTS"); do
+              echo "── [$attempt/$ATTEMPTS] 单次限时 ${ATTEMPT_MINS}min ──"
+              # rc 显式捕获：POSIX 规定 if 条件失败且 then/else 无命令执行时语句整体返回 0，$? 会失真
+              rc=0
+              timeout "${ATTEMPT_MINS}m" python3 script/registry-copy.py --from "$SRC" --to "$DST" || rc=$?
+              if [ "$rc" -eq 0 ]; then
+                ok=1
+                break
+              fi
+              # 🔴 ${rc} 必须带花括号：$rc 后紧跟多字节字符（；）时 bash 把其首字节并入变量名——
+              #    展开为空 + 输出半截非法字节（2026-10-10 本地等价验证抓到，测试桩三场景回归）
+              echo "::warning::$DST 第 $attempt/$ATTEMPTS 次分发未完成（exit=${rc}；124=单次限时击杀，已推 blob 下轮续传）"
+              if [ "$attempt" -lt "$ATTEMPTS" ]; then sleep 60; fi
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::error::$DST 连续 $ATTEMPTS 次分发失败（单次限时 ${ATTEMPT_MINS}min），终态失败不静默"
+              exit 1
+            fi
             # 单架构断言：raw manifest 不得是 index（arm64 已砍，防回归）
             if docker buildx imagetools inspect "$DST" --raw | jq -e '.manifests' >/dev/null 2>&1; then
               echo "::error::$DST 应为 amd64 单架构 manifest，实为多架构 index"
               exit 1
             fi
-            echo "✅ $DST（amd64 单架构）"
+            echo "✅ ${DST}（amd64 单架构）"
           done
 
       - name: Mirror sandbox images to private registry (ghcr → bcp-hub)
