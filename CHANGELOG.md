@@ -23,7 +23,7 @@
 
 上游 2.42.5 含 1 修复：编辑器：AI Agent 构建器创建产物（artifact）过程中即时显示、无需等待完成（[#40551](https://github.com/n8n-io/n8n/issues/40551)）。无破坏性变更。**汉化侧**：翻译增量 0 条，词典 **10277 键**全量——**2.42.4 当日手工补译的 Teams 串（`agents.channels.teams`）在本版 dist 首次生效**；dist 重编译 276 文件变更。第三方许可清单自动刷新，sha256 `5108f874…` 与上游 n8n@2.42.5 Release 附件逐字节一致。
 
-> 🔴 **镜像分发超时事故（run 37745229150）**：跨境逐 blob 分发异常缓慢（chinese 腿双库分发耗约 4 小时），runners 腿 SWR 完成后（11:48 UTC `✅` 断言通过）、**bcp-hub 腿复制中途被 300min job timeout 击杀（12:44 UTC）**——**bcp-hub 侧 `bcp-hub/n8n-runners:2.42.5` 缺位**，其余三镜像均在位（SWR 独立核验：chinese `bea157bd…` / runners `7264d616…`，runners digest 与 GHCR 中转推送 digest 逐字节一致；chinese 双库 ✅）。缺位腿补齐前，边端如需 2.42.5 runners 可从 GHCR 中转直拉 `ghcr.io/bsi-bcp/n8n-runners:2.42.5-amd64`（匿名可拉）。**整改待定**：job timeout 300min 对最坏跨境场景不足，建议上调或分发步独立限时重试。
+> 🔴 **镜像分发超时事故（run 37745229150）→ 已补齐（2026-10-10）**：跨境逐 blob 分发异常缓慢（chinese 腿双库分发耗约 4 小时），runners 腿 SWR 完成后（11:48 UTC `✅` 断言通过）、**bcp-hub 腿复制中途被 300min job timeout 击杀（12:44 UTC）**，`bcp-hub/n8n-runners:2.42.5` 缺位。**2026-10-10 本机 `script/registry-copy.py` 从 GHCR 中转重放该单腿**（源 `ghcr.io/bsi-bcp/n8n-runners:2.42.5-amd64` 匿名可拉，8 blob 约 144MB），复制后 digest 校验一致（`7264d616defc…`，与 GHCR 推送/SWR 三方同源）——**双库四镜像自此满员**。SWR 侧全程在位（独立核验：chinese `bea157bd…` / runners `7264d616…`，均 amd64 单架构）。**整改待定**：job timeout 300min 对最坏跨境场景不足（chinese 腿最坏耗 4h+），建议上调或分发步独立限时重试。
 
 ## [2.42.4] - 2026-10-07（n8n 2.42 minor 线首个汉化版；语义门禁首拦截版）
 
