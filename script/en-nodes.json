@@ -1,8 +1,8 @@
 {
     "_meta": {
-        "version": "2.42.7",
+        "version": "2.43.4",
         "tool": "extract-node-headers.js",
-        "extractedAt": "2026-10-12"
+        "extractedAt": "2026-10-13"
     },
     "headers.@n8n/n8n-nodes-langchain.agent.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "Generates an action plan and executes it. Can use external tools.",
@@ -383,6 +383,7 @@
     "headers.microsoftOutlook.description": "Consume Microsoft Outlook API",
     "headers.microsoftOutlookTrigger.description": "Fetches emails from Microsoft Outlook and starts the workflow on specified polling intervals.",
     "headers.microsoftSharePoint.description": "Interact with Microsoft SharePoint API",
+    "headers.microsoftSharePointTrigger.description": "Starts a workflow when a file or list item changes in Microsoft SharePoint",
     "headers.microsoftSql.description": "Get, add and update data in Microsoft SQL",
     "headers.microsoftTeams.description": "Consume Microsoft Teams API",
     "headers.microsoftTeamsTrigger.description": "Triggers workflows in n8n based on events from Microsoft Teams, such as new messages or team updates, using specified configurations.",
