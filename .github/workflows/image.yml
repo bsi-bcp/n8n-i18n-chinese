@@ -64,8 +64,11 @@ jobs:
     #   旧 90min 四连败实证（09-29/30），「正常 6-25 分钟」仅适用于缓存命中场景。
     #   🔴 300min 亦被实锤不足（2026-10-08，2.42.5 run 37745229150）：chinese 腿跨境
     #   单腿耗 4h+，runners 腿 bcp-hub 复制中途被击杀缺位。现两个 Mirror 步各自带
-    #   「单次限时 45min × 3 轮」重试（断点续传），本 job timeout 仅作最终兜底——
-    #   最坏预算：构建 40 + 双 Mirror 步各 ~137min ≈ 314min < 360min。
+    #   「单次限时 45min × 3 轮」重试（断点续传），本 job timeout 仅作最终兜底。
+    #   🔴 v5（2026-10-17）后每步改双腿（ghcr→SWR 跨境 + SWR→bcp-hub 境内）：
+    #   病态最坏 = 双步 × 双腿 × 135min 远超 360，但 SWR 腿实测 ~2min、bcp-hub 腿
+    #   境内互传同量级——360min 覆盖「构建 40 + 4 腿各 1-2 轮」的现实预算，
+    #   再撞就是链路级故障，靠 job timeout 止损 + 失败卡报警，勿再加大。
     timeout-minutes: 360
     steps:
       # 🔒 安全修复（2026-09-18 评审 #2/#3）：inputs/tag_name 不再直接内插 shell，
@@ -214,6 +217,11 @@ jobs:
           username: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
           password: ${{ secrets.PRIVATE_REGISTRY_PASSWORD }}
 
+      # 🔴 v5（2026-10-17，2.43.4-7 四连败复盘，run 38371289893/38537187822/38700573077/38875654024）：
+      #    bcp-hub 腿原与 SWR 腿同源直拉 ghcr——GitHub runner → TX-43 跨境上传 183MB 主层
+      #    连续 4 天 3×45min 全灭（exit=124；10-12 的 2.42.7 亦是第 2/3 次尝试 36min 擦线），
+      #    而同图 ghcr→SWR 仅 ~2min。整改 = bcp-hub 改从 SWR 取源（境内-境内，跨境只走一次）；
+      #    digest 保真链不变——registry-copy 逐层校验源/目标 digest 一致，SWR 腿刚校验过。
       - name: Mirror n8n-chinese amd64 → SWR + bcp-hub
         env:
           GHCR_USER: ${{ github.actor }}
@@ -226,6 +234,7 @@ jobs:
           set -e
           OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
           SRC="ghcr.io/$OWNER_LC/n8n-chinese:$IMAGE_TAG"
+          SWR="swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG"
           # 🔴 步级独立限时+重试（2026-10-10）：GHA step 不支持 timeout-minutes，
           #    用 coreutils timeout 实现单次限时。registry-copy 对已存在 blob 走
           #    HEAD 检查跳过——重试天然断点续传，「短限时多轮」优于「一次给足」：
@@ -233,15 +242,17 @@ jobs:
           #    严禁静默绿（本仓铁律：步骤恒 green 比报错危险）。
           ATTEMPTS=3
           ATTEMPT_MINS=45
-          for DST in "swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:$IMAGE_TAG" \
-                     "registry.bcpcloud.cn/bcp-hub/n8n-chinese:$IMAGE_TAG"; do
-            echo "──── $SRC → $DST ────"
+          # 腿 1：ghcr → SWR（跨境上传，SWR 侧快）；腿 2：SWR → bcp-hub（境内互传）
+          for leg in "$SRC $SWR" "$SWR registry.bcpcloud.cn/bcp-hub/n8n-chinese:$IMAGE_TAG"; do
+            SRC_CUR="${leg%% *}"
+            DST="${leg#* }"
+            echo "──── $SRC_CUR → $DST ────"
             ok=0
             for attempt in $(seq 1 "$ATTEMPTS"); do
               echo "── [$attempt/$ATTEMPTS] 单次限时 ${ATTEMPT_MINS}min ──"
               # rc 显式捕获：POSIX 规定 if 条件失败且 then/else 无命令执行时语句整体返回 0，$? 会失真
               rc=0
-              timeout "${ATTEMPT_MINS}m" python3 script/registry-copy.py --from "$SRC" --to "$DST" || rc=$?
+              timeout "${ATTEMPT_MINS}m" python3 script/registry-copy.py --from "$SRC_CUR" --to "$DST" || rc=$?
               if [ "$rc" -eq 0 ]; then
                 ok=1
                 break
@@ -263,7 +274,10 @@ jobs:
             echo "✅ ${DST}（amd64 单架构）"
           done
 
+      # 🔴 v5（2026-10-17）：与 chinese 步解耦——原为 chinese 步失败即跳过，runners 缺腿
+      #    四天无人知（SWR/bcp-hub 双库停在 2.42.7）。两步各自独立成败、各自发失败卡。
       - name: Mirror n8n-runners amd64 → SWR + bcp-hub
+        if: ${{ !cancelled() }}
         env:
           GHCR_USER: ${{ github.actor }}
           GHCR_PASS: ${{ secrets.GITHUB_TOKEN }}
@@ -275,19 +289,22 @@ jobs:
           set -e
           OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
           SRC="ghcr.io/$OWNER_LC/n8n-runners:$IMAGE_TAG-amd64"
+          SWR="swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG"
           # 🔴 步级独立限时+重试（2026-10-10）：与 chinese 步同款，注释见彼处——
           #    本步即 2.42.5 超时事故被击杀的步骤，重试+续传为针对性修复。
+          # 🔴 v5（2026-10-17）：bcp-hub 腿改从 SWR 取源（同 chinese 步，见上方 v5 注释）。
           ATTEMPTS=3
           ATTEMPT_MINS=45
-          for DST in "swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-runners:$IMAGE_TAG" \
-                     "registry.bcpcloud.cn/bcp-hub/n8n-runners:$IMAGE_TAG"; do
-            echo "──── $SRC → $DST ────"
+          for leg in "$SRC $SWR" "$SWR registry.bcpcloud.cn/bcp-hub/n8n-runners:$IMAGE_TAG"; do
+            SRC_CUR="${leg%% *}"
+            DST="${leg#* }"
+            echo "──── $SRC_CUR → $DST ────"
             ok=0
             for attempt in $(seq 1 "$ATTEMPTS"); do
               echo "── [$attempt/$ATTEMPTS] 单次限时 ${ATTEMPT_MINS}min ──"
               # rc 显式捕获：POSIX 规定 if 条件失败且 then/else 无命令执行时语句整体返回 0，$? 会失真
               rc=0
-              timeout "${ATTEMPT_MINS}m" python3 script/registry-copy.py --from "$SRC" --to "$DST" || rc=$?
+              timeout "${ATTEMPT_MINS}m" python3 script/registry-copy.py --from "$SRC_CUR" --to "$DST" || rc=$?
               if [ "$rc" -eq 0 ]; then
                 ok=1
                 break
@@ -310,6 +327,7 @@ jobs:
           done
 
       - name: Mirror sandbox images to private registry (ghcr → bcp-hub)
+        if: ${{ !cancelled() }}
         # 沙箱服务（AI Assistant 用）来自上游公共库 ghcr.io —— 边端直拉 ghcr 不稳，
         # 故一并镜像进私有库，让边端只依赖 registry.bcpcloud.cn。
         # 🔴 2026-09-26：此前 bcp-hub 里那两个 tag 与上游 digest 不一致（`d115bbc6…` vs `23d7fbc0…`），
