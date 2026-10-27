@@ -11,6 +11,40 @@
 - **就近兼容** = 搭配相邻后端版本实测可用；旧 dist 配新后端时，新增文案回退英文（功能不受影响）
 - **不兼容** = 跨大版本区间错配可能白屏，请勿使用
 
+## 📋 事故复盘 · GitHub Actions fork 用量限制停摆（2026-10-23 ~ 2026-10-27）
+
+**概述**：GitHub 以「Actions 用量规模」为由禁用了本仓（public fork）的全部 workflow——Actions 页横幅原文 *"Workflows are not currently being run on this fork due to the scale of GitHub Actions usage"*，所有 dispatch 返回 `HTTP 422: Actions has been disabled for this repository`。产线静默停摆约 **4 天**（最后成功运行 10-23 07:37 CST 的 watcher #900，10-27 09:46 维护者 re-enable 后恢复），期间上游积压 2.44.4 ~ 2.44.7 四个稳定版未跟版。
+
+**时间线**：
+
+- 10-13 ~ 10-16：v4 链路镜像分发连续 4 天长跑失败（跨境逐 blob 3×45min 全灭），连续多小时 runner 占用疑似触发 GitHub 的 fork 用量阈值（10-19 的 2.43.8 v5 链路一次过后用量回落，禁用于 10-23 落地）
+- 10-20 ~ 10-22：watcher 正常运行，对 2.44.4/5/6 连续三日做的是**正确拦截**——语义门禁红灯建 Issue #3~#5 等人工适配（该机制工作正常）
+- 10-23 07:37 CST：watcher #900 成功，此后 Actions 被禁，cron 与本机 launchd 每小时触发全部 422，**零运行记录**
+- 10-23 ~ 10-27：**静默期**。GitHub 侧全部告警通道（飞书三色卡、失败建 Issue、watcher 自失败 Issue）随 Actions 一起哑火；本机 launchd 日志静默累积 90 行 422 无人查看
+- 10-27 上午：用户主动询问「自动化部署工作在正常运转吗」才暴露；定位根因后由维护者在 Actions 页点 re-enable（**唯一自助通道**），report_only dispatch 验证产线复活
+- 10-27 当日：2.44 语义脚本适配 + en-nodes 对齐后 dispatch 发版 2.44.7，补齐全部文档欠账（本段）
+
+**根因与技术要点**：
+
+- 直接原因：GitHub 针对高用量 public fork 的 Actions 限制（非账号 billing 问题，org/user 级 API 均 404/正常）
+- 🔴 **API 全面假象**：`GET /actions/permissions` 返回 `enabled:true`、workflow 状态仍 `active`、`PUT .../permissions` 与 `PUT .../workflows/{id}/enable` 均返回 204「成功」但实际无效——**无公开 API 可诊断或恢复**，只能界面操作或联系 GitHub Support
+- 结构性风险：本仓是归档上游（other-blowsnow，2026-08-21 停更）的 fork，fork 身份带来的用量限制无法从我们侧根治
+
+**影响面**：watcher/翻译/构建/发版/镜像全链停摆；存量边端（YTJ1 2.43.7 等）不受影响，无客户实例受损；SWR/bcp-hub 存量镜像完好。
+
+**整改沉淀（10-27 当日全部落地）**：
+
+1. **带外告警**（commit `c68775e`）：触发器 dispatch 失败带时间戳落日志并累计，连续失败 ≥3 次（≈3 小时）直发飞书告警群（12h 冷却），恢复时发恢复通知——这是**唯一不依赖 GitHub Actions 的探针**，同类事故 detection 时间从「无限期（靠人问）」收敛到 ≤3 小时
+2. **2.44 适配**（commit `15f5b28`）：MCP 模块描述符迁移路径候选化 + en-nodes 对齐 2.44.7，全量源码树 11/11 规则验证
+3. **发版 + 文档清账**：2.44.7 当日发版，CHANGELOG 补齐 2.42.7/2.43.4~2.43.8 六段欠账，README 矩阵刷新（终结 2026-09-20 checklist 记录的三连犯式滞后）
+4. **未尽事项**：fork 迁移预案待命——**触发条件 = 30 天内再次被禁**，届时脱离 fork 网络重建非 fork 仓（push 全部分支+tags+Release 资产）；短期靠 v5 瘦身链路降低用量 + 带外告警兜底
+
+**教训**：
+
+- 告警通道不能与被监控对象同生共死——所有依赖 Actions 运行的告警在 Actions 停摆时集体失效，带外探针（本机 launchd → 飞书直发）必须存在
+- 静默失败比报错危险：90 行 422 在日志里躺了 4 天，任何「看起来还在跑」的表象（permissions API 的 `enabled:true`、workflow 状态 `active`）都不可信，判活以实际运行打点为准
+- 对第三方平台的隐性依赖（fork 身份、配额策略）要登记为结构性风险并预演退出路径
+
 ## [2.44.7] - 2026-10-27（n8n 2.44 minor 线首个汉化版；Actions 禁用事件恢复后首版）
 
 **兼容**：n8n 2.44.7（精确匹配）；**就近兼容** 2.44.0 ~ 2.44.6（同 minor 旧补丁线，新增文案回退英文）；**不兼容** > 2.44.7 的后端。⚠️ 2.44 为 **minor 版**，跨 minor 升级/回滚涉及数据库迁移——须按 Release 说明执行（`n8n db:revert`）。
