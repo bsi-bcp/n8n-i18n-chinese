@@ -42,12 +42,17 @@ node script/check-ee-gate.cjs --diff <n8n源码根>                  # ②构建
 node script/check-ee-gate.cjs --dist <nodes-base或langchain dist>  # ③镜像内断言：EE 保护路径含 CJK 即 fail（Dockerfile 注入后自动跑）
 node script/scan-zh-dict.js languages/zh-CN.json                 # 词典安全扫描（HIGH 阻断；--strict 连 WARN 也阻断）
 
-# ── watcher 触发源（2026-09-25 核实，2026-10-08 补判活口径）──
+# ── watcher 触发源（2026-09-25 核实，2026-10-08 补判活口径，2026-10-27 加带外告警）──
 # GitHub cron `37 * * * *` 之外，本机 launchd 每小时 :37 主动 dispatch 同一 workflow（绕开 GitHub schedule 节流；
 # watcher 幂等，多触发无副作用）。plist + 脚本见 host-launchd/，日志 ~/.claude/logs/n8n-watcher-trigger.log。
-# 🔴 判活口径：gh dispatch 成功时零输出、日志只积累失败行（"error connecting to api.github.com"——launchd 环境
-# 无 shell 代理，直连 api.github.com 间歇失败属已知形态，重试或下小时自愈）；看日志有错误 ≠ 触发器已死，
-# 判活必须查 Actions run 列表的 `workflow_dispatch` 事件是否按小时打点。
+# 🔴 判活口径：gh dispatch 成功时零输出、日志只在失败时追加带时间戳的行（脚本已带 `[连续失败#N]` 前缀；
+# 旧版无时间戳的 "error connecting to api.github.com" 为历史行——launchd 环境无 shell 代理，直连 api.github.com
+# 间歇失败属已知形态，重试或下小时自愈）；看日志有错误 ≠ 触发器已死，判活必须查 Actions run 列表的
+# `workflow_dispatch` 事件是否按小时打点。
+# 🔴 带外告警（2026-10-27，fork 用量限制事故沉淀）：Actions 被 GitHub 整体禁用时（2026-10-23~27 静默停摆 4 天，
+# 报 422 "Actions has been disabled for this repository"，且 permissions API 假报 enabled=true），GitHub 侧
+# 飞书卡/Issue 告警全部哑火——唯一通道是本机触发器：连续失败 ≥3 次直接发飞书告警群（12h 冷却），恢复时发恢复通知。
+# 状态在 ~/.claude/logs/.n8n-watcher/；告警器 host-launchd/notify-feishu.py 从凭证库读 webhook（无明文 secret）。
 # 换机恢复：脚本 → ~/.claude/scripts/、plist → ~/Library/LaunchAgents/；⚠️ plist 内 /Users/fish 与 gh 绝对路径须改。
 
 # ── 本地速验与遗留项（2026-09-25 补录）──
