@@ -1,8 +1,8 @@
 {
     "_meta": {
-        "version": "2.43.8",
+        "version": "2.44.7",
         "tool": "extract-node-headers.js",
-        "extractedAt": "2026-10-19"
+        "extractedAt": "2026-10-27"
     },
     "headers.@n8n/n8n-nodes-langchain.agent.description": "Generates an action plan and executes it. Can use external tools.",
     "headers.@n8n/n8n-nodes-langchain.agentTool.description": "Generates an action plan and executes it. Can use external tools.",
@@ -20,13 +20,14 @@
     "headers.@n8n/n8n-nodes-langchain.code.description": "LangChain Code Node",
     "headers.@n8n/n8n-nodes-langchain.contentColumn.description": "Column that becomes the document text. Leave empty on a managed-embedding index to use its embedding source column. Choose from the list, or specify an ID using an <a href=\"https://docs.n8n.io/code/expressions/\">expression</a>.",
     "headers.@n8n/n8n-nodes-langchain.contentPayloadKey.description": "The key to use for the content payload in Qdrant. Default is \"content\".",
+    "headers.@n8n/n8n-nodes-langchain.databricksAiAgent.description": "An AI agent that exports its runs to MLflow Tracing in Databricks",
     "headers.@n8n/n8n-nodes-langchain.documentBinaryInputLoader.description": "Use binary data from a previous step in the workflow",
     "headers.@n8n/n8n-nodes-langchain.documentDefaultDataLoader.description": "Load data from previous step in the workflow",
     "headers.@n8n/n8n-nodes-langchain.documentGithubLoader.description": "Use GitHub data as input to this chain",
     "headers.@n8n/n8n-nodes-langchain.documentJsonInputLoader.description": "Use JSON data from a previous step in the workflow",
     "headers.@n8n/n8n-nodes-langchain.embeddingDimensions.description": "Whether to allow using characters from the Unicode surrogate blocks",
     "headers.@n8n/n8n-nodes-langchain.embeddingsAwsBedrock.description": "Use Embeddings AWS Bedrock",
-    "headers.@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi.description": "Use Embeddings Azure OpenAI",
+    "headers.@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi.description": "Use Microsoft Foundry Embeddings",
     "headers.@n8n/n8n-nodes-langchain.embeddingsCohere.description": "Use Cohere Embeddings",
     "headers.@n8n/n8n-nodes-langchain.embeddingsDatabricks.description": "Use Databricks Embeddings",
     "headers.@n8n/n8n-nodes-langchain.embeddingsGoogleGemini.description": "Use Google Gemini Embeddings",

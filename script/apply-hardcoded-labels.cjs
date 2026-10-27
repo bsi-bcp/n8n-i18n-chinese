@@ -83,7 +83,10 @@ const RULES = [
   //    分发构成合规违规（与 E5-P1-A 同类，当时只堵了 params 注入端、漏了本脚本前端端）。
   //    相关面板标签保持英文原文。防回潜：script/check-ee-gate.cjs --diff 拦截任何
   //    触碰 .ee. / .ee 目录段的新规则。
-  ['packages/frontend/editor-ui/src/features/ai/mcpAccess/module.descriptor.ts', [
+  // 2.44 起 MCP 迁 packages/modules/mcp/frontend/src/mcp.module.ts（路径候选；内容与旧版一致，
+  // settingsPages label 仍为 useI18n() 懒求值 getter——2026-10-27 对 n8n@2.44.7 实测）
+  [['packages/frontend/editor-ui/src/features/ai/mcpAccess/module.descriptor.ts',
+    'packages/modules/mcp/frontend/src/mcp.module.ts'], [
     [T("\tname: 'MCP Server',\n\tdescription: 'Access your n8n instance through MCP clients',"),
      T("\tname: 'MCP 服务器',\n\tdescription: '通过 MCP 客户端访问您的 n8n 实例',"),
      'MCP Server 模块名+描述', 1],
