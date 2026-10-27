@@ -56,7 +56,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @ai-sdk/mistral 4.0.14
 * @ai-sdk/moonshotai 3.0.35
 * @ai-sdk/openai 4.0.20
-* @ai-sdk/openai-compatible 3.0.28
+* @ai-sdk/openai-compatible 3.0.44
 * @ai-sdk/otel 1.0.74
 * @ai-sdk/provider 4.0.7
 * @ai-sdk/provider-utils 5.0.27
@@ -458,6 +458,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @chat-adapter/state-memory 4.37.0
 * @chat-adapter/teams 4.37.0
 * @chat-adapter/telegram 4.37.0
+* @chat-adapter/whatsapp 4.37.0
 * @codemirror/autocomplete 6.20.0
 * @codemirror/language 6.12.1
 * @codemirror/state 6.5.3
@@ -1431,7 +1432,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * xmlhttprequest-ssl 2.1.2
 * xmllint-wasm 3.0.1
 * xpath 0.0.34
-* xregexp 2.0.0
 * xss 1.0.15
 * xtend 4.0.2
 * yargs 17.7.2
