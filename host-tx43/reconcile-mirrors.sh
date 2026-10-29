@@ -40,7 +40,9 @@ ghcr_token() { # 匿名 pull token（ghcr 公共包）
 }
 ghcr_runners_src_exists() { # $1=tag → 0=存在（v4+ 版本才有 GHCR 源）
   local tok; tok=$(ghcr_token); [ -n "$tok" ] || return 1
-  curl -sS -m 20 -o /dev/null "https://ghcr.io/v2/bsi-bcp/n8n-runners/manifests/$1-amd64" \
+  # 🔴 -f 必带：curl 对 HTTP 404 默认退出码 0，不带 -f 会把「无源」误判成「有源」
+  # （v1.1 首跑实录：2.40.6 无源却被放行 replay 必败）
+  curl -sfS -m 20 -o /dev/null "https://ghcr.io/v2/bsi-bcp/n8n-runners/manifests/$1-amd64" \
     -H "Authorization: Bearer $tok" \
     -H "Accept: application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json"
 }
