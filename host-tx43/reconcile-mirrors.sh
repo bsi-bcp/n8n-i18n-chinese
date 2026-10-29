@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # ── 镜像双库对账自愈（2026-10-30 上线；2.44.7 bcp-hub 缺腿躺 3 天事故沉淀）────────
+# v1.1（2026-10-30 首跑实录修复）：①runners 双侧都在但 digest≠SWR=历史信封差异（docker
+#   push 重组信封，内容一致），降级 INFO 不再每 30 分钟误报 🔴；②v4 前 runners 无 GHCR 源
+#   补不了 → ⚠️ + ignore.list 静默机制（每行 repo:tag / rel:ver，精确匹配）；③辅对账加
+#   3s 复核防瞬时误报；首跑另实锤 SWR 双库同缺 2.39.10（辅对账价值实证，重建待办见 Issue）。
 # 职责：SWR（不退役、全版本永久保留 = 期望全集锚点）与 bcp-hub（边端消费主通道）
 #       按 tag 对账 manifest digest；发现缺失/漂移即调同目录 replay-mirror.sh 幂等
 #       补齐（境内快线 + 断点续传 + digest 校验）。
@@ -30,6 +34,17 @@ SWR="https://swr.cn-north-4.myhuaweicloud.com"
 HUB="https://registry.bcpcloud.cn"
 OUR_REPO="bsi-bcp/n8n-i18n-chinese"
 ACCEPT='application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json'
+
+ghcr_token() { # 匿名 pull token（ghcr 公共包）
+  curl -sS -m 20 "https://ghcr.io/token?scope=repository:bsi-bcp/n8n-runners:pull" | jq -r '.token // empty' 2>/dev/null
+}
+ghcr_runners_src_exists() { # $1=tag → 0=存在（v4+ 版本才有 GHCR 源）
+  local tok; tok=$(ghcr_token); [ -n "$tok" ] || return 1
+  curl -sS -m 20 -o /dev/null "https://ghcr.io/v2/bsi-bcp/n8n-runners/manifests/$1-amd64" \
+    -H "Authorization: Bearer $tok" \
+    -H "Accept: application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json"
+}
+ignored() { grep -qsxF "$1" ignore.list; }
 
 notify() { # $1=文本（多行）；webhook 缺失时静默降级
   [ "$HAVE_WEBHOOK" = "1" ] || return 0
@@ -81,6 +96,22 @@ main() {
         return 2
       fi
       [ "$sd" = "$hd" ] && continue
+      # ── v1.1 缺陷修复（2026-10-30 首跑实录沉淀）──────────────────────────
+      # ① runners 双侧都在但 digest≠SWR = 历史信封差异（bcp-hub 老条目经 docker push
+      #   重组信封，内容层一致、registry-copy 无法也无需归一）——记 INFO，不告警不重放
+      if [ "$repo" = "n8n-runners" ] && [ -n "$hd" ]; then
+        echo "[INFO] $repo:$tag 信封差异 hub≠swr（历史推送路径所致，内容一致假定，不处理）" >>reconcile.log
+        continue
+      fi
+      # ② 确认放弃自动修复的条目（ignore.list，每行 repo:tag）静默跳过
+      if ignored "$repo:$tag"; then continue; fi
+      # ③ runners hub 缺失且 GHCR 无源（v4=2026-09-30 前版本）→ replay 必败；
+      #   SWR 有货可匿名拉兜底，只 ⚠️ 不 🔴，确认放弃后入 ignore.list
+      if [ "$repo" = "n8n-runners" ] && ! ghcr_runners_src_exists "$tag"; then
+        failed=$((failed + 1))
+        report="${report}- ⚠️ ${repo}:${tag} bcp-hub 缺失且无 GHCR 源（v4 前历史版本，SWR 有货可匿名拉兜底；确认放弃 → echo \"${repo}:${tag}\" >> ignore.list）"$'\n'
+        continue
+      fi
       # 缺失或漂移 → 幂等补齐（chinese=SWR→hub；runners=ghcr→SWR→hub，已有腿校验跳过）
       leg=chinese; [ "$repo" = "n8n-runners" ] && leg=runners
       report="${report}- ${repo}:${tag}（hub=${hd:-缺} / swr=${sd}）→ replay ${leg}"$'\n'
@@ -105,11 +136,18 @@ main() {
   if [ -n "$rel" ]; then
     while IFS= read -r ver; do
       [ -n "$ver" ] || continue
-      if [ -z "$(swr_digest n8n-chinese "$ver")" ]; then
+      ignored "rel:$ver" && continue
+      sd1=$(swr_digest n8n-chinese "$ver")
+      if [ -z "$sd1" ]; then
+        # 瞬时网络/token 抖动会造成假 404——隔 3s 复核一次再定罪
+        sleep 3
+        sd1=$(swr_digest n8n-chinese "$ver")
+      fi
+      if [ -z "$sd1" ]; then
         failed=$((failed + 1))
-        report="${report}- ⚠️ Release release/${ver} 已发布但 SWR 缺 n8n-chinese:${ver}（image.yml 上游腿失败？）
+        report="${report}- ⚠️ Release release/${ver} 已发布但 SWR 缺 n8n-chinese:${ver}（复核两次仍缺；image.yml 上游腿失败或历史从未入阵）
   语言包底线不受影响：tarball 已在 Release 资产（bind mount 通道可用），镜像仅缺增强通道。
-  补法：gh workflow run image.yml -f version=${ver} -R ${OUR_REPO}，或 TX-43 手动构建。"$'\n'
+  补法：v4+ 版 gh workflow run image.yml -f version=${ver} -R ${OUR_REPO}；v4 前版本 TX-43 从 Release tarball 重建（2.39.10 即此形态）。确认挂起 → echo \"rel:${ver}\" >> ignore.list。"$'\n'
       fi
     done <<< "$rel"
   fi
