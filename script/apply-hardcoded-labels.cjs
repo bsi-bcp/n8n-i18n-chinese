@@ -73,10 +73,18 @@ const RULES = [
      T("\tname: '洞察',\n\tdescription: '为项目提供洞察与分析功能',"),
      'Insights 模块名+描述', 1],
   ], 1],
-  ['packages/frontend/editor-ui/src/features/workflow-reviews/module.descriptor.ts', [
-    [T("\tname: 'Workflow Reviews',\n\tdescription: 'Cross-project workflow review inbox.',"),
-     T("\tname: '工作流评审',\n\tdescription: '跨项目工作流评审收件箱',"),
-     'Workflow Reviews 模块名+描述', 1],
+  // 2.45 起 workflow-reviews 升格为 Inbox 模块（迁 packages/modules/inbox/frontend/src/
+  // inbox.module.ts；name 'Workflow Reviews'→'Inbox'、description 换新——工作流评审与助手
+  // 结果合流，/reviews 路由重定向保留。2026-10-29 对 n8n@2.45.6 实测）——路径候选 + 版式变体
+  [['packages/frontend/editor-ui/src/features/workflow-reviews/module.descriptor.ts',
+    'packages/modules/inbox/frontend/src/inbox.module.ts'], [
+    [[[// ≤2.44：Workflow Reviews 独立模块
+       T("\tname: 'Workflow Reviews',\n\tdescription: 'Cross-project workflow review inbox.',"),
+       T("\tname: '工作流评审',\n\tdescription: '跨项目工作流评审收件箱',")],
+      [// 2.45+：Inbox 模块（工作流评审 + 已保存助手结果）
+       T("\tname: 'Inbox',\n\tdescription: 'Workflow reviews and saved Assistant results.',"),
+       T("\tname: '收件箱',\n\tdescription: '工作流评审与已保存的助手结果',")]],
+     null, 'Workflow Reviews/Inbox 模块名+描述（≤2.44 独立 / 2.45+ 并入 Inbox）', 1],
   ], 1],
   // 🔴 EE 专有文件规则已移除（2026-09-21 专家评审实锤）：promotions.ee/sourceControl.ee
   //    属上游 EE 专有源码（LICENSE.md 明文 *.ee.* 不适用 SUL），修改它们并随公开 dist
