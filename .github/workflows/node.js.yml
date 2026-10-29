@@ -461,6 +461,30 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # 2026-10-30 落地（收尾滞后三连犯 + 2.44.7「入阵中≠完成」漏账沉淀）：发版成功≠闭环。
+    # 收尾清单自动建 Issue 防静默搁浅；置于联动镜像步**之前**——镜像腿失败不得拖累
+    # 收尾清单落地（语言包底线=Release+tarball 已在本步之前落地，镜像只是增强通道）。
+    - name: 发收尾待办 Issue
+      if: steps.check_tag.outputs.exists == 'false'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_REPO: ${{ github.repository }}
+        VERSION: ${{ steps.ver.outputs.version }}
+      run: |
+        TITLE="发版收尾待办：n8n@${VERSION}"
+        EXISTING=$(gh issue list --state open --search "${TITLE} in:title" --json number --jq 'length' 2>/dev/null || echo 0)
+        if [ "$EXISTING" -gt 0 ]; then echo "已存在收尾待办 Issue，跳过"; exit 0; fi
+        gh label create n8n-release-pending --color 0E8A16 -R "$GH_REPO" 2>/dev/null || true
+        gh issue create -R "$GH_REPO" --title "$TITLE" --label n8n-release-pending --body "$(cat <<EOFMD
+        Release \`release/${VERSION}\` 已发布——**语言包底线已落地**（词典提交 + tarball 在 Release 资产，bind mount 通道立即可用）。发版会话请逐项完成后关闭本 Issue：
+
+        - [ ] README「n8n 版本兼容说明」矩阵新增 ${VERSION%.*} 行
+        - [ ] CHANGELOG 固化 ${VERSION} 版本段
+        - [ ] 双库四镜像入阵确认——TX-43 对账自愈 cron 每 30 分钟自动收敛补腿（缺腿窗口 ≤30 分钟），以对账通报/digest 核验为准；「run 在跑/入阵中」**不算完成**
+        EOFMD
+        )"
+        echo "已建收尾待办 Issue：${TITLE}"
+
     # 🔒 安全修复（2026-09-18 评审 #2）：不再依赖 PAT 创建 Release 来触发 image.yml 的
     #    release 事件——workflow_dispatch 是 GITHUB_TOKEN 唯二可触发的事件之一，
     #    由此以最小权限内置 token 联动镜像构建，全权限 classic PAT 退役。

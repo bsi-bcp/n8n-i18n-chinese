@@ -219,10 +219,17 @@ jobs:
         id: labels
         run: |
           # 语义脚本 --check 干跑：硬编码修复可应用性=门禁一部分（失败即红灯）
-          node plugin/script/apply-hardcoded-labels.cjs ./n8n --check || {
+          # 2026-10-30 加固：失败规则明细随 step 输出上行——红卡/Issue 直接点名，
+          # 免人工翻 run 日志定位（2.45 线三连拦截实录：每次都要 grep 日志找规则名）
+          if ! node plugin/script/apply-hardcoded-labels.cjs ./n8n --check > /tmp/labels-check.log 2>&1; then
             echo "verdict_override=red" >> "$GITHUB_OUTPUT"
+            {
+              echo "failures<<EOFLBL"
+              grep "^❌" /tmp/labels-check.log | head -10 || true
+              echo "EOFLBL"
+            } >> "$GITHUB_OUTPUT"
             exit 0
-          }
+          fi
           echo "verdict_override=green" >> "$GITHUB_OUTPUT"
 
       - name: Evaluate translation delta (D3, 同 translate.js 口径)
@@ -346,6 +353,10 @@ jobs:
                 #    误标为「👁 具备发版条件」——实际此时 dispatch 也会在 node.js.yml
                 #    构建端同门禁红灯，一键发版不可用
                 echo "- **结论**：🔴 语义脚本 --check 失败（硬编码标签修复不可应用），自动发版已拦截"
+                if [ -n "${{ steps.labels.outputs.failures }}" ]; then
+                  echo "- **失败规则明细**（点名为 2026-10-30 新增，历史红卡需翻运行日志）："
+                  while IFS= read -r row; do [ -n "$row" ] && echo "  - \`$row\`"; done <<< "${{ steps.labels.outputs.failures }}"
+                fi
                 echo "- 需人工适配 script/apply-hardcoded-labels.cjs；适配后重评或直接 dispatch node.js.yml"
               elif [ "$PV" = "yellow" ]; then
                 echo "- **结论**：🟡 模糊贴合需人工复核补丁内容，确认后一键发版"
