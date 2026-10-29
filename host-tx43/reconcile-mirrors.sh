@@ -3,7 +3,8 @@
 # v1.1（2026-10-30 首跑实录修复）：①runners 双侧都在但 digest≠SWR=历史信封差异（docker
 #   push 重组信封，内容一致），降级 INFO 不再每 30 分钟误报 🔴；②v4 前 runners 无 GHCR 源
 #   补不了 → ⚠️ + ignore.list 静默机制（每行 repo:tag / rel:ver，精确匹配）；③辅对账加
-#   3s 复核防瞬时误报；首跑另实锤 SWR 双库同缺 2.39.10（辅对账价值实证，重建待办见 Issue）。
+#   3s 复核防瞬时误报；首跑另实锤 SWR 双库同缺 2.39.10（辅对账价值实证；2026-10-30 用户
+#   拍板不重建，rel:2.39.10 入 ignore.list，Issue #10 留档终态）。
 # 职责：SWR（不退役、全版本永久保留 = 期望全集锚点）与 bcp-hub（边端消费主通道）
 #       按 tag 对账 manifest digest；发现缺失/漂移即调同目录 replay-mirror.sh 幂等
 #       补齐（境内快线 + 断点续传 + digest 校验）。
