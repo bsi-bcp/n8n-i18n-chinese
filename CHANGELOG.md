@@ -45,6 +45,12 @@
 - 静默失败比报错危险：90 行 422 在日志里躺了 4 天，任何「看起来还在跑」的表象（permissions API 的 `enabled:true`、workflow 状态 `active`）都不可信，判活以实际运行打点为准
 - 对第三方平台的隐性依赖（fork 身份、配额策略）要登记为结构性风险并预演退出路径
 
+## [2.45.7] - 2026-10-30（上游修复补丁版；发版收尾自动化首跑翻车当日修复版）
+
+**兼容**：n8n 2.45.7（精确匹配）；**就近兼容** 2.45.0 ~ 2.45.6（同 minor 旧补丁线，新增文案回退英文）；**不兼容** > 2.45.7 的后端。patch 级升级，无数据库迁移。
+
+上游 2.45.7 含 3 修复：core 工作流范围内路由读取执行数据须具备 `execution:read` 权限（[#42446](https://github.com/n8n-io/n8n/issues/42446)）、IMAP 触发器激活后表达式未正确解析（[#42611](https://github.com/n8n-io/n8n/issues/42611)）、表达式返回带 `__isError` 键的用户数据时按普通数据返回（[#42491](https://github.com/n8n-io/n8n/issues/42491)）。无破坏性变更。**汉化侧**：翻译增量 0 条（上游 patch 无新文案），语言包沿用 **11120 键**，前端 dist 随 2.45.7 源码重建。**流水线实录**：同日新增的「发收尾待办 Issue」步骤首跑即翻车——`gh label create` 在 GITHUB_TOKEN 下无 administration 权限必然失败，被 `|| true` 静默吞掉后 `gh issue create --label` 引用不存在 label 退出 1，连带跳过镜像联动；Release 与 tarball（语言包底线）在失败点之前已落地、未受损。人工补齐收尾 [Issue #11](https://github.com/bsi-bcp/n8n-i18n-chinese/issues/11) 与镜像 dispatch，修复（label 存在性检查降级无 label 建 Issue + 镜像联动 `if: !cancelled()` 解耦 + 失败红卡文案去误导）随 commit `7bbdc15` 当日上线。**镜像**：`swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.45.7` SWR 腿 digest `55cb1a66…` 实证入阵；bcp-hub 腿由 image.yml 构建链 + TX-43 对账自愈 cron（30 分钟级）兜底收敛——cron 上线首日已实证自动补齐 10-29 发出的 2.45.6 bcp-hub 缺腿（SWR digest `d9635799…` 核验一致）。
+
 ## [2.45.6] - 2026-10-29（n8n 2.45 minor 线首个汉化版；语义门禁 2.45 线三连拦截解锁版）
 
 **兼容**：n8n 2.45.6（精确匹配）；**就近兼容** 2.45.0 ~ 2.45.5（同 minor 旧补丁线，新增文案回退英文）；**不兼容** > 2.45.6 的后端。⚠️ 2.45 为 **minor 版**，跨 minor 升级/回滚涉及数据库迁移——须按 Release 说明执行（`n8n db:revert`）。
