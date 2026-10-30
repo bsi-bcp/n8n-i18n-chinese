@@ -464,6 +464,10 @@ jobs:
     # 2026-10-30 落地（收尾滞后三连犯 + 2.44.7「入阵中≠完成」漏账沉淀）：发版成功≠闭环。
     # 收尾清单自动建 Issue 防静默搁浅；置于联动镜像步**之前**——镜像腿失败不得拖累
     # 收尾清单落地（语言包底线=Release+tarball 已在本步之前落地，镜像只是增强通道）。
+    # ⚠️ label 保全（2026-10-30 2.45.7 首跑实锤）：GITHUB_TOKEN 无 administration 权限
+    #    建不了 label——原 `gh label create || true` 把必然失败静默吞掉，随后 --label
+    #    引用不存在 label 直接 exit 1，连带跳过镜像联动。改为显式查存在性：缺则降级
+    #    无 label 建 Issue + warning。仓库 label 由人工预建（已建，2026-10-30）。
     - name: 发收尾待办 Issue
       if: steps.check_tag.outputs.exists == 'false'
       env:
@@ -474,8 +478,14 @@ jobs:
         TITLE="发版收尾待办：n8n@${VERSION}"
         EXISTING=$(gh issue list --state open --search "${TITLE} in:title" --json number --jq 'length' 2>/dev/null || echo 0)
         if [ "$EXISTING" -gt 0 ]; then echo "已存在收尾待办 Issue，跳过"; exit 0; fi
-        gh label create n8n-release-pending --color 0E8A16 -R "$GH_REPO" 2>/dev/null || true
-        gh issue create -R "$GH_REPO" --title "$TITLE" --label n8n-release-pending --body "$(cat <<EOFMD
+        LABEL_ARGS=""
+        if gh label list -R "$GH_REPO" --json name --jq '.[].name' 2>/dev/null | grep -qx 'n8n-release-pending'; then
+          LABEL_ARGS="--label n8n-release-pending"
+        else
+          echo "::warning::label n8n-release-pending 缺失且 GITHUB_TOKEN 无权创建——Issue 降级为无 label（请人工补建 label）"
+        fi
+        # shellcheck disable=SC2086 —— LABEL_ARGS 空时为零参数，分词展开是有意行为
+        gh issue create -R "$GH_REPO" --title "$TITLE" $LABEL_ARGS --body "$(cat <<EOFMD
         Release \`release/${VERSION}\` 已发布——**语言包底线已落地**（词典提交 + tarball 在 Release 资产，bind mount 通道立即可用）。发版会话请逐项完成后关闭本 Issue：
 
         - [ ] README「n8n 版本兼容说明」矩阵新增 ${VERSION%.*} 行
@@ -488,8 +498,11 @@ jobs:
     # 🔒 安全修复（2026-09-18 评审 #2）：不再依赖 PAT 创建 Release 来触发 image.yml 的
     #    release 事件——workflow_dispatch 是 GITHUB_TOKEN 唯二可触发的事件之一，
     #    由此以最小权限内置 token 联动镜像构建，全权限 classic PAT 退役。
+    # if: !cancelled()（2026-10-30 2.45.7 实锤）：镜像联动是产线主链路，上游收尾 Issue
+    # 步失败（附属物，响亮失败走红卡）不得阻断 dispatch——对齐 image.yml Mirror 步与
+    # chinese 解耦同款机制。
     - name: 联动触发镜像构建
-      if: steps.check_tag.outputs.exists == 'false'
+      if: ${{ !cancelled() && steps.check_tag.outputs.exists == 'false' }}
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GH_REPO: ${{ github.repository }}  # 显式指定仓库：不依赖 cwd 的 git remote 解析
@@ -513,7 +526,10 @@ jobs:
       run: |
         set -euo pipefail
         TITLE="[${{ github.repository }}] n8n@${{ steps.ver.outputs.version }} 发版流水线失败"
-        M="❌ node.js.yml 构建失败，Release 与镜像未产出，需人工介入"$'\n'"日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        # 文案勿写死产物状态（2026-10-30 2.45.7 实锤：收尾 Issue 步失败时 Release/tarball
+        # 早已落地，旧文案「Release 与镜像未产出」与事实不符误导判断）——按步序 tag/Release
+        # 可能已部分产出且不回滚（语言包底线），以 run 日志与 Release 页核实为准。
+        M="❌ node.js.yml 构建失败，需人工介入（tag/Release 可能已部分落地，核实 run 日志与 Release 页）"$'\n'"日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         jq -n --arg t "$TITLE" --arg m "$M" \
           '{msg_type:"interactive",card:{header:{title:{tag:"plain_text",content:$t},template:"red"},
             elements:[{tag:"markdown",content:$m}]}}' > p_fail.json
