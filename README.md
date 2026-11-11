@@ -5,16 +5,16 @@
 **让 n8n 说中文 —— CI 全自动跟随官方发版**
 
 [![Latest Release](https://img.shields.io/github/v/release/bsi-bcp/n8n-i18n-chinese?style=flat-square)](https://github.com/bsi-bcp/n8n-i18n-chinese/releases)
-[![n8n](https://img.shields.io/badge/n8n-2.44.7-EA4B71?style=flat-square)](https://github.com/n8n-io/n8n/releases)
+[![n8n](https://img.shields.io/badge/n8n-2.47.3-EA4B71?style=flat-square)](https://github.com/n8n-io/n8n/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ```shell
-docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.44.7
+docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.47.3
 ```
 
 </div>
 
-> 社区延续维护 [fork](https://github.com/other-blowsnow/n8n-i18n-chinese)（原项目已归档停更）：watcher 每小时巡检 n8n 官方稳定版，评估通过后自动完成「增量翻译 → 门禁 → 构建 → Release → 镜像双库分发」。当前覆盖 n8n 2.44.7。
+> 社区延续维护 [fork](https://github.com/other-blowsnow/n8n-i18n-chinese)（原项目已归档停更）：watcher 每小时巡检 n8n 官方稳定版，评估通过后自动完成「增量翻译 → 门禁 → 构建 → Release → 镜像双库分发」。当前覆盖 n8n 2.47.3。
 >
 > 非 n8n 官方项目；汉化包 MIT 许可（详见文末[版权声明](#版权与来源声明)），n8n 本体受 [Sustainable Use License](https://docs.n8n.io/license/) 约束。
 
@@ -33,7 +33,7 @@ docker pull swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.44.7
 
 ```shell
 docker run -d --name n8n -p 5678:5678 -v ~/.n8n:/home/node/.n8n \
-  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.44.7
+  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.47.3
 ```
 
 打开 `http://localhost:5678` 即中文界面；`curl localhost:5678/healthz` 返回 200 即健康。
@@ -68,6 +68,8 @@ main / worker / webhook 之外，加一个 Task Runners 容器（同版本 `n8n-
 
 | n8n minor 线 | 汉化最新版（精确匹配） | 就近兼容后端区间 |
 |---|---|---|
+| 2.47 | **2.47.3** | 2.47.0 ~ 2.47.2 |
+| 2.46 | （未单独跟版） | 由 **2.47.3** 就近覆盖（2.46.0 ~ 2.46.7） |
 | 2.45 | **2.45.7** | 2.45.0 ~ 2.45.6 |
 | 2.44 | **2.44.7** | 2.44.0 ~ 2.44.6 |
 | 2.43 | **2.43.8** | 2.43.0 ~ 2.43.7 |
@@ -97,11 +99,11 @@ n8n editor-ui 内置 vue-i18n 但官方无中文包：将 `zh-CN.json` 注入语
 
 ## 🌍 English
 
-Community-maintained **Simplified Chinese localization** for n8n — CI rebuilds for every n8n stable release (currently 2.44.7). Docker image (amd64; arm64 via the Release-attached `n8n-editor-ui@<ver>.tar.gz` dist overlay):
+Community-maintained **Simplified Chinese localization** for n8n — CI rebuilds for every n8n stable release (currently 2.47.3). Docker image (amd64; arm64 via the Release-attached `n8n-editor-ui@<ver>.tar.gz` dist overlay):
 
 ```shell
 docker run -d --name n8n -p 5678:5678 -v ~/.n8n:/home/node/.n8n \
-  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.44.7
+  swr.cn-north-4.myhuaweicloud.com/bcphub/n8n-chinese:2.47.3
 ```
 
 Defaults to Chinese UI; set `N8N_DEFAULT_LOCALE=en` for English. MIT-licensed; n8n itself remains under its own [Sustainable Use License](https://docs.n8n.io/license/).
