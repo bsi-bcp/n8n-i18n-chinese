@@ -345,7 +345,10 @@ jobs:
               #    节点描述/操作标题提取在 CI 之外，新 minor 不重提取则面板覆盖不全
               ENNODES_VER=$(jq -r '._meta.version // "unknown"' plugin/script/en-nodes.json 2>/dev/null || echo unknown)
               if [ "$ENNODES_VER" != "$T" ]; then
-                echo "- ⚠️ **en-nodes 提取版本**：$ENNODES_VER（目标 $T）——新 minor 的节点面板新文案需人工重提取（extract-node-headers.js），否则面板描述/操作标题覆盖不全"
+                # 2026-11-11 修正：此前文案称「需人工重提取」——实际 node.js.yml 自
+                # 2026-09-19 起已在发版流程内自动重提取（Extract en-nodes headers 步，
+                # 位于翻译之前），此处只是评估时点快照，落后属正常，无需人工动作。
+                echo "- ℹ️ **en-nodes 提取版本**：$ENNODES_VER（目标 $T）——评估时点快照；发版流程会自动重提取（node.js.yml），无需人工动作"
               fi
               echo "- **基础镜像**：$IMGM"
               echo "- **自动发版**：AUTO_RELEASE=$AUTO_RELEASE report_only=${REPORT_ONLY:-false}"
