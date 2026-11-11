@@ -225,7 +225,12 @@ jobs:
             echo "verdict_override=red" >> "$GITHUB_OUTPUT"
             {
               echo "failures<<EOFLBL"
-              grep "^❌" /tmp/labels-check.log | head -10 || true
+              # 兜底（2026-11-11）：无 ❌ 行（脚本输出格式变化/异常退出）时附日志尾部——
+              # 明细为空会让红灯 Issue 退化为「自己翻日志」，2026-10-30 点名牌即因下游
+              # 反引号被 shell 吃掉而恒空，2.46.4~2.47.3 五连拦截全靠人工排查
+              LBL="$(grep '^❌' /tmp/labels-check.log | head -10 || true)"
+              [ -n "$LBL" ] || LBL="$(tail -10 /tmp/labels-check.log)"
+              printf '%s\n' "$LBL"
               echo "EOFLBL"
             } >> "$GITHUB_OUTPUT"
             exit 0
@@ -295,6 +300,7 @@ jobs:
         env:
           LABELS_OVERRIDE: ${{ steps.labels.outputs.verdict_override }}
           PATCH_DETAILS: ${{ steps.patch.outputs.details }}
+          LABEL_FAILURES: ${{ steps.labels.outputs.failures }}
         run: |
           set -euo pipefail
           T="${{ steps.ver.outputs.version }}"
@@ -353,9 +359,13 @@ jobs:
                 #    误标为「👁 具备发版条件」——实际此时 dispatch 也会在 node.js.yml
                 #    构建端同门禁红灯，一键发版不可用
                 echo "- **结论**：🔴 语义脚本 --check 失败（硬编码标签修复不可应用），自动发版已拦截"
-                if [ -n "${{ steps.labels.outputs.failures }}" ]; then
-                  echo "- **失败规则明细**（点名为 2026-10-30 新增，历史红卡需翻运行日志）："
-                  while IFS= read -r row; do [ -n "$row" ] && echo "  - \`$row\`"; done <<< "${{ steps.labels.outputs.failures }}"
+                # 🔴 2026-11-11 修复（2.46.4~2.47.3 五连拦截实录）：明细走 env 传入、不再
+                #    内插 ${{ }}，且不带反引号——原写法把 `` `❌ ...` `` 写进 md，下游 Issue
+                #    body 内插时反引号被 shell 当 command substitution 执行（❌: command not
+                #    found），明细被吃掉恒为空，五连拦截每次只能人工翻运行日志定位。
+                if [ -n "${LABEL_FAILURES:-}" ]; then
+                  echo "- **失败规则明细**："
+                  printf '%s\n' "$LABEL_FAILURES" | while IFS= read -r row; do [ -n "$row" ] && echo "  - $row"; done
                 fi
                 echo "- 需人工适配 script/apply-hardcoded-labels.cjs；适配后重评或直接 dispatch node.js.yml"
               elif [ "$PV" = "yellow" ]; then
@@ -391,6 +401,9 @@ jobs:
         if: steps.gate.outputs.skip == 'false' && steps.patch.outputs.verdict == 'red' && steps.ver.outputs.drill != 'true'
         env:
           T: ${{ steps.ver.outputs.version }}
+          # 2026-11-11：md 走 env 传入，禁止内插（内插发生在 shell 解析前，内容中的
+          # 反引号/$(...) 会被当命令执行——语义明细被吃掉即该坑，见 report 步骤注释）
+          REPORT_MD: ${{ steps.report.outputs.md }}
         run: |
           gh label create n8n-compat --color D93F0B -R "$GITHUB_REPOSITORY" 2>/dev/null || true
           # 查重：watched 状态走 actions/cache（7 天不用会被逐出），逐出后同一红灯版本会重复评估；
@@ -404,7 +417,7 @@ jobs:
           gh issue create -R "$GITHUB_REPOSITORY" \
             --title "n8n@$T 兼容性评估失败：补丁需人工适配" \
             --label n8n-compat \
-            --body "$(printf '%s' "${{ steps.report.outputs.md }}")
+            --body "$REPORT_MD
 
           评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           两步闭环——①适配后先重评：`gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY`\n          ②重评绿灯后**必须手动发版**（重评不会自动发版也不解除状态机跳过）：`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY`"
@@ -540,6 +553,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           T: ${{ steps.ver.outputs.version }}
+          REPORT_MD: ${{ steps.report.outputs.md }}
         run: |
           set -euo pipefail
           PV="${{ steps.patch.outputs.verdict }}"
@@ -560,7 +574,7 @@ jobs:
             gh issue create -R "$GITHUB_REPOSITORY" \
               --title "n8n@$T 语义脚本需适配：--check 失败，自动发版已拦截" \
               --label n8n-compat \
-              --body "$(printf '%s' "${{ steps.report.outputs.md }}")
+              --body "$REPORT_MD
 
           apply-hardcoded-labels.cjs --check 在该版本源码上未全部命中（上游结构变化），直接 dispatch node.js.yml 也会在构建端同门禁红灯。人工适配 script/apply-hardcoded-labels.cjs 规则后闭环：\`gh workflow run n8n-stable-watch.yml -f force_version=$T -R $GITHUB_REPOSITORY\` 重评，或直接 \`gh workflow run node.js.yml -f version=$T -R $GITHUB_REPOSITORY\`（发版后关闭本 Issue）。评估运行：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             exit 0

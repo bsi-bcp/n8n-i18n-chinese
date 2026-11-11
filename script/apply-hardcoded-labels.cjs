@@ -83,8 +83,11 @@ const RULES = [
        T("\tname: '工作流评审',\n\tdescription: '跨项目工作流评审收件箱',")],
       [// 2.45+：Inbox 模块（工作流评审 + 已保存助手结果）
        T("\tname: 'Inbox',\n\tdescription: 'Workflow reviews and saved Assistant results.',"),
-       T("\tname: '收件箱',\n\tdescription: '工作流评审与已保存的助手结果',")]],
-     null, 'Workflow Reviews/Inbox 模块名+描述（≤2.44 独立 / 2.45+ 并入 Inbox）', 1],
+       T("\tname: '收件箱',\n\tdescription: '工作流评审与已保存的助手结果',")],
+      [// 2.46+：描述并入 promotion reviews（2026-11-11 对 n8n@2.46.5/2.46.7/2.47.3 实测三版一致）
+       T("\tname: 'Inbox',\n\tdescription: 'Workflow reviews, promotion reviews, and saved Assistant results.',"),
+       T("\tname: '收件箱',\n\tdescription: '工作流评审、推广评审与已保存的助手结果',")]],
+     null, 'Workflow Reviews/Inbox 模块名+描述（≤2.44 独立 / 2.45+ 并入 Inbox / 2.46+ 加推广评审）', 1],
   ], 1],
   // 🔴 EE 专有文件规则已移除（2026-09-21 专家评审实锤）：promotions.ee/sourceControl.ee
   //    属上游 EE 专有源码（LICENSE.md 明文 *.ee.* 不适用 SUL），修改它们并随公开 dist
