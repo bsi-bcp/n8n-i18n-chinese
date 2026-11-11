@@ -32,6 +32,10 @@ concurrency:
 permissions:
   contents: write   # 翻译/dist 提交 + release tag + Release 附件
   actions: write    # workflow_dispatch 联动 image.yml（GITHUB_TOKEN 可触发的唯二事件之一）
+  issues: write     # 「发收尾待办 Issue」——2026-11-11 补：显式声明 permissions 后未列
+                    # scope 即为 none，此前缺此项致 createIssue 403「Resource not
+                    # accessible by integration」（2.47.3 首跑实锤）；2.45.7 的
+                    # 7bbdc15 只做了 label 降级，未根治建 Issue 本身
   # ⚠️ 不可加 workflows:write——GITHUB_TOKEN 不支持该 scope，声明即整个文件非法
   #    （startup_failure，dispatch 连锁 403，2.39.8 实锤）。tag 推送的 workflow 提交
   #    竞态用「打 tag 前 rebase origin/main」策略规避。
