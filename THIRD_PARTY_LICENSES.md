@@ -4,65 +4,39 @@ This file lists third-party software components included in n8n and their respec
 
 The n8n software includes open source packages, libraries, and modules, each of which is subject to its own license. The following sections list those dependencies and provide required attributions and license texts.
 
-## (AFL-2.1 OR BSD-3-Clause)
+## (MIT OR Apache-2.0) AND Unicode-3.0
 
-* json-schema 0.4.0
-
-## (Apache-2.0 OR UPL-1.0)
-
-* oracledb 6.10.0
-
-## (BSD-2-Clause OR MIT OR Apache-2.0)
-
-* rc 1.2.8
-
-## (MIT AND BSD-3-Clause)
-
-* sha.js 2.4.12
-
-## (MIT AND Zlib)
-
-* pako 1.0.11
-
-## (MIT OR EUPL-1.1+)
-
-* @zone-eu/mailsplit 5.4.15
-
-## (MIT OR GPL-3.0-or-later)
-
-* jszip 3.10.1
-
-## (MIT OR WTFPL)
-
-* expand-template 2.0.3
+* unicode-ident 1.0.24
 
 ## 0BSD
 
 * tslib 2.8.1
 
+## AFL-2.1 OR BSD-3-Clause
+
+* json-schema 0.4.0
+
 ## Apache-2.0
 
-* @ai-sdk/alibaba 2.0.32
-* @ai-sdk/amazon-bedrock 5.0.31
-* @ai-sdk/anthropic 4.0.39
-* @ai-sdk/azure 4.0.21
-* @ai-sdk/cohere 4.0.12
-* @ai-sdk/deepseek 3.0.13
-* @ai-sdk/gateway 4.0.60
-* @ai-sdk/google 4.0.39
-* @ai-sdk/google-vertex 5.0.48
-* @ai-sdk/groq 4.0.13
-* @ai-sdk/minimax 3.0.15
-* @ai-sdk/mistral 4.0.14
-* @ai-sdk/moonshotai 3.0.35
-* @ai-sdk/openai 4.0.20
-* @ai-sdk/openai-compatible 3.0.44
-* @ai-sdk/otel 1.0.74
-* @ai-sdk/provider 4.0.7
-* @ai-sdk/provider-utils 5.0.27
-* @ai-sdk/xai 4.0.18
-* @apm-js-collab/code-transformer 0.18.1
-* @apm-js-collab/tracing-hooks 0.13.0
+* @ai-sdk/alibaba 2.0.75
+* @ai-sdk/amazon-bedrock 5.0.123
+* @ai-sdk/anthropic 4.0.87
+* @ai-sdk/azure 4.0.109
+* @ai-sdk/cohere 4.0.68
+* @ai-sdk/deepseek 3.0.72
+* @ai-sdk/gateway 4.0.123
+* @ai-sdk/google 4.0.104
+* @ai-sdk/google-vertex 5.0.121
+* @ai-sdk/groq 4.0.69
+* @ai-sdk/minimax 3.0.64
+* @ai-sdk/mistral 4.0.71
+* @ai-sdk/moonshotai 3.0.76
+* @ai-sdk/openai 4.0.104
+* @ai-sdk/openai-compatible 3.0.77
+* @ai-sdk/otel 1.0.150
+* @ai-sdk/provider 4.0.33
+* @ai-sdk/provider-utils 5.0.67
+* @ai-sdk/xai 4.0.59
 * @aws-crypto/crc32 5.2.0
 * @aws-crypto/crc32c 5.2.0
 * @aws-crypto/sha1-browser 5.2.0
@@ -134,9 +108,9 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @discordjs/ws 1.2.3
 * @e965/xlsx 0.20.3
 * @getzep/zep-cloud 1.0.6
-* @getzep/zep-js 0.9.0
-* @google-cloud/resource-manager 5.3.0
-* @google-cloud/secret-manager 5.6.0
+* @getzep/zep-js 2.0.2
+* @google-cloud/resource-manager 6.0.1
+* @google-cloud/secret-manager 6.0.1
 * @google/genai 1.19.0
 * @google/generative-ai 0.24.0
 * @grpc/grpc-js 1.14.5
@@ -145,39 +119,53 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @internationalized/date 3.9.0
 * @internationalized/number 3.6.2
 * @mistralai/mistralai 2.7.0
+* @modelcontextprotocol/core 2.3.0
+* @modelcontextprotocol/server 2.3.0
 * @mozilla/readability 0.6.0
 * @openrouter/ai-sdk-provider 3.0.0
 * @opentelemetry/api 1.9.1
-* @opentelemetry/api-logs 0.220.0
-* @opentelemetry/configuration 0.217.0
-* @opentelemetry/context-async-hooks 2.10.0
+* @opentelemetry/api-logs 0.221.0
+* @opentelemetry/configuration 0.221.0
+* @opentelemetry/context-async-hooks 2.11.0
 * @opentelemetry/core 2.10.0
-* @opentelemetry/exporter-logs-otlp-grpc 0.217.0
-* @opentelemetry/exporter-logs-otlp-http 0.217.0
-* @opentelemetry/exporter-logs-otlp-proto 0.217.0
-* @opentelemetry/exporter-metrics-otlp-grpc 0.217.0
-* @opentelemetry/exporter-metrics-otlp-http 0.217.0
-* @opentelemetry/exporter-metrics-otlp-proto 0.217.0
-* @opentelemetry/exporter-prometheus 0.217.0
+* @opentelemetry/exporter-logs-otlp-grpc 0.221.0
+* @opentelemetry/exporter-logs-otlp-http 0.221.0
+* @opentelemetry/exporter-logs-otlp-proto 0.221.0
+* @opentelemetry/exporter-metrics-otlp-grpc 0.221.0
+* @opentelemetry/exporter-metrics-otlp-http 0.221.0
+* @opentelemetry/exporter-metrics-otlp-proto 0.221.0
+* @opentelemetry/exporter-prometheus 0.221.0
 * @opentelemetry/exporter-trace-otlp-grpc 0.221.0
 * @opentelemetry/exporter-trace-otlp-http 0.221.0
 * @opentelemetry/exporter-trace-otlp-proto 0.221.0
-* @opentelemetry/exporter-zipkin 2.7.1
-* @opentelemetry/instrumentation 0.220.0
+* @opentelemetry/exporter-zipkin 2.10.0
+* @opentelemetry/instrumentation 0.221.0
+* @opentelemetry/instrumentation-bunyan 0.66.0
+* @opentelemetry/instrumentation-console 0.3.0
 * @opentelemetry/instrumentation-http 0.221.0
+* @opentelemetry/instrumentation-mongodb 0.74.0
+* @opentelemetry/instrumentation-mysql 0.67.0
+* @opentelemetry/instrumentation-pg 0.73.0
+* @opentelemetry/instrumentation-redis 0.69.0
+* @opentelemetry/instrumentation-winston 0.65.0
 * @opentelemetry/otlp-exporter-base 0.221.0
 * @opentelemetry/otlp-grpc-exporter-base 0.221.0
 * @opentelemetry/otlp-transformer 0.221.0
-* @opentelemetry/propagator-b3 2.7.1
+* @opentelemetry/propagator-b3 2.10.0
 * @opentelemetry/propagator-jaeger 2.10.0
+* @opentelemetry/redis-common 0.38.3
+* @opentelemetry/resource-detector-azure 0.29.0
 * @opentelemetry/resources 2.10.0
 * @opentelemetry/sdk-logs 0.221.0
-* @opentelemetry/sdk-metrics 2.10.0
+* @opentelemetry/sdk-metrics 2.11.0
 * @opentelemetry/sdk-node 0.221.0
 * @opentelemetry/sdk-trace 2.10.0
 * @opentelemetry/sdk-trace-base 2.10.0
 * @opentelemetry/sdk-trace-node 2.10.0
+* @opentelemetry/sdk-trace-web 2.12.0
 * @opentelemetry/semantic-conventions 1.43.0
+* @opentelemetry/sql-common 0.42.0
+* @opentelemetry/winston-transport 0.31.0
 * @pinecone-database/pinecone 5.1.2
 * @qdrant/js-client-rest 1.19.0
 * @smithy/abort-controller 4.2.12
@@ -238,7 +226,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @xata.io/client 0.28.4
 * @zilliz/milvus2-sdk-node 2.5.7
 * agent-browser 0.26.0
-* ai 7.0.74
+* ai 7.0.150
 * axios-retry 4.5.0
 * bson 6.10.4
 * chromadb 3.2.0
@@ -251,9 +239,10 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * gaxios 7.1.4
 * gcp-metadata 8.1.2
 * google-auth-library 10.9.1
-* google-gax 4.6.1
+* google-gax 5.0.8
 * google-logging-utils 1.1.3
 * groq-sdk 0.19.0
+* highway 457c891775a7397bdb0376bb1031e6e027af1c48
 * ibm-cloud-sdk-core 5.5.0
 * import-in-the-middle 3.0.0
 * jmespath 0.16.0
@@ -265,21 +254,34 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * pdfjs-dist 6.3.289
 * playwright-core 1.62.1
 * prom-client 15.1.3
-* proto3-json-serializer 2.0.2
+* proto3-json-serializer 3.0.4
 * reflect-metadata 0.2.2
 * remend 1.3.0
 * retry-axios 2.6.0
 * rhea 3.0.4
-* semifies 1.0.0
 * snowflake-sdk 3.3.0
 * ssh2-sftp-client 12.1.0
 * swagger-ui-dist 5.11.0
-* teeny-request 9.0.0
+* teeny-request 10.1.4
 * ts-interface-checker 0.1.13
 * ts-toolbelt 9.6.0
 * tunnel-agent 0.6.0
 * typescript 6.0.2
+* wuffs e3f919ccfe3ef542cfc983a82146070258fb57f8
 * xml-name-validator 5.0.0
+
+## Apache-2.0 OR MIT
+
+* ctor 1.0.11
+* fastrand 2.5.0
+* nohash-hasher 0.2.0
+* pin-project-lite 0.2.17
+* rustc-hash 2.1.3
+* uuid 1.24.0
+
+## Apache-2.0 OR UPL-1.0
+
+* oracledb 6.10.0
 
 ## BlueOak-1.0.0
 
@@ -307,13 +309,19 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * entities 7.0.1
 * esprima 4.0.1
 * esprima-next 5.8.4
-* estraverse 5.3.0
 * json-schema-typed 8.0.2
+* libaom-sys 0.17.2+libaom.3.11.0
+* libavif 0.14.0
+* libavif-sys 0.17.0+libavif.1.0.4
 * lop 0.4.2
 * mammoth 1.12.1
 * nth-check 3.0.1
 * option 0.2.4
 * webidl-conversions 7.0.0
+
+## BSD-2-Clause OR MIT OR Apache-2.0
+
+* rc 1.2.8
 
 ## BSD-3-Clause
 
@@ -333,7 +341,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * charenc 0.0.2
 * crypt 0.0.2
 * d3-dsv 2.0.0
-* esquery 1.7.0
 * express-handlebars 8.0.1
 * fast-uri 3.1.8
 * flat 5.0.2
@@ -341,10 +348,12 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * ieee754 1.2.1
 * js-base64 3.7.8
 * jssha 3.3.1
+* libjxl 332feb17d17311c748445f7ee75c4fb55cc38530
+* libwebp 845d5476a866141ba35ac133f856fa62f0b7445f
 * md5 2.3.0
 * normalize-wheel-es 1.2.0
 * protobufjs 7.6.5
-* qs 6.15.2
+* qs 6.16.0
 * replacestream 4.0.3
 * rrule 2.8.1
 * rw 1.3.3
@@ -357,6 +366,22 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * stream-json 1.9.1
 * tough-cookie 4.1.4
 * weaviate-client 3.9.0
+
+## BSD-3-Clause AND IJG AND Zlib
+
+* libjpeg-turbo e14cbfaa85529d47f9f55b0f104a579c1061f9ad
+
+## FSL-1.1-ALv2
+
+* sentry 0.45.0
+
+## FTL
+
+* freetype 264b5fbf5b912b39f98d038bf75d39be0a73f21b
+
+## ICU
+
+* icu d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738
 
 ## ISC
 
@@ -385,11 +410,11 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * inherits 2.0.4
 * ini 1.3.8
 * isexe 2.0.0
-* isolated-vm 7.0.1
+* isolated-vm 7.0.2
 * jsonrepair 3.13.2
+* libloading 0.9.0
 * linkedom 0.18.13
 * markdown-it-task-lists 2.1.1
-* meriyah 6.1.4
 * minifaker 1.34.1
 * minimalistic-assert 1.0.1
 * minimatch 9.0.9
@@ -397,7 +422,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * once 1.4.0
 * pg-int8 1.0.1
 * picocolors 1.0.1
-* rimraf 2.6.3
+* rimraf 5.0.1
 * sax 1.2.4
 * saxes 6.0.0
 * semver 7.7.3
@@ -414,12 +439,15 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * yargs-parser 21.1.1
 * zod-to-json-schema 3.23.3
 
+## libpng-2.0
+
+* libpng d5515b5b8be3901aac04e5bd8bd5c89f287bcd33
+
 ## MIT
 
 * @1password/connect 1.4.2
 * @acuminous/bitsyntax 0.1.2
 * @anthropic-ai/sdk 0.115.0
-* @apm-js-collab/code-transformer-bundler-plugins 0.7.4
 * @asteasolutions/zod-to-openapi 7.3.4
 * @authenio/xml-encryption 2.0.2
 * @azure-rest/core-client 2.8.0
@@ -429,6 +457,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @azure/core-http-compat 2.4.0
 * @azure/core-lro 2.4.0
 * @azure/core-paging 1.6.2
+* @azure/core-process 1.0.0
 * @azure/core-rest-pipeline 1.24.0
 * @azure/core-tracing 1.3.1
 * @azure/core-util 1.13.1
@@ -438,9 +467,11 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @azure/keyvault-keys 4.10.2
 * @azure/keyvault-secrets 4.8.0
 * @azure/logger 1.3.0
+* @azure/monitor-opentelemetry-exporter 1.0.0-beta.46
 * @azure/msal-browser 4.27.0
 * @azure/msal-common 15.13.3
 * @azure/msal-node 3.8.4
+* @azure/opentelemetry-instrumentation-azure-sdk 1.1.0-beta.1
 * @azure/search-documents 12.1.0
 * @azure/storage-blob 12.32.0
 * @azure/storage-common 12.4.0
@@ -494,7 +525,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @joplin/turndown-plugin-gfm 1.0.64
 * @jridgewell/gen-mapping 0.3.13
 * @jridgewell/resolve-uri 3.1.2
-* @jridgewell/sourcemap-codec 1.5.5
+* @jridgewell/sourcemap-codec 1.6.0
 * @jridgewell/trace-mapping 0.3.31
 * @js-sdsl/ordered-map 4.4.2
 * @kafkajs/confluent-schema-registry 3.8.0
@@ -515,13 +546,13 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @langchain/langgraph-checkpoint 1.1.6
 * @langchain/langgraph-sdk 1.12.4
 * @langchain/mistralai 1.1.0
-* @langchain/mongodb 1.0.1
+* @langchain/mongodb 1.3.1
 * @langchain/ollama 1.2.6
 * @langchain/openai 1.4.4
 * @langchain/pinecone 1.0.1
 * @langchain/protocol 0.0.19
 * @langchain/qdrant 1.0.1
-* @langchain/redis 1.0.1
+* @langchain/redis 1.1.1
 * @langchain/textsplitters 1.0.1
 * @langchain/weaviate 1.0.1
 * @lezer/common 1.2.1
@@ -529,31 +560,36 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @lezer/lr 1.4.5
 * @linear/sdk 76.0.0
 * @marijn/find-cluster-break 1.0.2
-* @microsoft/agents-a365-observability 1.0.0
 * @microsoft/agents-a365-runtime 1.0.0
 * @microsoft/agents-a365-tooling 1.0.0
 * @microsoft/agents-activity 1.6.1
 * @microsoft/agents-hosting 1.6.1
 * @microsoft/agents-telemetry 1.6.1
+* @microsoft/applicationinsights-web-snippet 1.2.3
+* @microsoft/opentelemetry 1.5.0
 * @microsoft/teams.api 2.0.16
 * @microsoft/teams.apps 2.0.16
 * @microsoft/teams.cards 2.0.16
 * @microsoft/teams.common 2.0.16
 * @microsoft/teams.graph 2.0.16
 * @microsoft/teams.graph-endpoints 2.0.16
-* @modelcontextprotocol/core 2.0.0
 * @modelcontextprotocol/ext-apps 1.3.2
 * @modelcontextprotocol/node 2.0.0
-* @modelcontextprotocol/sdk 1.31.0
-* @modelcontextprotocol/server 2.0.0
+* @modelcontextprotocol/sdk 1.32.0
 * @mongodb-js/saslprep 1.3.2
 * @napi-rs/canvas 1.0.11
+* @napi-rs/canvas-linux-arm64-musl 1.0.11
+* @napi-rs/canvas-linux-x64-musl 1.0.11
+* @napi-rs/image 1.15.0
+* @napi-rs/image-linux-arm64-musl 1.15.0
+* @napi-rs/image-linux-x64-musl 1.15.0
 * @noble/hashes 1.8.0
 * @nodable/entities 2.1.0
 * @nodelib/fs.scandir 2.1.5
 * @nodelib/fs.stat 2.0.5
 * @nodelib/fs.walk 1.2.8
 * @oracle/langchain-oracledb 0.2.0
+* @oxc-project/types 0.152.0
 * @paralleldrive/cuid2 2.2.2
 * @parcel/watcher 2.5.1
 * @petamoriken/float16 3.9.2
@@ -572,16 +608,17 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @sapphire/shapeshift 4.0.0
 * @sapphire/snowflake 3.5.5
 * @selderee/plugin-htmlparser2 0.11.0
-* @sentry/conventions 0.16.0
-* @sentry/core 10.70.0
-* @sentry/node 10.70.0
-* @sentry/node-core 10.70.0
-* @sentry/node-cpu-profiler 2.4.3
-* @sentry/node-native 10.70.0
+* @sentry/bundler-plugins 11.8.0
+* @sentry/conventions 0.27.0
+* @sentry/core 11.8.0
+* @sentry/node 11.8.0
+* @sentry/node-cpu-profiler 2.4.4
+* @sentry/node-native 11.8.0
 * @sentry/node-native-stacktrace 0.5.2
-* @sentry/opentelemetry 10.70.0
-* @sentry/profiling-node 10.70.0
-* @sentry/server-utils 10.70.0
+* @sentry/opentelemetry 11.8.0
+* @sentry/profiling-node 11.8.0
+* @sentry/server-runtime-injection 11.8.0
+* @sentry/server-utils 11.8.0
 * @simple-git/args-pathspec 1.0.4
 * @simple-git/argv-parser 2.0.1
 * @slack/logger 4.0.1
@@ -598,7 +635,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @supabase/realtime-js 2.112.3
 * @supabase/storage-js 2.112.3
 * @supabase/supabase-js 2.112.3
-* @supercharge/promise-pool 3.1.0
 * @sxzz/popperjs-es 2.11.8
 * @tanstack/table-core 8.21.2
 * @tanstack/virtual-core 3.13.9
@@ -643,12 +679,10 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @tiptap/vue-3 3.30.5
 * @tokenizer/inflate 0.4.1
 * @tokenizer/token 0.3.0
-* @tootallnate/once 2.0.1
 * @types/body-parser 1.19.2
-* @types/caseless 0.12.5
+* @types/bunyan 1.8.11
 * @types/connect 3.4.38
 * @types/debug 4.1.12
-* @types/estree 1.0.8
 * @types/express 5.0.1
 * @types/express-serve-static-core 5.0.6
 * @types/http-proxy 1.17.16
@@ -656,17 +690,18 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * @types/jsonwebtoken 9.0.10
 * @types/lodash 4.17.17
 * @types/lodash-es 4.17.12
-* @types/long 4.0.2
 * @types/luxon 3.7.1
 * @types/mdast 4.0.4
 * @types/mime 3.0.1
 * @types/ms 2.1.0
+* @types/mysql 2.15.27
 * @types/node 20.19.41
 * @types/node-fetch 2.6.13
+* @types/pg 8.15.6
+* @types/pg-pool 2.0.7
 * @types/qs 6.9.15
 * @types/range-parser 1.2.4
 * @types/readable-stream 4.0.25
-* @types/request 2.48.12
 * @types/retry 0.12.0
 * @types/send 0.17.4
 * @types/serve-static 1.15.0
@@ -713,7 +748,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * alasql 4.4.0
 * alien-signals 3.2.1
 * amqplib 0.10.6
-* ansi-regex 6.0.1
+* ansi-regex 5.0.1
 * ansi-styles 4.3.0
 * any-promise 1.3.0
 * anynum 1.0.1
@@ -732,7 +767,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * assert-options 0.8.1
 * assert-plus 1.0.0
 * ast-types 0.16.1
-* astring 1.9.0
 * async 3.2.4
 * async-mutex 0.5.0
 * async-validator 4.2.5
@@ -747,6 +781,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * bail 2.0.2
 * balanced-match 1.0.2
 * base64-js 1.5.1
+* base64-simd 0.8.0
 * basic-auth 2.0.1
 * bcryptjs 2.4.3
 * bignumber.js 9.1.2
@@ -758,9 +793,10 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * bn.js 5.2.3
 * body-parser 2.3.0
 * bowser 2.11.0
-* brace-expansion 5.0.12
+* brace-expansion 2.1.7
 * braces 3.0.3
 * broker-factory 3.1.15
+* brotli 6d03dfbedda1615c4cba1211f8d81735575209c8
 * buffer 5.6.0
 * buffer-from 1.1.2
 * buffer-more-ints 1.0.0
@@ -774,7 +810,9 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * call-bound 1.0.4
 * callsites 3.1.0
 * camelcase 6.3.0
+* canvas 0.1.0
 * ccount 2.0.1
+* cfb 0.14.0
 * chalk 4.1.2
 * change-case 5.4.4
 * character-entities 2.0.2
@@ -788,6 +826,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * clsx 2.1.1
 * cohere-ai 7.14.0
 * color 3.2.1
+* color_quant 1.1.0
 * color-convert 1.9.3
 * color-name 1.1.3
 * color-string 1.9.1
@@ -803,6 +842,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * consola 3.4.2
 * content-disposition 1.0.0
 * content-type 1.0.5
+* convert_case 0.11.0
 * cookie 0.7.2
 * cookie-parser 1.4.7
 * cookie-signature 1.0.6
@@ -828,7 +868,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * date-fns 2.30.0
 * date-fns-tz 2.0.0
 * dateformat 3.0.3
-* dayjs 1.11.10
+* dayjs 1.11.23
 * debug 4.4.3
 * decimal.js 10.4.3
 * decode-named-character-reference 1.3.0
@@ -867,7 +907,6 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * engine.io-parser 5.2.3
 * es-define-property 1.0.1
 * es-errors 1.3.0
-* es-module-lexer 2.3.2
 * es-object-atoms 1.1.1
 * es-set-tostringtag 2.1.0
 * escalade 3.2.0
@@ -881,6 +920,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * eventsource 3.0.6
 * eventsource-parser 3.0.8
 * expand-tilde 2.0.2
+* expat 6154446fccefbf3ca644894f598969113b0c7bcd
 * express 5.1.0
 * express-prom-bundle 8.0.0
 * express-rate-limit 8.2.2
@@ -901,7 +941,8 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * finalhandler 2.1.0
 * first-match 0.0.1
 * fn.name 1.1.0
-* follow-redirects 1.16.0
+* fnv 1.0.7
+* follow-redirects 1.16.1
 * for-each 0.3.5
 * form-data 4.0.6
 * form-data-encoder 4.0.2
@@ -926,8 +967,9 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * gopd 1.2.0
 * graphql 16.11.0
 * graphql-request 6.1.0
-* gtoken 7.1.0
+* gtoken 8.0.0
 * handlebars 4.7.10
+* harfbuzz 9cb1fee51069b206effb4736e443b038d230789d
 * has-flag 4.0.0
 * has-property-descriptors 1.0.2
 * has-symbols 1.1.0
@@ -938,7 +980,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * helmet 8.1.0
 * help-me 5.0.0
 * homedir-polyfill 1.0.3
-* hono 4.12.34
+* hono 4.13.11
 * html-encoding-sniffer 4.0.0
 * html-escaper 3.0.3
 * html-to-text 9.0.5
@@ -952,11 +994,13 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * iceberg-js 0.8.1
 * iconv-lite 0.6.3
 * ignore 5.3.2
+* imagesize 0.15.0
 * imapflow 1.7.1
 * immediate 3.0.6
+* infer 0.22.0
 * interpret 1.4.0
 * ioredis 5.3.2
-* ip-address 10.3.1
+* ip-address 10.7.1
 * ipaddr.js 1.9.1
 * is-arguments 1.1.1
 * is-arrayish 0.3.2
@@ -1011,10 +1055,11 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * kuler 2.0.0
 * langchain 1.2.30
 * langsmith 0.6.0
-* launder 1.7.1
+* launder 1.7.2
 * ldapts 8.1.7
 * leac 0.6.0
 * libbase64 1.3.0
+* libmimalloc-sys2 0.1.60
 * libmime 5.4.2
 * libqp 2.1.1
 * lie 3.3.0
@@ -1045,7 +1090,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * lru.min 1.1.4
 * luxon 3.7.2
 * magic-bytes.js 1.13.1
-* magic-string 0.30.21
+* magic-string 1.4.2
 * mailparser 3.9.3
 * make-dir 3.1.0
 * mappersmith 2.45.0
@@ -1102,6 +1147,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * micromark-util-symbol 2.0.1
 * micromark-util-types 2.0.2
 * micromatch 4.0.8
+* mimalloc-safe 0.1.64
 * mime-db 1.54.0
 * mime-types 3.0.2
 * mimic-response 3.1.0
@@ -1110,7 +1156,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * mkdirp 2.1.3
 * mkdirp-classic 0.5.3
 * module-details-from-path 1.0.4
-* moment 2.30.1
+* moment 2.31.0
 * moment-timezone 0.5.48
 * mqtt 5.16.0
 * mqtt-packet 9.0.0
@@ -1118,7 +1164,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * msgpackr 1.11.2
 * mssql 12.7.0
 * muggle-string 0.4.1
-* multer 2.3.0
+* multer 2.4.0
 * mustache 4.2.0
 * mysql2 3.23.1
 * mz 2.7.0
@@ -1126,7 +1172,12 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * nan 2.26.2
 * nanoclone 0.2.1
 * nanoid 3.3.18
+* napi 3.12.1
+* napi-build 2.4.1
 * napi-build-utils 2.0.0
+* napi-derive 3.6.3
+* napi-derive-backend 6.1.2
+* napi-sys 3.3.0
 * native-duplexpair 1.0.0
 * negotiator 0.6.4
 * neo-async 2.6.2
@@ -1143,6 +1194,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * node-machine-id 1.1.12
 * node-rsa 2.0.0
 * node-ssh 13.2.0
+* nom 8.0.0
 * nub 0.0.0
 * nwsapi 2.2.7
 * oauth-1.0a 2.2.6
@@ -1165,6 +1217,8 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * openid-client 6.8.4
 * orderedmap 2.1.1
 * otpauth 9.1.1
+* outref 0.5.2
+* oxc-parser 0.152.0
 * p-cancelable 2.1.1
 * p-finally 1.0.0
 * p-lazy 3.1.0
@@ -1196,6 +1250,10 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * pg-protocol 1.15.0
 * pg-types 2.2.0
 * pgpass 1.0.5
+* phf 0.14.0
+* phf_generator 0.14.0
+* phf_macros 0.14.0
+* phf_shared 0.14.0
 * picomatch 2.3.2
 * pino 10.3.1
 * pino-abstract-transport 3.0.0
@@ -1203,7 +1261,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * pirates 4.0.7
 * pkce-challenge 5.0.0
 * possible-typed-array-names 1.1.0
-* postcss 8.5.23
+* postcss 8.5.31
 * postgres-array 2.0.0
 * postgres-bytea 1.0.0
 * postgres-date 1.0.7
@@ -1243,6 +1301,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * quickjs-emscripten-core 0.32.0
 * random-bytes 1.0.0
 * range-parser 1.2.1
+* rate-limit-redis 4.3.1
 * raw-body 3.0.0
 * readable-stream 2.3.8
 * readdirp 4.1.2
@@ -1263,9 +1322,10 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * requires-port 1.0.0
 * resolve 1.22.11
 * retry 0.13.1
-* retry-request 7.0.2
+* retry-request 8.0.4
 * reusify 1.0.4
 * rfdc 1.4.1
+* rgb 0.8.53
 * rndm 1.2.0
 * rope-sequence 1.3.4
 * router 2.2.0
@@ -1278,7 +1338,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * safe-stable-stringify 2.4.0
 * safer-buffer 2.1.2
 * samlify 2.13.0
-* sanitize-html 2.17.7
+* sanitize-html 2.18.0
 * sb-promise-queue 2.1.0
 * sb-scandir 3.1.0
 * selderee 0.11.0
@@ -1291,8 +1351,8 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * shell-escape 0.2.0
 * shell-quote 1.11.0
 * showdown 2.1.0
-* side-channel 1.1.0
-* side-channel-list 1.0.0
+* side-channel 1.1.1
+* side-channel-list 1.0.1
 * side-channel-map 1.0.1
 * side-channel-weakmap 1.0.2
 * simple-concat 1.0.1
@@ -1300,6 +1360,8 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * simple-git 4.0.2
 * simple-lru-cache 0.0.2
 * simple-swizzle 0.2.2
+* siphasher 1.0.3
+* slab 0.4.12
 * slugify 1.6.6
 * smart-buffer 4.2.0
 * socket.io-client 4.8.3
@@ -1330,7 +1392,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * stubs 3.0.0
 * style-mod 4.1.0
 * sucrase 3.35.0
-* supports-color 7.2.0
+* supports-color 8.1.1
 * supports-preserve-symlinks-flag 1.0.0
 * swagger-ui-express 5.0.1
 * symbol-tree 3.2.4
@@ -1353,6 +1415,8 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * to-regex-range 5.0.1
 * toidentifier 1.0.1
 * token-types 6.1.2
+* tokio 1.53.1
+* tokio-stream 0.1.19
 * toml 4.2.0
 * toposort 2.0.2
 * tr46 5.0.0
@@ -1375,7 +1439,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * uid-safe 2.1.5
 * uint8array-extras 1.5.0
 * underscore 1.13.8
-* undici 7.29.1
+* undici 7.30.1
 * undici-types 6.21.0
 * unified 11.0.5
 * unist-util-is 6.0.1
@@ -1394,6 +1458,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * vfile 6.0.3
 * vfile-message 4.0.3
 * vm2 3.12.2
+* vsimd 0.8.0
 * vue 3.5.26
 * vue-boring-avatars 1.3.0
 * vue-demi 0.14.10
@@ -1401,7 +1466,7 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * vue-router 4.5.0
 * w3c-keyname 2.2.6
 * w3c-xmlserializer 5.0.0
-* web-streams-polyfill 4.0.0-beta.3
+* web-streams-polyfill 3.2.1
 * whatwg-encoding 3.1.1
 * whatwg-fetch 3.6.20
 * whatwg-mimetype 4.0.0
@@ -1433,9 +1498,81 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * yargs 17.7.2
 * yocto-queue 0.1.0
 * yup 0.32.11
+* zmij 1.0.23
 * zod 3.25.76
 * zod-from-json-schema 0.0.5
 * zwitch 2.0.4
+
+## MIT AND BSD-3-Clause
+
+* sha.js 2.4.12
+
+## MIT AND Zlib
+
+* pako 1.0.11
+
+## MIT OR Apache-2.0
+
+* anyhow 1.0.104
+* bitflags 2.13.1
+* bumpalo 3.20.3
+* cc 1.4.0
+* cfg-if 1.0.4
+* cmake 0.1.58
+* dtoa 1.0.11
+* find-msvc-tools 0.1.9
+* futures 0.3.33
+* futures-channel 0.3.33
+* futures-core 0.3.33
+* futures-executor 0.3.33
+* futures-io 0.3.33
+* futures-macro 0.3.33
+* futures-sink 0.3.33
+* futures-task 0.3.33
+* futures-util 0.3.33
+* gif 0.14.2
+* hermit-abi 0.5.2
+* itoa 1.0.18
+* js-sys 0.3.103
+* libc 0.2.189
+* num_cpus 1.17.0
+* once_cell 1.21.4
+* proc-macro2 1.0.107
+* quote 1.0.47
+* regex 1.13.1
+* regex-automata 0.4.16
+* regex-syntax 0.8.11
+* rustversion 1.0.23
+* serde 1.0.229
+* serde_core 1.0.229
+* serde_derive 1.0.229
+* serde_json 1.0.151
+* shlex 2.0.1
+* smallvec 1.15.2
+* syn 2.0.119
+* syn 3.0.3
+* thiserror 2.0.19
+* thiserror-impl 2.0.19
+* unicode-segmentation 1.13.3
+* wasm-bindgen 0.2.126
+* wasm-bindgen-macro 0.2.126
+* wasm-bindgen-macro-support 0.2.126
+* wasm-bindgen-shared 0.2.126
+* web-time 1.1.0
+* weezl 0.1.12
+* windows-link 0.2.1
+
+## MIT OR EUPL-1.1+
+
+* @zone-eu/mailsplit 5.4.15
+
+## MIT OR GPL-3.0-or-later
+
+* jszip 3.10.1
+
+## MIT OR WTFPL
+
+* expand-template 2.0.3
 
 ## MIT-0
 
@@ -1445,6 +1582,10 @@ The n8n software includes open source packages, libraries, and modules, each of 
 ## MPL-2.0
 
 * @resvg/resvg-wasm 2.6.2
+* cssparser 0.38.0
+* cssparser-color 0.6.0
+* cssparser-macros 0.7.0
+* dtoa-short 0.3.5
 
 ## Python-2.0
 
@@ -1457,6 +1598,19 @@ The n8n software includes open source packages, libraries, and modules, each of 
 * isbot 3.6.13
 * tweetnacl 0.14.5
 
+## Unlicense OR MIT
+
+* aho-corasick 1.1.4
+* memchr 2.8.3
+
+## Zlib
+
+* zlib 646b7f569718921d7d4b5b8e22572ff6c76f2596
+
+## Zlib OR Apache-2.0 OR MIT
+
+* bytemuck 1.25.2
+
 # License Texts
 
 The license text below is reproduced from a single representative package per license.
@@ -1464,7 +1618,28 @@ Copyright notices identify the contributor of that representative package only; 
 listed component carries its own copyright. The verbatim LICENSE file of every package
 is distributed inside its `node_modules/` directory in the n8n release artefact.
 
-## (AFL-2.1 OR BSD-3-Clause) License Text
+## (MIT OR Apache-2.0) AND Unicode-3.0 License Text
+
+(MIT OR Apache-2.0) AND Unicode-3.0 license text not available.
+
+## 0BSD License Text
+
+```
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+```
+
+## AFL-2.1 OR BSD-3-Clause License Text
 
 ```
 Dojo is available under *either* the terms of the BSD 3-Clause "New" License *or* the
@@ -1664,7 +1839,202 @@ modification. This license may not be modified without the express written
 permission of its copyright owner.
 ```
 
-## (Apache-2.0 OR UPL-1.0) License Text
+## Apache-2.0 License Text
+
+```
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+```
+
+## Apache-2.0 OR MIT License Text
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2010-2020 Robert Kieffer and other contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## Apache-2.0 OR UPL-1.0 License Text
 
 ```
 Copyright (c) 2015, 2025 Oracle and/or its affiliates.
@@ -1898,7 +2268,92 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 END OF TERMS AND CONDITIONS
 ```
 
-## (BSD-2-Clause OR MIT OR Apache-2.0) License Text
+## BlueOak-1.0.0 License Text
+
+```
+All packages under `src/` are licensed according to the terms in
+their respective `LICENSE` or `LICENSE.md` files.
+
+The remainder of this project is licensed under the Blue Oak
+Model License, as follows:
+
+-----
+
+# Blue Oak Model License
+
+Version 1.0.0
+
+## Purpose
+
+This license gives everyone as much permission to work with
+this software as possible, while protecting contributors
+from liability.
+
+## Acceptance
+
+In order to receive this license, you must agree to its
+rules.  The rules of this license are both obligations
+under that agreement and conditions to your license.
+You must not do anything with this software that triggers
+a rule that you cannot or will not follow.
+
+## Copyright
+
+Each contributor licenses you to do everything with this
+software that would otherwise infringe that contributor's
+copyright in it.
+
+## Notices
+
+You must ensure that everyone who gets a copy of
+any part of this software from you, with or without
+changes, also gets the text of this license or a link to
+<https://blueoakcouncil.org/license/1.0.0>.
+
+## Excuse
+
+If anyone notifies you in writing that you have not
+complied with [Notices](#notices), you can keep your
+license by taking all practical steps to comply within 30
+days after the notice.  If you do not do so, your license
+ends immediately.
+
+## Patent
+
+Each contributor licenses you to do everything with this
+software that would otherwise infringe any patent claims
+they can license or become able to license.
+
+## Reliability
+
+No contributor can revoke this license.
+
+## No Liability
+
+***As far as the law allows, this software comes as is,
+without any warranty or condition, and no contributor
+will be liable to anyone for any damages related to this
+software or this license, under any kind of legal claim.***
+```
+
+## BSD-2-Clause License Text
+
+```
+# The BSD 2-Clause License
+
+Copyright (c) 2014, Domenic Denicola
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+## BSD-2-Clause OR MIT OR Apache-2.0 License Text
 
 ```
 Apache License, Version 2.0
@@ -1918,7 +2373,214 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-## (MIT AND BSD-3-Clause) License Text
+## BSD-3-Clause License Text
+
+```
+Copyright (c) 2020-2025, Weaviate B.V.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+## BSD-3-Clause AND IJG AND Zlib License Text
+
+BSD-3-Clause AND IJG AND Zlib license text not available.
+
+## FSL-1.1-ALv2 License Text
+
+```
+# Functional Source License, Version 1.1, Apache 2.0 Future License
+
+## Abbreviation
+
+FSL-1.1-Apache-2.0
+
+## Notice
+
+Copyright 2025 Functional Software, Inc. dba Sentry
+
+## Terms and Conditions
+
+### Licensor ("We")
+
+The party offering the Software under these Terms and Conditions.
+
+### The Software
+
+The "Software" is each version of the software that we make available under
+these Terms and Conditions, as indicated by our inclusion of these Terms and
+Conditions with the Software.
+
+### License Grant
+
+Subject to your compliance with this License Grant and the Patents,
+Redistribution and Trademark clauses below, we hereby grant you the right to
+use, copy, modify, create derivative works, publicly perform, publicly display
+and redistribute the Software for any Permitted Purpose identified below.
+
+### Permitted Purpose
+
+A Permitted Purpose is any purpose other than a Competing Use. A Competing Use
+means making the Software available to others in a commercial product or
+service that:
+
+1. substitutes for the Software;
+
+2. substitutes for any other product or service we offer using the Software
+   that exists as of the date we make the Software available; or
+
+3. offers the same or substantially similar functionality as the Software.
+
+Permitted Purposes specifically include using the Software:
+
+1. for your internal use and access;
+
+2. for non-commercial education;
+
+3. for non-commercial research; and
+
+4. in connection with professional services that you provide to a licensee
+   using the Software in accordance with these Terms and Conditions.
+
+### Patents
+
+To the extent your use for a Permitted Purpose would necessarily infringe our
+patents, the license grant above includes a license under our patents. If you
+make a claim against any party that the Software infringes or contributes to
+the infringement of any patent, then your patent license to the Software ends
+immediately.
+
+### Redistribution
+
+The Terms and Conditions apply to all copies, modifications and derivatives of
+the Software.
+
+If you redistribute any copies, modifications or derivatives of the Software,
+you must include a copy of or a link to these Terms and Conditions and not
+remove any copyright notices provided in or with the Software.
+
+### Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING WITHOUT LIMITATION WARRANTIES OF FITNESS FOR A PARTICULAR
+PURPOSE, MERCHANTABILITY, TITLE OR NON-INFRINGEMENT.
+
+IN NO EVENT WILL WE HAVE ANY LIABILITY TO YOU ARISING OUT OF OR RELATED TO THE
+SOFTWARE, INCLUDING INDIRECT, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES,
+EVEN IF WE HAVE BEEN INFORMED OF THEIR POSSIBILITY IN ADVANCE.
+
+### Trademarks
+
+Except for displaying the License Details and identifying us as the origin of
+the Software, you have no right under these Terms and Conditions to use our
+trademarks, trade names, service marks or product names.
+
+## Grant of Future License
+
+We hereby irrevocably grant you an additional license to use the Software under
+the Apache License, Version 2.0 that is effective on the second anniversary of
+the date we make the Software available. On or after that date, you may use the
+Software under the Apache License, Version 2.0, in which case the following
+will apply:
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+<!-- packages/cli/LICENSE.md is a copy of ../LICENSE.md (the canonical source in this repo). Both files must remain byte-identical. -->
+```
+
+## FTL License Text
+
+FTL license text not available.
+
+## ICU License Text
+
+ICU license text not available.
+
+## ISC License Text
+
+```
+ISC License
+
+Copyright (c) 2020, Stefan Terdell
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+```
+
+## libpng-2.0 License Text
+
+libpng-2.0 license text not available.
+
+## MIT License Text
+
+```
+(The MIT License)
+
+Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## MIT AND BSD-3-Clause License Text
 
 ```
 Copyright (c) 2013-2018 sha.js contributors
@@ -1971,7 +2633,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## (MIT AND Zlib) License Text
+## MIT AND Zlib License Text
 
 ```
 (The MIT License)
@@ -1997,7 +2659,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-## (MIT OR EUPL-1.1+) License Text
+## MIT OR Apache-2.0 License Text
+
+MIT OR Apache-2.0 license text not available.
+
+## MIT OR EUPL-1.1+ License Text
 
 ```
 EUROOPA LIIDU TARKVARA VABA KASUTUSE LITSENTS v. 1.2
@@ -2155,7 +2821,7 @@ Euroopa Komisjon võib käesolevat lisa ajakohastada loetletud litsentside hilis
 Kõigi muude käesoleva liite muudatuste või täienduste jaoks on vaja koostada EUPLi uus versioon.
 ```
 
-## (MIT OR GPL-3.0-or-later) License Text
+## MIT OR GPL-3.0-or-later License Text
 
 ```
 JSZip is dual licensed. At your choice you may use it under the MIT license *or* the GPLv3
@@ -2811,7 +3477,7 @@ copy of the Program in return for a fee.
                      END OF TERMS AND CONDITIONS
 ```
 
-## (MIT OR WTFPL) License Text
+## MIT OR WTFPL License Text
 
 ```
 The MIT License (MIT)
@@ -2835,368 +3501,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-```
-
-## 0BSD License Text
-
-```
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-```
-
-## Apache-2.0 License Text
-
-```
-Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
-
-   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
-
-   1. Definitions.
-
-      "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
-
-      "Licensor" shall mean the copyright owner or entity authorized by
-      the copyright owner that is granting the License.
-
-      "Legal Entity" shall mean the union of the acting entity and all
-      other entities that control, are controlled by, or are under common
-      control with that entity. For the purposes of this definition,
-      "control" means (i) the power, direct or indirect, to cause the
-      direction or management of such entity, whether by contract or
-      otherwise, or (ii) ownership of fifty percent (50%) or more of the
-      outstanding shares, or (iii) beneficial ownership of such entity.
-
-      "You" (or "Your") shall mean an individual or Legal Entity
-      exercising permissions granted by this License.
-
-      "Source" form shall mean the preferred form for making modifications,
-      including but not limited to software source code, documentation
-      source, and configuration files.
-
-      "Object" form shall mean any form resulting from mechanical
-      transformation or translation of a Source form, including but
-      not limited to compiled object code, generated documentation,
-      and conversions to other media types.
-
-      "Work" shall mean the work of authorship, whether in Source or
-      Object form, made available under the License, as indicated by a
-      copyright notice that is included in or attached to the work
-      (an example is provided in the Appendix below).
-
-      "Derivative Works" shall mean any work, whether in Source or Object
-      form, that is based on (or derived from) the Work and for which the
-      editorial revisions, annotations, elaborations, or other modifications
-      represent, as a whole, an original work of authorship. For the purposes
-      of this License, Derivative Works shall not include works that remain
-      separable from, or merely link (or bind by name) to the interfaces of,
-      the Work and Derivative Works thereof.
-
-      "Contribution" shall mean any work of authorship, including
-      the original version of the Work and any modifications or additions
-      to that Work or Derivative Works thereof, that is intentionally
-      submitted to Licensor for inclusion in the Work by the copyright owner
-      or by an individual or Legal Entity authorized to submit on behalf of
-      the copyright owner. For the purposes of this definition, "submitted"
-      means any form of electronic, verbal, or written communication sent
-      to the Licensor or its representatives, including but not limited to
-      communication on electronic mailing lists, source code control systems,
-      and issue tracking systems that are managed by, or on behalf of, the
-      Licensor for the purpose of discussing and improving the Work, but
-      excluding communication that is conspicuously marked or otherwise
-      designated in writing by the copyright owner as "Not a Contribution."
-
-      "Contributor" shall mean Licensor and any individual or Legal Entity
-      on behalf of whom a Contribution has been received by Licensor and
-      subsequently incorporated within the Work.
-
-   2. Grant of Copyright License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      copyright license to reproduce, prepare Derivative Works of,
-      publicly display, publicly perform, sublicense, and distribute the
-      Work and such Derivative Works in Source or Object form.
-
-   3. Grant of Patent License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      (except as stated in this section) patent license to make, have made,
-      use, offer to sell, sell, import, and otherwise transfer the Work,
-      where such license applies only to those patent claims licensable
-      by such Contributor that are necessarily infringed by their
-      Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
-      institute patent litigation against any entity (including a
-      cross-claim or counterclaim in a lawsuit) alleging that the Work
-      or a Contribution incorporated within the Work constitutes direct
-      or contributory patent infringement, then any patent licenses
-      granted to You under this License for that Work shall terminate
-      as of the date such litigation is filed.
-
-   4. Redistribution. You may reproduce and distribute copies of the
-      Work or Derivative Works thereof in any medium, with or without
-      modifications, and in Source or Object form, provided that You
-      meet the following conditions:
-
-      (a) You must give any other recipients of the Work or
-          Derivative Works a copy of this License; and
-
-      (b) You must cause any modified files to carry prominent notices
-          stating that You changed the files; and
-
-      (c) You must retain, in the Source form of any Derivative Works
-          that You distribute, all copyright, patent, trademark, and
-          attribution notices from the Source form of the Work,
-          excluding those notices that do not pertain to any part of
-          the Derivative Works; and
-
-      (d) If the Work includes a "NOTICE" text file as part of its
-          distribution, then any Derivative Works that You distribute must
-          include a readable copy of the attribution notices contained
-          within such NOTICE file, excluding those notices that do not
-          pertain to any part of the Derivative Works, in at least one
-          of the following places: within a NOTICE text file distributed
-          as part of the Derivative Works; within the Source form or
-          documentation, if provided along with the Derivative Works; or,
-          within a display generated by the Derivative Works, if and
-          wherever such third-party notices normally appear. The contents
-          of the NOTICE file are for informational purposes only and
-          do not modify the License. You may add Your own attribution
-          notices within Derivative Works that You distribute, alongside
-          or as an addendum to the NOTICE text from the Work, provided
-          that such additional attribution notices cannot be construed
-          as modifying the License.
-
-      You may add Your own copyright statement to Your modifications and
-      may provide additional or different license terms and conditions
-      for use, reproduction, or distribution of Your modifications, or
-      for any such Derivative Works as a whole, provided Your use,
-      reproduction, and distribution of the Work otherwise complies with
-      the conditions stated in this License.
-
-   5. Submission of Contributions. Unless You explicitly state otherwise,
-      any Contribution intentionally submitted for inclusion in the Work
-      by You to the Licensor shall be under the terms and conditions of
-      this License, without any additional terms or conditions.
-      Notwithstanding the above, nothing herein shall supersede or modify
-      the terms of any separate license agreement you may have executed
-      with Licensor regarding such Contributions.
-
-   6. Trademarks. This License does not grant permission to use the trade
-      names, trademarks, service marks, or product names of the Licensor,
-      except as required for reasonable and customary use in describing the
-      origin of the Work and reproducing the content of the NOTICE file.
-
-   7. Disclaimer of Warranty. Unless required by applicable law or
-      agreed to in writing, Licensor provides the Work (and each
-      Contributor provides its Contributions) on an "AS IS" BASIS,
-      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-      implied, including, without limitation, any warranties or conditions
-      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-      PARTICULAR PURPOSE. You are solely responsible for determining the
-      appropriateness of using or redistributing the Work and assume any
-      risks associated with Your exercise of permissions under this License.
-
-   8. Limitation of Liability. In no event and under no legal theory,
-      whether in tort (including negligence), contract, or otherwise,
-      unless required by applicable law (such as deliberate and grossly
-      negligent acts) or agreed to in writing, shall any Contributor be
-      liable to You for damages, including any direct, indirect, special,
-      incidental, or consequential damages of any character arising as a
-      result of this License or out of the use or inability to use the
-      Work (including but not limited to damages for loss of goodwill,
-      work stoppage, computer failure or malfunction, or any and all
-      other commercial damages or losses), even if such Contributor
-      has been advised of the possibility of such damages.
-
-   9. Accepting Warranty or Additional Liability. While redistributing
-      the Work or Derivative Works thereof, You may choose to offer,
-      and charge a fee for, acceptance of support, warranty, indemnity,
-      or other liability obligations and/or rights consistent with this
-      License. However, in accepting such obligations, You may act only
-      on Your own behalf and on Your sole responsibility, not on behalf
-      of any other Contributor, and only if You agree to indemnify,
-      defend, and hold each Contributor harmless for any liability
-      incurred by, or claims asserted against, such Contributor by reason
-      of your accepting any such warranty or additional liability.
-
-   END OF TERMS AND CONDITIONS
-```
-
-## BlueOak-1.0.0 License Text
-
-```
-All packages under `src/` are licensed according to the terms in
-their respective `LICENSE` or `LICENSE.md` files.
-
-The remainder of this project is licensed under the Blue Oak
-Model License, as follows:
-
------
-
-# Blue Oak Model License
-
-Version 1.0.0
-
-## Purpose
-
-This license gives everyone as much permission to work with
-this software as possible, while protecting contributors
-from liability.
-
-## Acceptance
-
-In order to receive this license, you must agree to its
-rules.  The rules of this license are both obligations
-under that agreement and conditions to your license.
-You must not do anything with this software that triggers
-a rule that you cannot or will not follow.
-
-## Copyright
-
-Each contributor licenses you to do everything with this
-software that would otherwise infringe that contributor's
-copyright in it.
-
-## Notices
-
-You must ensure that everyone who gets a copy of
-any part of this software from you, with or without
-changes, also gets the text of this license or a link to
-<https://blueoakcouncil.org/license/1.0.0>.
-
-## Excuse
-
-If anyone notifies you in writing that you have not
-complied with [Notices](#notices), you can keep your
-license by taking all practical steps to comply within 30
-days after the notice.  If you do not do so, your license
-ends immediately.
-
-## Patent
-
-Each contributor licenses you to do everything with this
-software that would otherwise infringe any patent claims
-they can license or become able to license.
-
-## Reliability
-
-No contributor can revoke this license.
-
-## No Liability
-
-***As far as the law allows, this software comes as is,
-without any warranty or condition, and no contributor
-will be liable to anyone for any damages related to this
-software or this license, under any kind of legal claim.***
-```
-
-## BSD-2-Clause License Text
-
-```
-# The BSD 2-Clause License
-
-Copyright (c) 2014, Domenic Denicola
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-## BSD-3-Clause License Text
-
-```
-Copyright (c) 2020-2025, Weaviate B.V.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-## ISC License Text
-
-```
-ISC License
-
-Copyright (c) 2020, Stefan Terdell
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-```
-
-## MIT License Text
-
-```
-(The MIT License)
-
-Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-'Software'), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
 ## MIT-0 License Text
@@ -3247,4 +3551,16 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 ```
+
+## Unlicense OR MIT License Text
+
+Unlicense OR MIT license text not available.
+
+## Zlib License Text
+
+Zlib license text not available.
+
+## Zlib OR Apache-2.0 OR MIT License Text
+
+Zlib OR Apache-2.0 OR MIT license text not available.
 
